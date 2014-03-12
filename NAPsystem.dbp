@@ -10,13 +10,15 @@ Begin DataProject = "NAPsystem"
       End
    End
    Begin Folder = "NAPMiscellany"
-      Script = "Member_GetAllCountry.sql"
-      Script = "Member_LoginVerifyAllowReq.sql"
-      Script = "Member_LoginVerifyDel.sql"
-      Script = "Member_LoginVerifyIns.sql"
-      Script = "Member_LoginVerifySelList.sql"
-      Script = "Member_LoginVerifySelReqById.sql"
-      Script = "Member_LoginVerifyUpd.sql"
+      Begin Folder = "Member-LoginVerify"
+         Script = "Member_GetAllCountry.sql"
+         Script = "Member_LoginVerifyAllowReq.sql"
+         Script = "Member_LoginVerifyDel.sql"
+         Script = "Member_LoginVerifyIns.sql"
+         Script = "Member_LoginVerifySelList.sql"
+         Script = "Member_LoginVerifySelReqById.sql"
+         Script = "Member_LoginVerifyUpd.sql"
+      End
       Script = "Script1.sql"
    End
 End
