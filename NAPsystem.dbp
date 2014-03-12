@@ -1,5 +1,5 @@
 # Microsoft Developer Studio Project File - Database Project
-Begin DataProject = "Project1"
+Begin DataProject = "NAPsystem"
    MSDTVersion = "80"
    DefDBRef = "db215.bodb02.dbo"
    Begin DBRefFolder = "Database References"
@@ -10,6 +10,13 @@ Begin DataProject = "Project1"
       End
    End
    Begin Folder = "NAPMiscellany"
+      Script = "Member_GetAllCountry.sql"
+      Script = "Member_LoginVerifyAllowReq.sql"
+      Script = "Member_LoginVerifyDel.sql"
+      Script = "Member_LoginVerifyIns.sql"
+      Script = "Member_LoginVerifySelList.sql"
+      Script = "Member_LoginVerifySelReqById.sql"
+      Script = "Member_LoginVerifyUpd.sql"
       Script = "Script1.sql"
    End
 End
