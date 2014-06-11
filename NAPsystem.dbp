@@ -16,6 +16,12 @@ Begin DataProject = "NAPsystem"
          Script = "dbo.NAP_CustomerUpdInfoRobotAccount.sql"
          Script = "dbo.NAP_CustomerUpdStatusRobotAccount.sql"
       End
+      Begin Folder = "Manage Smart punters"
+         Script = "dbo.NAP_CustomerDelSmartPunter.sql"
+         Script = "dbo.NAP_CustomerInsSmartPunter.sql"
+         Script = "dbo.NAP_CustomerSelSmartPunter.sql"
+         Script = "dbo.NAP_CustomerUpdSmartPunter.sql"
+      End
       Begin Folder = "Member-LoginVerify"
          Script = "Member_GetAllCountry.sql"
          Script = "Member_LoginVerifyAllowReq.sql"
