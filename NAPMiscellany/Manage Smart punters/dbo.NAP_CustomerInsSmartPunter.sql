@@ -45,7 +45,7 @@ BEGIN
 	
 	IF EXISTS (SELECT 1 FROM SmartPunterList WITH(NOLOCK) WHERE CustID = @CustID)
 	BEGIN		
-		SELECT @ErrMsg = 'Smart punter already exists in the list.'
+		SELECT @ErrMsg = 'Smart punter already existed in the list.'
 				,@ErrCode = 102
 		RETURN
 	END
@@ -87,7 +87,7 @@ BEGIN
 		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 			@Userid = @userid,
 			@Custid = @CustID,
-			@ActionID = 644,
+			@ActionID = 31000,
 			@TrackingValue = @LogData,
 			@Duration = @duration
 	END TRY
@@ -100,7 +100,7 @@ BEGIN
 		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 			@Userid = @userid,
 			@Custid = @CustID,
-			@ActionID = 644,
+			@ActionID = 31000,
 			@TrackingValue = @LogData,
 			@Duration = @duration
 	END CATCH

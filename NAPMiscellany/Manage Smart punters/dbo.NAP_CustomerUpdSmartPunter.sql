@@ -1,6 +1,6 @@
 ﻿ ALTER PROCEDURE [dbo].[NAP_CustomerUpdSmartPunter]
 	@custid		INT,
-	@remark	VARCHAR(200) = '',
+	@remark	NVARCHAR(200) = '',
 	@userid		INT,
 	@IP			VARCHAR(50),
 	@ErrCode	INT = 0 OUTPUT,
@@ -55,8 +55,8 @@
 	END
 	
 	-- write log
-	DECLARE @LogData VARCHAR(4000),	
-			@LogData_Old VARCHAR(4000)
+	DECLARE @LogData NVARCHAR(4000),	
+			@LogData_Old NVARCHAR(4000)
 
 	SELECT @LogData = '<Nap_CustomerUpdSmartPunter CustID="' + COALESCE(CAST(@CustID AS VARCHAR(50)),SPACE(1)) + '" ' 
 							+ 'Remark="' + COALESCE(@Remark,SPACE(1)) + '" '
@@ -76,7 +76,7 @@
 		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 			@Userid = @userid,
 			@Custid = @CustID,
-			@ActionID = 645,
+			@ActionID = 31001,
 			@TrackingValue = @LogData,
 			@TrackingValue2 = @LogData_Old,
 			@Duration = @duration
@@ -96,7 +96,7 @@
 		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 			@Userid = @userid,
 			@Custid = @CustID,
-			@ActionID = 645,
+			@ActionID = 31001,
 			@TrackingValue = @LogData,
 			@TrackingValue2 = @LogData_Old,
 			@Duration = @duration

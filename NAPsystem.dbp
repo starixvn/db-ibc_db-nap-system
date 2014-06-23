@@ -19,6 +19,7 @@ Begin DataProject = "NAPsystem"
       Begin Folder = "Manage Smart punters"
          Script = "dbo.NAP_CustomerDelSmartPunter.sql"
          Script = "dbo.NAP_CustomerInsSmartPunter.sql"
+         Script = "dbo.NAP_CustomerSelIDbyUsernameNickname.sql"
          Script = "dbo.NAP_CustomerSelSmartPunter.sql"
          Script = "dbo.NAP_CustomerUpdSmartPunter.sql"
       End
