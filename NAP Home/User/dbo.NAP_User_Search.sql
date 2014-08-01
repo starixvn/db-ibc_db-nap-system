@@ -1,4 +1,10 @@
-﻿ 
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_Search]    Script Date: 8/1/2014 1:51:50 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[NAP_User_Search]
     @Username       NVARCHAR(50)
     ,@GroupId       INT

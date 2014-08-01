@@ -1,4 +1,11 @@
-﻿ --EXEC NAP_Group_GetAll
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_GetGroupByFunctionAndSite]    Script Date: 8/1/2014 1:37:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--EXEC NAP_Group_GetAll
 
 ALTER PROCEDURE [dbo].[NAP_Group_GetGroupByFunctionAndSite]
     @FunctionId	INT
@@ -47,7 +54,6 @@ BEGIN
 		AND gf.Policy	> 0				-- check for have permission that means policy > 0
 		AND gf.SiteId	= @SiteId
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_GetGroupByFunctionAndSite] TO [bodbAdminNet] AS [dbo]

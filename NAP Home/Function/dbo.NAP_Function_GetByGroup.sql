@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_GetByGroup]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByGroup]    Script Date: 8/1/2014 12:56:04 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_GetByGroup]
 	@GroupId		INT,				
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
 AS

@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Cust_Update]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Cust_Update]    Script Date: 8/1/2014 12:39:39 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Cust_Update]
 	@CustId				INT,
 	@FirstName			NVARCHAR (50)	=	NULL,
 	@LastName			NVARCHAR (50)	=	NULL,
@@ -64,7 +71,7 @@ BEGIN
 				,cu.email		AS '@e'
 		FROM [bodb02].[dbo].Customer AS cu WITH(NOLOCK)
 		INNER JOIN Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
-		INNER JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
+		LEFT JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE cu.custid = @CustId 
 		FOR XML PATH('r'), TYPE
 	)	
@@ -82,10 +89,10 @@ BEGIN
 	IF(@dbGroupID <> @GroupID)
 		BEGIN	
 			UPDATE Users
-			SET GroupId = @GroupID
-			WHERE UserId = @CustID		
+			SET GroupId		= @GroupID
+			WHERE UserId	= @CustID		
 		END
-	IF @@ERROR > 0
+	IF @@ERROR <> 0
 	BEGIN
 			SELECT 
 				@ErrCode = 103,
@@ -94,13 +101,13 @@ BEGIN
 	END	
 
 	-- Update customer information
-	EXEC	[DBTRANS].[bodb02].[dbo].[NAP_AdminInfo_Update]
-			@CustID = @CustID,
-			@FirstName = @FirstName,
-			@LastName = @LastName,
-			@Email = @Email,
-			@ErrCode = @ErrCode OUTPUT,
-			@ErrMsg = @ErrMsg OUTPUT
+	EXEC	[DBTXN].[CustDB].[dbo].[NAP_AdminInfo_Update]
+			@CustID		= @CustID,
+			@FirstName	= @FirstName,
+			@LastName	= @LastName,
+			@Email		= @Email,
+			@ErrCode	= @ErrCode OUTPUT,
+			@ErrMsg		= @ErrMsg OUTPUT
 	
 	IF @ErrCode > 0
 	BEGIN
@@ -119,7 +126,7 @@ BEGIN
 				,@Email			AS '@e'
 		FROM [bodb02].[dbo].Customer AS cu WITH(NOLOCK)
 		INNER JOIN Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
-		INNER JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
+		LEFT JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE cu.custid = @CustId 
 		FOR XML PATH('r'), TYPE
 	)	
@@ -142,7 +149,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Cust_Update] TO [bodbAdminNet] AS [dbo]

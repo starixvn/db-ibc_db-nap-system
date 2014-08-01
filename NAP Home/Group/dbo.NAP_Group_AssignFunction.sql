@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_AssignFunction]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_AssignFunction]    Script Date: 8/1/2014 1:36:18 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Group_AssignFunction]
 	@GroupId			INT
 	,@SiteId			INT
 	,@Value				NVARCHAR(4000)
@@ -29,7 +36,12 @@ AS
 		> 0: Specific Error.
 
 	*** WRITE LOG template:
-	Main: 		<root><xml path="r" />				<row item="GroupId" alias="g" />				<row item="SiteId" alias="s" />		</root>	Sub: 
+	Main: 
+		<root><xml path="r" />
+				<row item="GroupId" alias="g" />
+				<row item="SiteId" alias="s" />
+		</root>
+	Sub: 
 		<root><xml path="r/z" />
 				<row item="FunctionId" alias="f" />
 				<row item="Policy" alias="p" />
@@ -172,9 +184,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_AssignFunction] TO [bodbAdminNet] AS [dbo]

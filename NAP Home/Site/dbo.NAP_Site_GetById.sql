@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_GetById]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_GetById]    Script Date: 8/1/2014 1:41:45 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_GetById]
 	@SiteId INT
 AS
 /*  

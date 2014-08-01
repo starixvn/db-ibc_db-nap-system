@@ -1,4 +1,11 @@
-﻿ --EXEC [NAP_Site_GetByUser] 7771656,'UAT'
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_GetByUser]    Script Date: 8/1/2014 1:42:13 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--EXEC [NAP_Site_GetByUser] 7771656,'UAT'
 
 ALTER PROCEDURE [dbo].[NAP_Site_GetByUser]
     @UserId			INT
@@ -41,7 +48,6 @@ BEGIN
 		AND s.IsActive = 1
 	
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_GetByUser] TO [bodbAdminNet] AS [dbo]

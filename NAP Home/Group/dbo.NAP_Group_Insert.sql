@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_Insert]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_Insert]    Script Date: 8/1/2014 1:37:49 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Group_Insert]
 	@GroupId			INT								OUTPUT
 	,@GroupName			VARCHAR(50)
 	,@Description		VARCHAR(200)		= NULL
@@ -102,7 +109,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_Insert] TO [bodbAdminNet] AS [dbo]

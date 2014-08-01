@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_User_SearchExcludeFunction]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_SearchExcludeFunction]    Script Date: 8/1/2014 1:53:33 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_SearchExcludeFunction]
     @Username       NVARCHAR(50)
     ,@GroupId       INT
     ,@SiteId        INT
@@ -105,6 +112,7 @@ BEGIN
 		Temp.num
 
 END
+
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_SearchExcludeFunction] TO [bodbAdminNet] AS [dbo]

@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_GetByUserAndFunctionKeyIncludeGroup]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByUserAndFunctionKeyIncludeGroup]    Script Date: 8/1/2014 12:57:46 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_GetByUserAndFunctionKeyIncludeGroup]
 	@UserId			INT,				
 	@FunctionKey	NVARCHAR(50),				
 	@Environment	VARCHAR(10)		= 'UAT'	-- 'UAT', 'LIVE'

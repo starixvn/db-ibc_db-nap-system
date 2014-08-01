@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_GetByUserAndSite]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByUserAndSite]    Script Date: 8/1/2014 12:58:14 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_GetByUserAndSite]
 	@UserId			INT,				
 	@SiteId			INT,				
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'

@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[NAP_Functions_GenerateNAPFunction]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Functions_GenerateNAPFunction]    Script Date: 8/1/2014 1:35:20 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Functions_GenerateNAPFunction]
 	@SiteId			INT,
 	@Environment	VARCHAR(10)
 AS
@@ -43,7 +50,6 @@ BEGIN
 	VALUES (@SiteId, N'Assign Function To Group', N'AssignFunctionToGroup', N'Assign Function To Group', @ManageGroupId, N'Manage Group', 1, 1, 1, NULL, GETDATE(), NULL, GETDATE(), @Environment)
 	
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Functions_GenerateNAPFunction] TO [bodbAdminNet] AS [dbo]

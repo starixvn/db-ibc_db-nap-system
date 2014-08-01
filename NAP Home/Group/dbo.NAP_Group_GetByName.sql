@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_GetByName]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_GetByName]    Script Date: 8/1/2014 1:37:09 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Group_GetByName]
     @GroupName VARCHAR(50)
 AS
 /*  

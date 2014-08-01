@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_GetSiteURLByUser]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_GetSiteURLByUser]    Script Date: 8/1/2014 1:42:53 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_GetSiteURLByUser]
     @UserId			INT
     ,@Environment	VARCHAR(10)
 AS

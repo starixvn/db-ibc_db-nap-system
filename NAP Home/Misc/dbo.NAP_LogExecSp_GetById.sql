@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_LogExecSp_GetById]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_LogExecSp_GetById]    Script Date: 8/1/2014 1:39:08 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_LogExecSp_GetById]
 	@LogId INT
 AS
 /*  
@@ -22,7 +29,6 @@ BEGIN
 	INNER JOIN  bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON ld.ActionId=la.ActionId
 	WHERE ld.ID = @LogId
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_LogExecSp_GetById] TO [bodbAdminNet] AS [dbo]

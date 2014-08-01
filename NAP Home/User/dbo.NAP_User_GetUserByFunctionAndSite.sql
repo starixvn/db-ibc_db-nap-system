@@ -1,4 +1,10 @@
-﻿ 
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_GetUserByFunctionAndSite]    Script Date: 8/1/2014 1:50:26 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[NAP_User_GetUserByFunctionAndSite]
 	@FunctionId INT
 	,@SiteId INT
@@ -54,7 +60,6 @@ BEGIN
 		AND uf.Policy > 0
 		AND uf.SiteId = @SiteId
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_GetUserByFunctionAndSite] TO [bodbAdminNet] AS [dbo]

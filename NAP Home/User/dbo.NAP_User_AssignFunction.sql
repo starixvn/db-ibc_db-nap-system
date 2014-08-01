@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_User_AssignFunction]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_AssignFunction]    Script Date: 8/1/2014 1:45:25 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_AssignFunction]
     @UserId             INT
 	,@SiteId            INT
     ,@Value             VARCHAR(MAX)
@@ -23,7 +30,11 @@ AS
 		- Value : '<ROOT><FunctionPolicy SiteId="4" FunctionId="4" Policy="1"></FunctionPolicy></ROOT>'  
 	
 	*** WRITE LOG template:
-	main:	<root><xml path="r" />					<row item="SiteId" alias="s" />					<row item="UserId" alias="u" />			</root>	sub:	<root><xml path="r/z" />
+	main:	<root><xml path="r" />
+					<row item="SiteId" alias="s" />
+					<row item="UserId" alias="u" />
+			</root>
+	sub:	<root><xml path="r/z" />
 					<row item="FunctionId" alias="f" />
 					<row item="Policy" alias="p" />
 			</root>
@@ -169,7 +180,6 @@ BEGIN
 	@Duration		= @Duration
 		
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_AssignFunction] TO [bodbAdminNet] AS [dbo]

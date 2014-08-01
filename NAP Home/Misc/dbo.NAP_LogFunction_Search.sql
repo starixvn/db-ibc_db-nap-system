@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_LogFunction_Search]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_LogFunction_Search]    Script Date: 8/1/2014 1:40:03 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_LogFunction_Search]
     @Name			NVARCHAR(50)	= ''
 	,@SiteId		INT				= 0
     ,@From			DATETIME
@@ -71,7 +78,6 @@ BEGIN
 		Temp.num
 	
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_LogFunction_Search] TO [bodbAdminNet] AS [dbo]

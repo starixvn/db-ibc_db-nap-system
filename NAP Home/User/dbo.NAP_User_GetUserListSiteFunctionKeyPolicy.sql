@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[NAP_User_GetUserListSiteFunctionKeyPolicy]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_GetUserListSiteFunctionKeyPolicy]    Script Date: 8/1/2014 1:50:47 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_GetUserListSiteFunctionKeyPolicy]
     @UserId			INT,
 	@Site			NVARCHAR(MAX)	= '',
 	@FunctionKey	NVARCHAR(50)

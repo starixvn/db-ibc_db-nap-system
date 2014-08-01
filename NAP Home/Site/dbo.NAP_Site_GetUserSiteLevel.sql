@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_GetUserSiteLevel]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_GetUserSiteLevel]    Script Date: 8/1/2014 1:43:07 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_GetUserSiteLevel]
     @UserId		INT,
 	@SiteId		INT
 AS
@@ -23,6 +30,7 @@ BEGIN
 		us.UserId = @UserId
 		AND us.SiteId = @SiteId		
 END
+
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_GetUserSiteLevel] TO [bodbAdminNet] AS [dbo]

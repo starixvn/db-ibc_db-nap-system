@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_GetByKeyAndSite]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByKeyAndSite]    Script Date: 8/1/2014 12:56:42 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_GetByKeyAndSite]
 	@FunctionKey	NVARCHAR(50),
 	@SiteId			INT
 AS
@@ -44,7 +51,6 @@ BEGIN
 		f.FunctionKey	= @FunctionKey
 		AND f.SiteId	= @SiteId
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_GetByKeyAndSite] TO [bodbAdminNet] AS [dbo]

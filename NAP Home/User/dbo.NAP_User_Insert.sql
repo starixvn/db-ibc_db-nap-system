@@ -1,4 +1,10 @@
-﻿ 
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_Insert]    Script Date: 8/1/2014 1:51:15 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[NAP_User_Insert]
     @UserId             INT
     ,@username			VARCHAR(30) = null
@@ -86,10 +92,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
-
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_Insert] TO [bodbAdminNet] AS [dbo]

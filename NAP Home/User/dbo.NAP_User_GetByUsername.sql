@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_User_GetByUsername]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_GetByUsername]    Script Date: 8/1/2014 1:50:16 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_GetByUsername]
     @Username NVARCHAR(50)
 AS
 
@@ -37,10 +44,8 @@ BEGIN
 		LEFT JOIN dbo.Groups AS g WITH (NOLOCK) ON g.GroupId = u.GroupId
 		LEFT JOIN bodb02.dbo.custInfo AS ci1 WITH (NOLOCK) ON u.CreatedBy = ci1.custid
 		LEFT JOIN bodb02.dbo.custInfo AS ci2 WITH (NOLOCK) ON u.ModifiedBy = ci2.custid
-    WHERE c.username = @Username 
+    WHERE c.username = @Username and ci.closed = 0
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_GetByUsername] TO [bodbAdminNet] AS [dbo]

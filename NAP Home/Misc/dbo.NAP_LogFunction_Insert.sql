@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_LogFunction_Insert]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_LogFunction_Insert]    Script Date: 8/1/2014 1:39:47 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_LogFunction_Insert]
 	@FunctionId		INT,
 	@SiteId			INT,
 	@UserId			INT,		
@@ -38,7 +45,6 @@ BEGIN
 			@BrowserName
 			)
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_LogFunction_Insert] TO [bodbAdminNet] AS [dbo]

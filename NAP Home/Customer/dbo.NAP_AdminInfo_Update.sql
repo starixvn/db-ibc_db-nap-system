@@ -1,4 +1,12 @@
-﻿ALTER PROCEDURE [dbo].[NAP_AdminInfo_Update]
+﻿USE [CustDB]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_AdminInfo_Update]    Script Date: 8/1/2014 10:18:25 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+/****** Object:  Stored Procedure dbo.NAP_AdminInfo_Update    Script Date: 12/9/2013 12:53:47 PM ******/
+ALTER PROCEDURE [dbo].[NAP_AdminInfo_Update]
 	@custid INT,
 	@FirstName			NVARCHAR (50)	=	NULL,
 	@LastName			NVARCHAR (50)	=	NULL,
@@ -36,7 +44,6 @@ BEGIN
 
 	RETURN
 END
-
 
 
 GO

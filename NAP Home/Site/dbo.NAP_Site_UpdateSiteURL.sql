@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_UpdateSiteURL]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_UpdateSiteURL]    Script Date: 8/1/2014 1:44:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_UpdateSiteURL]
     @SiteURLId		INT
 	,@SiteId		INT
     ,@URL			VARCHAR(100)
@@ -103,8 +110,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_UpdateSiteURL] TO [bodbAdminNet] AS [dbo]

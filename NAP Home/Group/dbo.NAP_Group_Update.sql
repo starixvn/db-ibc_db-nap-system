@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_Update]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_Update]    Script Date: 8/1/2014 1:38:17 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Group_Update]
 	@GroupId			INT
 	,@GroupName			VARCHAR(50)
 	,@Description		VARCHAR(200)    = NULL
@@ -99,7 +106,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 
 
 GO

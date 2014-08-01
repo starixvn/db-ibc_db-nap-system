@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_LogExecSp_Search]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_LogExecSp_Search]    Script Date: 8/1/2014 1:39:34 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_LogExecSp_Search]
 	@Username		NVARCHAR(50) = ''
     ,@Name			NVARCHAR(50) = ''
     ,@FilterType    INT
@@ -256,8 +263,6 @@ BEGIN
 				Temp.num
 		END
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_LogExecSp_Search] TO [bodbAdminNet] AS [dbo]

@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_GetAllSiteUrl]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_GetAllSiteUrl]    Script Date: 8/1/2014 1:40:50 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_GetAllSiteUrl]
     @Environment	VARCHAR(10)		-- UAT, LIVE
 AS
 
@@ -30,7 +37,6 @@ BEGIN
 		INNER JOIN dbo.Sites s WITH (NOLOCK) ON su.SiteId = s.SiteId
 	WHERE su.Environment = @Environment
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_GetAllSiteUrl] TO [bodbAdminNet] AS [dbo]

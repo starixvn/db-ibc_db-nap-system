@@ -1,4 +1,11 @@
-﻿ --EXEC NAP_Group_GetByUser 7771656
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_GetByUser]    Script Date: 8/1/2014 1:37:24 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--EXEC NAP_Group_GetByUser 7771656
 ALTER PROCEDURE [dbo].[NAP_Group_GetByUser]
     @UserId INT
 AS
@@ -31,7 +38,6 @@ BEGIN
 		LEFT JOIN bodb02.dbo.custInfo AS ci1 WITH (NOLOCK) ON g.ModifiedBy = ci1.custid
     WHERE u.UserId = @UserId
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_GetByUser] TO [bodbAdminNet] AS [dbo]

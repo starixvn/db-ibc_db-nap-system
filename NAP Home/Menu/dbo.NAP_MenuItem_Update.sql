@@ -1,4 +1,12 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_MenuItem_Update]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_MenuItem_Update]    Script Date: 8/1/2014 8:35:02 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[NAP_MenuItem_Update]
     @MenuItemId			INT,	
 	@FunctionId			INT,	
 	@SiteId				INT,	
@@ -29,6 +37,7 @@ AS
  *  
  * Revisions:     
 	- 20120830@Edward : Update Environment of child when parent change
+	- 20140801@Sophia: Update ParentName of child when parent change
  * Param's Explanation: 	
 	• Main	:	
 				<root><xml path="r" />
@@ -65,7 +74,7 @@ BEGIN
 
 	-- write log before update
 	SET @xml = (
-		SELECT @MenuItemId			AS '@mi'
+		SELECT  @MenuItemId			AS '@mi'
 				,m.MenuItemName		AS '@m'
 				,m.FunctionId		AS '@fi'
 				,f.FunctionName		AS '@f'
@@ -88,11 +97,11 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')		
 	
 	-- Get Environment before update
-	DECLARE @EnvironmentOld VARCHAR(10)
+	DECLARE @EnvironmentOld VARCHAR(10), @MenuItemNameOld NVARCHAR(50)
 
-	SELECT @EnvironmentOld = Environment
-	FROM MenuItems
-	WHERE MenuItemId = @MenuItemId
+	SELECT	@EnvironmentOld = Environment, @MenuItemNameOld = MenuItemName
+	FROM	MenuItems
+	WHERE	MenuItemId = @MenuItemId
 
 	-- Update menu item information
 	UPDATE dbo.MenuItems 
@@ -122,25 +131,30 @@ BEGIN
 		END		
 	ELSE
 		BEGIN
+				DECLARE @MenuItemChild AS TABLE (MenuItemId INT)
+
+				INSERT INTO @MenuItemChild (MenuItemId)
+				SELECT  c.MenuItemId 
+				FROM	MenuItems AS c WITH(NOLOCK) 
+				WHERE	c.ParentId = @MenuItemId
+
+
 			-- Check if Environment is change will be update all menu item child
-			IF (@EnvironmentOld != @Environment)
-				BEGIN
-					-- Get list menu item is child of this menuId
-					;WITH MenuItemChild AS(
-						SELECT  MenuItemId 
-						FROM    MenuItems WITH (NOLOCK)
-						WHERE   MenuItemId = @MenuItemId
-						UNION ALL
-						SELECT  t.MenuItemId 
-						FROM    
-							MenuItems AS t WITH(NOLOCK) 
-							INNER JOIN MenuItemChild r ON t.ParentId = r.MenuItemId
-					)
-					
+				IF (@EnvironmentOld <> @Environment)
+				BEGIN	
 					-- Update Environment of all menu item child
-					UPDATE dbo.MenuItems 
+					UPDATE dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
 					SET	Environment = @Environment
-					WHERE MenuItemId IN ( SELECT  MenuItemId FROM    MenuItemChild)
+					WHERE MenuItemId IN ( SELECT MenuItemId FROM @MenuItemChild)
+				END
+
+			-- Check if MenuItemName is change will be update all ParentName of item child
+				IF (@MenuItemNameOld <> @MenuItemName)
+				BEGIN	
+					-- Update ParentName of all menu item child
+					UPDATE	dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
+					SET		ParentName = @MenuItemName
+					WHERE	MenuItemId IN ( SELECT MenuItemId FROM @MenuItemChild)
 				END
 		END
 
@@ -185,8 +199,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_MenuItem_Update] TO [bodbAdminNet] AS [dbo]

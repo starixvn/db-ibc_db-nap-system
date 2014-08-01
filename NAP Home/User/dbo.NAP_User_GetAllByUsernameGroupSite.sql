@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_User_GetAllByUsernameGroupSite]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_GetAllByUsernameGroupSite]    Script Date: 8/1/2014 1:48:56 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_GetAllByUsernameGroupSite]
     @Username       NVARCHAR(50)
     ,@GroupId       INT
     ,@Site			NVARCHAR(MAX)	= ''
@@ -119,7 +126,6 @@ BEGIN
 		Temp.num
 
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_GetAllByUsernameGroupSite] TO [bodbAdminNet] AS [dbo]

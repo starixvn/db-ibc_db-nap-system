@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_Update]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_Update]    Script Date: 8/1/2014 1:34:42 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_Update]
     @FunctionId			INT,	
 	@SiteId				INT,									
 	@FunctionName		NVARCHAR(50),	
@@ -226,9 +233,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_Update] TO [bodbAdminNet] AS [dbo]

@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[NAP_User_SearchByUsername]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_SearchByUsername]    Script Date: 8/1/2014 1:52:58 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_SearchByUsername]
     @Username	NVARCHAR(50),
 	@PageIndex	INT,
 	@PageSize	INT,
@@ -47,7 +54,8 @@ BEGIN
 		AND Temp.num <= @LastRec
 
 END
+
 GO
-GRANT EXECUTE ON [dbo].[NAP_User_SSOCheckIn] TO [bodbAdminNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[NAP_User_SearchByUsername] TO [bodbAdminNet] AS [dbo]
 GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_User_SSOCheckIn] TO [vnteam] AS [dbo]
+GRANT VIEW DEFINITION ON [dbo].[NAP_User_SearchByUsername] TO [vnteam] AS [dbo]

@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_User_GetByGroupAndSite]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_GetByGroupAndSite]    Script Date: 8/1/2014 1:49:10 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_GetByGroupAndSite]
     @GroupId    INT
     ,@SiteId    INT
     ,@IsActive  BIT		= NULL
@@ -46,7 +53,6 @@ BEGIN
 		AND (@GroupId = 0 OR (@GroupId != 0 AND u.GroupId = @GroupId))
 	
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_GetByGroupAndSite] TO [bodbAdminNet] AS [dbo]

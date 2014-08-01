@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[NAP_Cust_Insert]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Cust_Insert]    Script Date: 8/1/2014 12:39:00 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Cust_Insert]
 	@CustId			INT							OUTPUT,	
 	@Username		VARCHAR (30),
 	@UserPwd		VARCHAR (40)	= '',
@@ -80,16 +87,16 @@ BEGIN
 		END
 
 	-- create new user in customer/custinfo tables
-	EXEC	[DBTRANS].[bodb02].[dbo].[NAP_Admin_Ins]
-			@FirstName = @FirstName OUTPUT,
-			@LastName = @LastName OUTPUT,
-			@Email = @Email OUTPUT,
-			@UserName = @UserName OUTPUT,
-			@UserPwd = @UserPwd,
-			@CustID = @CustID OUTPUT,
-			@CurrentUserId = @CurrentUserId,
-			@ErrCode = @ErrCode OUTPUT,
-			@ErrMsg = @ErrMsg OUTPUT
+	EXEC	[DBTXN].[CustDB].[dbo].[NAP_Admin_Ins]
+			@FirstName		= @FirstName	OUTPUT,
+			@LastName		= @LastName		OUTPUT,
+			@Email			= @Email		OUTPUT,
+			@UserName		= @UserName		OUTPUT,
+			@UserPwd		= @UserPwd,
+			@CustID			= @CustID		OUTPUT,
+			@CurrentUserId	= @CurrentUserId,
+			@ErrCode		= @ErrCode		OUTPUT,
+			@ErrMsg			= @ErrMsg		OUTPUT
 	IF @ErrCode > 0
 	BEGIN
 		SELECT @ErrCode = @ErrCode, @ErrMsg = @ErrMsg
@@ -99,18 +106,18 @@ BEGIN
 
 	-- Create new NAP user
 	EXEC [dbo].[NAP_User_Insert] 
-		@UserId = @CustId,
-		@Username = @Username,
-		@GroupId = @GroupId,
-		@CreatedBy = @CurrentUserId,
-		@CreatedDate = @LogDate,
-		@CurrentUserId = @CurrentUserId,
-		@CurrentSiteId = @CurrentSiteId,
-		@LogDate = @LogDate,
-		@LoginIP = @LoginIP,
-		@Language = @Language,
-		@ErrCode = @ErrCode OUTPUT,
-		@ErrMsg = @ErrMsg OUTPUT
+		@UserId			= @CustId,
+		@Username		= @Username,
+		@GroupId		= @GroupId,
+		@CreatedBy		= @CurrentUserId,
+		@CreatedDate	= @LogDate,
+		@CurrentUserId	= @CurrentUserId,
+		@CurrentSiteId	= @CurrentSiteId,
+		@LogDate		= @LogDate,
+		@LoginIP		= @LoginIP,
+		@Language		= @Language,
+		@ErrCode		= @ErrCode OUTPUT,
+		@ErrMsg			= @ErrMsg OUTPUT
 	IF @ErrCode > 0
 	BEGIN
 		SELECT @ErrCode = @ErrCode, @ErrMsg = @ErrMsg

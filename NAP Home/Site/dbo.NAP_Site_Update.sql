@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_Update]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_Update]    Script Date: 8/1/2014 1:43:56 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_Update]
     @SiteId			INT
 	,@SiteName		VARCHAR(50)
 	,@Description	VARCHAR(200)		= NULL
@@ -22,7 +29,14 @@ AS
  * Revisions:     
  * Param's Explanation: 
 	*** WRITE LOG template:
-	Main: 		<root><xml path="r" />			<row item="SiteId" alias="si" />			<row item="SiteName" alias="s" />			<row item="Description" alias="d" />			<row item="IsActive" alias="i" />			<row item="Environment" alias="e" />		</root>
+	Main: 
+		<root><xml path="r" />
+			<row item="SiteId" alias="si" />
+			<row item="SiteName" alias="s" />
+			<row item="Description" alias="d" />
+			<row item="IsActive" alias="i" />
+			<row item="Environment" alias="e" />
+		</root>
 */
 BEGIN
 	SET NOCOUNT ON
@@ -98,8 +112,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_Update] TO [bodbAdminNet] AS [dbo]

@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_InsertSiteURL]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_InsertSiteURL]    Script Date: 8/1/2014 1:43:27 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_InsertSiteURL]
 	@SiteUrlId		INT								OUTPUT
 	,@SiteId		INT
     ,@URL			VARCHAR(100)
@@ -21,7 +28,9 @@ AS
  * Revisions:     
  * Param's Explanation:
 	*** WRITE LOG template:
-	Main: 		<root><xml path="r" /><row item="SiteId" alias="s" /></root>	Sub: 
+	Main: 
+		<root><xml path="r" /><row item="SiteId" alias="s" /></root>
+	Sub: 
 		<root><xml path="r/z" />
 				<row item="SiteURLId" alias="si" />				
 				<row item="URL" alias="u" />
@@ -116,7 +125,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 
 
 GO

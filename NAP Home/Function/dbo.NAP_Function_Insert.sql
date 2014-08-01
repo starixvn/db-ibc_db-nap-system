@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_Insert]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_Insert]    Script Date: 8/1/2014 1:34:19 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_Insert]
     @FunctionId			INT							OUTPUT,	
 	@SiteId				INT,	
 	@FunctionName		NVARCHAR(50),	
@@ -177,7 +184,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 
 
 GO

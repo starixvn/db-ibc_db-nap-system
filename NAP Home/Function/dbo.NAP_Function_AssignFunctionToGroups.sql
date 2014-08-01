@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[NAP_Function_AssignFunctionToGroups]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_AssignFunctionToGroups]    Script Date: 8/1/2014 12:43:45 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_AssignFunctionToGroups]
      @FunctionId        INT
 	,@SiteId            INT
     ,@Value             NVARCHAR(MAX)

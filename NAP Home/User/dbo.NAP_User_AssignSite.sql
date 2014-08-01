@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_User_AssignSite]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_AssignSite]    Script Date: 8/1/2014 1:47:53 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_User_AssignSite]
     @UserId             INT
     ,@Value             NVARCHAR(MAX)
     ,@ModifiedBy        INT
@@ -21,7 +28,8 @@ AS
 		- Value : '<ROOT><SiteLevel SiteId="4" Level="3" ></SiteLevel></ROOT>'
 	
 *** WRITE LOG template:
-	main: <root><xml path="r" /><row item="UserId" alias="u" /></root>	sub: <root><xml path="r/z" />
+	main: <root><xml path="r" /><row item="UserId" alias="u" /></root>
+	sub: <root><xml path="r/z" />
 			<row item="SiteId" alias="si" />
 			<row item="SiteName" alias="s" />
 			<row item="Level" alias="l" />
@@ -233,7 +241,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 
 
 GO

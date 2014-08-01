@@ -1,4 +1,11 @@
-﻿ALTER PROCEDURE [dbo].[NAP_Site_UpdateDefaultSiteURL]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_UpdateDefaultSiteURL]    Script Date: 8/1/2014 1:44:21 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_UpdateDefaultSiteURL]
     @SiteUrlId		INT
 	,@SiteId		INT
 	,@Environment	VARCHAR(10)
@@ -18,7 +25,9 @@ AS
  * Revisions:     
  * Param's Explanation: 
 	*** WRITE LOG template:
-	Main: 		<root><xml path="r" /><row item="SiteId" alias="s" /></root>	Sub: 
+	Main: 
+		<root><xml path="r" /><row item="SiteId" alias="s" /></root>
+	Sub: 
 		<root><xml path="r/z" />
 				<row item="SiteURLId" alias="si" />				
 				<row item="URL" alias="u" />
@@ -111,8 +120,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_UpdateDefaultSiteURL] TO [bodbAdminNet] AS [dbo]

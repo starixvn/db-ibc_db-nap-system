@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_SearchExcludeFunction]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_SearchExcludeFunction]    Script Date: 8/1/2014 1:38:03 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Group_SearchExcludeFunction]
     @GroupName       NVARCHAR(50)    
     ,@SiteId        INT
     ,@FunctionId    INT	
@@ -37,7 +44,6 @@ BEGIN
 			WHERE FunctionId = @FunctionId AND SiteId = @SiteId AND Policy > 0
 		)
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_SearchExcludeFunction] TO [bodbAdminNet] AS [dbo]

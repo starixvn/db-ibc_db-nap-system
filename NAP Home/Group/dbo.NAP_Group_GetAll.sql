@@ -1,4 +1,13 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_GetAll]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_GetAll]    Script Date: 8/1/2014 1:36:36 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--EXEC NAP_Group_GetAll
+
+ALTER PROCEDURE [dbo].[NAP_Group_GetAll]
     @IsActive	BIT	= NULL 
 AS
 
@@ -30,7 +39,6 @@ BEGIN
     WHERE (@IsActive IS NULL OR (@IsActive IS NOT NULL AND g.IsActive = @IsActive))
 	
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_GetAll] TO [bodbAdminNet] AS [dbo]

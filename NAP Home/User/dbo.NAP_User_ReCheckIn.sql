@@ -1,5 +1,10 @@
-﻿ 
-
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_User_ReCheckIn]    Script Date: 8/1/2014 1:51:37 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 ALTER PROCEDURE [dbo].[NAP_User_ReCheckIn]	
 	@OnUserId			INT 
 	,@IsKickedOut		BIT = 0 OUTPUT    

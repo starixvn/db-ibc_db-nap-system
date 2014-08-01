@@ -1,11 +1,10 @@
 ﻿USE [bodb_NAP]
 GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_Logout]    Script Date: 02/27/2013 09:33:48 ******/
+/****** Object:  StoredProcedure [dbo].[NAP_User_Logout]    Script Date: 8/1/2014 1:51:27 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-
 ALTER PROCEDURE [dbo].[NAP_User_Logout]
 	@OnUserID INT
 AS
@@ -15,7 +14,7 @@ AS
  * Task : User logout
  * DB: bodb_NAP
  *  
- * Revisions: 20130227@Edward  Update bug for logout NAP Hub  		
+ * Revisions:     
  * Param's Explanation: 		
 */
 
@@ -40,8 +39,6 @@ BEGIN
 	DELETE FROM OnUser WHERE Id = @OnUserID
 
 END
-
-
 
 
 GO

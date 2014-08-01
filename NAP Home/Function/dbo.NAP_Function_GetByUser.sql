@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_GetByUser]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByUser]    Script Date: 8/1/2014 12:57:28 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_GetByUser]
 	@UserId			INT,				
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
 AS
@@ -46,7 +53,6 @@ BEGIN
 		AND f.IsActive = 1 AND s.IsActive = 1
 		AND (@Environment = 'UAT' OR (@Environment != 'UAT' AND f.Environment = @Environment))
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_GetByUser] TO [bodbAdminNet] AS [dbo]

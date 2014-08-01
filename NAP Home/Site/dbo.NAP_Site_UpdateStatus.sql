@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Site_UpdateStatus]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Site_UpdateStatus]    Script Date: 8/1/2014 1:44:58 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Site_UpdateStatus]
     @SiteId			INT	
     ,@IsActive		BIT
     ,@CurrentUserId	INT     
@@ -16,7 +23,8 @@ AS
  *  
  * Revisions:     
  * Param's Explanation: 
-		Main: 		<root><xml path="r" /><row item="SiteId" alias="s" /><row item="IsActive" alias="i" /></root>
+		Main: 
+		<root><xml path="r" /><row item="SiteId" alias="s" /><row item="IsActive" alias="i" /></root>
 */
 BEGIN
 	SET NOCOUNT ON
@@ -81,7 +89,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_UpdateStatus] TO [bodbAdminNet] AS [dbo]

@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Group_UpdateStatus]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Group_UpdateStatus]    Script Date: 8/1/2014 1:38:29 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Group_UpdateStatus]
     @GroupId			INT	
     ,@IsActive			BIT
     ,@ModifiedBy		INT 
@@ -89,8 +96,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_UpdateStatus] TO [bodbAdminNet] AS [dbo]

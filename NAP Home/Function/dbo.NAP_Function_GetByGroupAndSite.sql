@@ -1,4 +1,11 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_Function_GetByGroupAndSite]
+﻿USE [bodb_NAP]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByGroupAndSite]    Script Date: 8/1/2014 12:56:19 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[NAP_Function_GetByGroupAndSite]
 	@GroupId		INT,				
 	@SiteId			INT,
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
@@ -48,7 +55,6 @@ BEGIN
 		AND f.IsActive = 1 AND s.IsActive = 1 -- check with site is active
 		AND (@Environment = 'UAT' OR (@Environment != 'UAT' AND f.Environment = @Environment))
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_GetByGroupAndSite] TO [bodbAdminNet] AS [dbo]
