@@ -100,11 +100,11 @@ BEGIN
 	DECLARE @EnvironmentOld VARCHAR(10), @MenuItemNameOld NVARCHAR(50)
 
 	SELECT	@EnvironmentOld = Environment, @MenuItemNameOld = MenuItemName
-	FROM	MenuItems
+	FROM	MenuItems WITH(NOLOCK) 
 	WHERE	MenuItemId = @MenuItemId
 
 	-- Update menu item information
-	UPDATE dbo.MenuItems 
+	UPDATE dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
 	SET	
 		FunctionId		= @FunctionId,
 		SiteId			= @SiteId,
