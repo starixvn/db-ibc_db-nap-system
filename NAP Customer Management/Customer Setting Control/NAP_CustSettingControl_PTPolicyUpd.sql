@@ -32,7 +32,15 @@ BEGIN
 		, @endRun DATETIME
 		, @duration INT
 	DECLARE @iDoc INT
+	
 	DECLARE @NewPTPolicy TABLE (
+		[ProductID] TINYINT
+		, [SuperMax] SMALLMONEY
+		, [MasterMax] SMALLMONEY
+		, [AgentMax] SMALLMONEY
+		)
+		
+	DECLARE @OldPTPolicy TABLE (
 		[ProductID] TINYINT
 		, [SuperMax] SMALLMONEY
 		, [MasterMax] SMALLMONEY
@@ -60,7 +68,7 @@ BEGIN
 	SELECT ProductID
 		, CAST(SuperMax AS SMALLMONEY) AS SuperMax
 		, CAST(MasterMax AS SMALLMONEY) AS MasterMax
-		, CAST(AgentMax AS SMALLMONEY) AS AgentMax
+		, CAST(AgentMax AS SMALLMONEY) AS AgentMax 
 	FROM OPENXML(@iDoc, '/ROOT/Policy', 1) WITH (
 			SiteID INT
 			, ExchangeID INT
@@ -73,13 +81,24 @@ BEGIN
 
 	EXEC sp_xml_removedocument @iDoc
 
+	
 	--Update changed Policy
 	IF @RoleID = 4
 	BEGIN
+		--Get old values
+		INSERT INTO @OldPTPolicy
+		SELECT p.ProductID,ISNULL(p.SuperMax,0),ISNULL(p.MasterMax,0),ISNULL(p.AgentMax,0)
+		FROM dbo.PTSettingPolicy p
+		INNER JOIN @NewPTPolicy n
+				ON p.ProductID = n.ProductID
+		WHERE p.SiteID = @SiteID
+			AND p.ExchangeID = @ExchangeID
+			AND p.RoleID = @RoleID
+		
 		UPDATE main
-		SET main.SuperMax = n.SuperMax
-			, main.MasterMax = n.MasterMax
-			, main.AgentMax = n.AgentMax
+		SET main.SuperMax = CASE WHEN n.SuperMax = 0 THEN NULL ELSE n.SuperMax END
+			, main.MasterMax = CASE WHEN n.MasterMax = 0 THEN NULL ELSE n.MasterMax END
+			, main.AgentMax = CASE WHEN  n.AgentMax = 0 THEN NULL ELSE n.AgentMax END
 		FROM dbo.PTSettingPolicy main WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN @NewPTPolicy n
 			ON main.ProductID = n.ProductID
@@ -89,8 +108,18 @@ BEGIN
 	END
 	ELSE IF @RoleID = 3
 	BEGIN
+		--Get old values
+		INSERT INTO @OldPTPolicy
+		SELECT p.ProductID,p.SuperMax,ISNULL(p.MasterMax,0),p.AgentMax
+		FROM dbo.PTSettingPolicy p
+		INNER JOIN @NewPTPolicy n
+				ON p.ProductID = n.ProductID
+		WHERE p.SiteID = @SiteID
+			AND p.ExchangeID = @ExchangeID
+			AND p.RoleID = @RoleID
+		
 		UPDATE main
-		SET main.MasterMax = n.MasterMax
+		SET main.MasterMax = CASE WHEN n.MasterMax = 0 THEN NULL ELSE n.MasterMax END
 		FROM dbo.PTSettingPolicy main WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN @NewPTPolicy n
 			ON main.ProductID = n.ProductID
@@ -100,8 +129,18 @@ BEGIN
 	END
 	ELSE IF @RoleID = 2
 	BEGIN
+		--Get old values
+		INSERT INTO @OldPTPolicy
+		SELECT p.ProductID,p.SuperMax,p.MasterMax,ISNULL(p.AgentMax,0)
+		FROM dbo.PTSettingPolicy p
+		INNER JOIN @NewPTPolicy n
+				ON p.ProductID = n.ProductID
+		WHERE p.SiteID = @SiteID
+			AND p.ExchangeID = @ExchangeID
+			AND p.RoleID = @RoleID
+		
 		UPDATE main
-		SET main.AgentMax = n.AgentMax
+		SET main.AgentMax = CASE WHEN  n.AgentMax = 0 THEN NULL ELSE n.AgentMax END
 		FROM dbo.PTSettingPolicy main WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN @NewPTPolicy n
 			ON main.ProductID = n.ProductID
@@ -123,7 +162,7 @@ BEGIN
 
 	SELECT @Variables = @Variables + ' ' + VarialeName 
 						+ CAST(ProductID AS VARCHAR(5)) + '="' 
-						+ CAST(Value AS VARCHAR(15)) + '"'
+						+ CASE WHEN Value=0 THEN '' ELSE CAST(Value AS VARCHAR(15)) END + '"'
 	FROM @NewPTPolicy
 	UNPIVOT(Value FOR VarialeName IN (SuperMax, MasterMax, AgentMax)) u;
 
@@ -137,13 +176,30 @@ BEGIN
 					+ 'IP="' + COALESCE(@IP, SPACE(1)) 
 					+ '" />'
 
-	SELECT @LogData
+	DECLARE @LogOldData NVARCHAR(4000)
+	
+	DECLARE @OldVariables NVARCHAR(4000) = ''
 
+	SELECT @OldVariables = @OldVariables + ' ' + VarialeName 
+						+ CAST(ProductID AS VARCHAR(5)) + '="' 
+						+ CASE WHEN Value=0 THEN '' ELSE CAST(Value AS VARCHAR(15)) END + '"'
+	FROM @OldPTPolicy
+	UNPIVOT(Value FOR VarialeName IN (SuperMax, MasterMax, AgentMax)) u;
+
+	SELECT @LogOldData = '<NAP_CustSettingControl_PTPolicyUpd ' 
+					+ 'SiteID="' + coalesce(cast(@SiteID AS VARCHAR(50)), space(1)) + '" ' 
+					+ 'ExchangeID="' + coalesce(cast(@ExchangeID AS VARCHAR(50)), space(1)) + '" ' 
+					+ 'RoleID="'+ coalesce(cast(@RoleID AS VARCHAR(50)), space(1)) + '" ' 
+					+ @OldVariables + ' ' 
+					+ 'IP="' + COALESCE(@IP, SPACE(1)) 
+					+ '" />'
+					
 	SET @endRun = GETDATE()
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)
 
 	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP @Userid = @userid
 		, @ActionID = 31102
 		, @TrackingValue = @LogData
+		, @TrackingValue2 = @LogOldData
 		, @Duration = @duration
 END
