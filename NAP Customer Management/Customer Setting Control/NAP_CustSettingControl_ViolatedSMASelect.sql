@@ -1,12 +1,11 @@
---CREATE PROCEDURE [dbo].[NAP_CustSettingControl_ViolatedSMASelect]
-DECLARE
+ALTER PROCEDURE [dbo].[NAP_CustSettingControl_ViolatedSMASelect]
 	@Username			NVARCHAR(50)= NULL,
 	@SiteID				NVARCHAR(50)= NULL,
 	@Currency			INT			= NULL,
 	@Status				TINYINT		= NULL,
 	@GroupHeadLineID	INT			= NULL,
 	@RoleID				TINYINT		= NULL
---AS 
+AS 
 /*	Created by: Dominic
 	Date: 20141224
 	Task: Display a list of violated PotsitonTaking Policy SMA
@@ -17,7 +16,7 @@ DECLARE
 	*Revisions:
 		
 */
---BEGIN	
+BEGIN	
 	SET NOCOUNT ON
 
 	CREATE TABLE #DirectCusts (
@@ -387,16 +386,21 @@ DECLARE
 								WHEN main.ProductID = 3 THEN ci.DisableNumber
 								WHEN main.ProductID = 4 THEN (~ci.SyncLiveCasino | ci.DisableLiveCasino)
 								WHEN main.ProductID = 5 THEN ci.DisableVirtualSports
-								WHEN main.ProductID = 8 THEN CASE WHEN EXISTS(SELECT TOP 1 1 FROM dbo.CustGameType gt WITH(NOLOCK,INDEX=PK_CustGameType)
-																					WHERE gt.CustID = ci.CustID AND gt.IsDisabled = 0 ) 
-																					THEN 0 
-																					ELSE 1 
-																					END
 							END
 	FROM #FinalResult main
 	JOIN dbo.CustInfo ci ON ci.CustID = main.CustID
-	WHERE main.ProductID IN (2,3,4,5,8)
+	WHERE main.ProductID IN (2,3,4,5)
 	
+	--Update Keno's status
+	UPDATE main
+	SET
+		main.IsDisabled = CASE WHEN EXISTS(SELECT TOP 1 1 FROM dbo.CustGameType gt WITH(NOLOCK)
+																					WHERE gt.CustID = main.CustID AND gt.IsDisabled = 0 ) 
+																					THEN 0 
+																					ELSE 1 
+																					END
+	FROM #FinalResult main 
+	WHERE main.ProductID = 8
 	
 	
 	--Return Result
@@ -425,4 +429,4 @@ DECLARE
 	DROP TABLE #ViolatedCustIDs
 	DROP TABLE #DirectCusts
 	DROP TABLE #FinalResult
---END
+END
