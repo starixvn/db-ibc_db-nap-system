@@ -272,9 +272,9 @@ BEGIN
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
 			AND p.ProductID = mp.ProductID
-	WHERE (p.AgentMax IS NOT NULL AND cs.alivepositiontaking <> p.AgentMax)
+	WHERE ((p.AgentMax IS NOT NULL AND cs.alivepositiontaking <> p.AgentMax)
 			OR (p.MasterMax IS NOT NULL AND cs.mlivepositiontaking  <> p.MasterMax)
-			OR (p.SuperMax IS NOT NULL AND cs.slivepositiontaking <> p.SuperMax)
+			OR (p.SuperMax IS NOT NULL AND cs.slivepositiontaking <> p.SuperMax))
 			AND cs.SportType=1 AND cs.BetType IN (1,3,7,8)
 		  
 	--NG(Deadball),RC,VS
@@ -309,9 +309,9 @@ BEGIN
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
 			AND p.ProductID = mp.ProductID
-	WHERE (p.AgentMax IS NOT NULL AND cs.alivepositiontaking <> p.AgentMax)
+	WHERE ((p.AgentMax IS NOT NULL AND cs.alivepositiontaking <> p.AgentMax)
 			OR (p.MasterMax IS NOT NULL AND cs.mlivepositiontaking  <> p.MasterMax)
-			OR (p.SuperMax IS NOT NULL AND cs.slivepositiontaking <> p.SuperMax)
+			OR (p.SuperMax IS NOT NULL AND cs.slivepositiontaking <> p.SuperMax))
 			AND cs.SportType=161 AND cs.BetType IN (85,86,87,89,90)
 
 	--LC,KN
@@ -405,6 +405,7 @@ BEGIN
 	
 	--Return Result
 	SELECT GroupHeadlineName
+		, CustID
 		, Username
 		, Status
 		, SiteID
