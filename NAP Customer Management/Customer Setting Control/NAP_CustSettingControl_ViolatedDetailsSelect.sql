@@ -1,7 +1,7 @@
 ALTER PROCEDURE [dbo].[NAP_CustSettingControl_ViolatedDetailsSelect] 
 	  @CustID INT
 	, @SiteID INT
-	, @ExchangeID INT
+	, @Currency INT
 	, @RoleID TINYINT
 	, @Mode TINYINT
 AS
@@ -92,7 +92,7 @@ BEGIN
 				THEN ci.DisableVirtualSports
 			END
 	FROM #SportBetTypeMapping main
-	INNER JOIN dbo.CustInfo ci
+	INNER JOIN dbo.CustInfo ci WITH(NOLOCK)
 		ON ci.CustID = @CustID
 	WHERE main.ProductID IN (2, 3, 4, 5)
 
@@ -124,13 +124,13 @@ BEGIN
 		, cs.spositiontaking SuperMax
 		, cs.mpositiontaking MasterMax
 		, cs.apositiontaking AgentMax
-	FROM dbo.CustSetting cs
+	FROM dbo.CustSetting cs WITH(NOLOCK)
 	INNER JOIN #SportBetTypeMapping mp
 		ON mp.SportType = cs.SportType
 			AND mp.BetType = cs.BetType
-	INNER JOIN dbo.PTSettingPolicy p
+	INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = @SiteID
-			AND p.ExchangeID = @ExchangeID
+			AND p.ExchangeID = @Currency
 			AND p.RoleID = @RoleID
 			AND p.ProductID = mp.ProductID
 	WHERE cs.CustID = @CustID
@@ -158,13 +158,13 @@ BEGIN
 		, cs.slivepositiontaking SuperMax
 		, cs.mlivepositiontaking MasterMax
 		, cs.alivepositiontaking AgentMax
-	FROM dbo.CustSetting cs
+	FROM dbo.CustSetting cs WITH(NOLOCK)
 	INNER JOIN #SportBetTypeMapping mp
 		ON mp.SportType = cs.SportType
 			AND mp.BetType = cs.BetType
-	INNER JOIN dbo.PTSettingPolicy p
+	INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = @SiteID
-			AND p.ExchangeID = @ExchangeID
+			AND p.ExchangeID = @Currency
 			AND p.RoleID = @RoleID
 			AND p.ProductID = mp.ProductID
 	WHERE cs.CustID = @CustID
@@ -194,13 +194,13 @@ BEGIN
 		, cs.spositiontaking SuperMax
 		, cs.mpositiontaking MasterMax
 		, cs.apositiontaking AgentMax
-	FROM dbo.CustSetting3rd cs
+	FROM dbo.CustSetting3rd cs WITH(NOLOCK)
 	INNER JOIN #SportBetTypeMapping mp
 		ON mp.SportType = cs.SportType
 			AND mp.BetType = cs.BetType
-	INNER JOIN dbo.PTSettingPolicy p
-		ON p.SiteID = @SiteID
-			AND p.ExchangeID = @ExchangeID
+	INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
+		ON p.SiteID = @SiteID 
+			AND p.ExchangeID = @Currency
 			AND p.RoleID = @RoleID
 			AND p.ProductID = mp.ProductID
 	WHERE cs.CustID = @CustID
@@ -228,13 +228,13 @@ BEGIN
 		, cs.slivepositiontaking SuperMax
 		, cs.mlivepositiontaking MasterMax
 		, cs.alivepositiontaking AgentMax
-	FROM dbo.CustSetting3rd cs
+	FROM dbo.CustSetting3rd cs WITH(NOLOCK)
 	INNER JOIN #SportBetTypeMapping mp
 		ON mp.SportType = cs.SportType
 			AND mp.BetType = cs.BetType
-	INNER JOIN dbo.PTSettingPolicy p
+	INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = @SiteID
-			AND p.ExchangeID = @ExchangeID
+			AND p.ExchangeID = @Currency
 			AND p.RoleID = @RoleID
 			AND p.ProductID = mp.ProductID
 	WHERE cs.CustID = @CustID
@@ -264,13 +264,13 @@ BEGIN
 		, cs.spositiontaking SuperMax
 		, cs.mpositiontaking MasterMax
 		, cs.apositiontaking AgentMax
-	FROM dbo.CustSettingGame cs
+	FROM dbo.CustSettingGame cs WITH(NOLOCK)
 	INNER JOIN #SportBetTypeMapping mp
 		ON mp.SportType = cs.SportType
 			AND mp.BetType = cs.BetType
-	INNER JOIN dbo.PTSettingPolicy p
+	INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = @SiteID
-			AND p.ExchangeID = @ExchangeID
+			AND p.ExchangeID = @Currency
 			AND p.RoleID = @RoleID
 			AND p.ProductID = mp.ProductID
 	WHERE cs.CustID = @CustID
@@ -305,9 +305,9 @@ BEGIN
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN v.AgentMax ELSE p.AgentMax END AgentMax
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN 1 ELSE 0 END ADiff
 			FROM @ViolatedSetting v
-			INNER JOIN dbo.PTSettingPolicy p
+			INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 				ON p.SiteID = @SiteID
-					AND p.ExchangeID = @ExchangeID
+					AND p.ExchangeID = @Currency
 					AND p.RoleID = @RoleID
 					AND p.ProductID = v.ProductID
 			WHERE p.SuperMax <> v.SuperMax
@@ -327,9 +327,9 @@ BEGIN
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN v.AgentMax ELSE p.AgentMax END AgentMax
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN 1 ELSE 0 END ADiff
 			FROM @ViolatedSetting v
-			INNER JOIN dbo.PTSettingPolicy p
+			INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 				ON p.SiteID = @SiteID
-					AND p.ExchangeID = @ExchangeID
+					AND p.ExchangeID = @Currency
 					AND p.RoleID = @RoleID
 					AND p.ProductID = v.ProductID
 			WHERE p.MasterMax <> v.MasterMax
@@ -349,9 +349,9 @@ BEGIN
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN v.AgentMax ELSE p.AgentMax END AgentMax
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN 1 ELSE 0 END ADiff
 			FROM @ViolatedSetting v
-			INNER JOIN dbo.PTSettingPolicy p
+			INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 				ON p.SiteID = @SiteID
-					AND p.ExchangeID = @ExchangeID
+					AND p.ExchangeID = @Currency
 					AND p.RoleID = @RoleID
 					AND p.ProductID = v.ProductID
 			WHERE p.AgentMax <> v.AgentMax
@@ -372,9 +372,9 @@ BEGIN
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN v.AgentMax ELSE p.AgentMax END AgentMax
 				, CASE WHEN p.AgentMax <> v.AgentMax THEN 1 ELSE 0 END ADiff
 		FROM @ViolatedSetting v
-		INNER JOIN dbo.PTSettingPolicy p
+		INNER JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 			ON p.SiteID = @SiteID
-				AND p.ExchangeID = @ExchangeID
+				AND p.ExchangeID = @Currency
 				AND p.RoleID = @RoleID
 				AND p.ProductID = v.ProductID
 		ORDER BY p.ProductID

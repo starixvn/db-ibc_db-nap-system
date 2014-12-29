@@ -64,9 +64,9 @@ BEGIN
 
 	--Get deposit and dummy Super	
 	INSERT INTO @DepositDummySuper
-	SELECT custid FROM dbo.Dep_CustSuper
+	SELECT custid FROM dbo.Dep_CustSuper WITH(NOLOCK)
 	UNION
-	SELECT custid FROM dbo.Acc_CustDirect WHERE roleid = 4
+	SELECT custid FROM dbo.Acc_CustDirect  WITH(NOLOCK) WHERE roleid = 4
 
 	--Get Real Credit Super/Direct Master/Direct Agent
 	INSERT INTO #DirectCusts(CustID,Site)
@@ -111,7 +111,7 @@ BEGIN
 	UPDATE main
 	SET main.SiteID = s.SiteID
 	FROM #DirectCusts main
-	JOIN dbo.Site s ON main.Site = s.Site
+	JOIN dbo.Site s WITH(NOLOCK) ON main.Site = s.Site
 	
 	--Filetered by @username
 	IF @Username IS NOT NULL
@@ -245,10 +245,10 @@ BEGIN
 		,cs.spositiontaking SuperMax
 		,cs.mpositiontaking MasterMax
 		,cs.apositiontaking AgentMax
-	FROM dbo.CustSetting cs
+	FROM dbo.CustSetting cs WITH(NOLOCK)
 	JOIN #DirectCusts main ON main.CustID = cs.CustID
 	JOIN #SportBetTypeMapping mp ON mp.SportType = cs.SportType AND mp.BetType=cs.BetType
-	JOIN dbo.PTSettingPolicy p
+	JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = main.SiteID
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
@@ -264,10 +264,10 @@ BEGIN
 		,cs.slivepositiontaking SuperMax
 		,cs.mlivepositiontaking MasterMax
 		,cs.alivepositiontaking AgentMax
-	FROM dbo.CustSetting cs
+	FROM dbo.CustSetting cs WITH(NOLOCK)
 	JOIN #DirectCusts main ON main.CustID = cs.CustID
 	JOIN #SportBetTypeMapping mp ON mp.SportType = cs.SportType AND mp.BetType=cs.BetType
-	JOIN dbo.PTSettingPolicy p
+	JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = main.SiteID
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
@@ -283,10 +283,10 @@ BEGIN
 		,cs.spositiontaking SuperMax
 		,cs.mpositiontaking MasterMax
 		,cs.apositiontaking AgentMax
-	FROM dbo.CustSetting3rd cs
+	FROM dbo.CustSetting3rd cs WITH(NOLOCK)
 	JOIN #DirectCusts main ON main.CustID = cs.CustID
 	JOIN #SportBetTypeMapping mp ON mp.SportType = cs.SportType AND mp.BetType=cs.BetType
-	JOIN dbo.PTSettingPolicy p
+	JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = main.SiteID
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
@@ -301,10 +301,10 @@ BEGIN
 		,cs.slivepositiontaking SuperMax
 		,cs.mlivepositiontaking MasterMax
 		,cs.alivepositiontaking AgentMax
-	FROM dbo.CustSetting3rd cs
+	FROM dbo.CustSetting3rd cs WITH(NOLOCK)
 	JOIN #DirectCusts main ON main.CustID = cs.CustID
 	JOIN #SportBetTypeMapping mp ON mp.SportType = cs.SportType AND mp.BetType=cs.BetType
-	JOIN dbo.PTSettingPolicy p
+	JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = main.SiteID
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
@@ -320,10 +320,10 @@ BEGIN
 		,cs.spositiontaking SuperMax
 		,cs.mpositiontaking MasterMax
 		,cs.apositiontaking AgentMax
-	FROM dbo.CustSettingGame cs
+	FROM dbo.CustSettingGame cs WITH(NOLOCK)
 	JOIN #DirectCusts main ON main.CustID = cs.CustID
 	JOIN #SportBetTypeMapping mp ON mp.SportType = cs.SportType AND mp.BetType=cs.BetType
-	JOIN dbo.PTSettingPolicy p
+	JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = main.SiteID
 			AND p.ExchangeID = main.Currency
 			AND p.RoleID = main.RoleID
@@ -370,7 +370,7 @@ BEGIN
 	INTO #FinalResult
 	FROM #DirectCusts c
 	JOIN #ViolatedCustIDs f ON c.CustID = f.CustID
-	JOIN dbo.PTSettingPolicy p
+	JOIN dbo.PTSettingPolicy p WITH(NOLOCK)
 		ON p.SiteID = c.SiteID
 		AND p.ExchangeID = c.Currency
 		AND p.RoleID = c.RoleID
@@ -388,7 +388,7 @@ BEGIN
 								WHEN main.ProductID = 5 THEN ci.DisableVirtualSports
 							END
 	FROM #FinalResult main
-	JOIN dbo.CustInfo ci ON ci.CustID = main.CustID
+	JOIN dbo.CustInfo ci WITH(NOLOCK) ON ci.CustID = main.CustID
 	WHERE main.ProductID IN (2,3,4,5)
 	
 	--Update Keno's status
