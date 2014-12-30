@@ -37,13 +37,13 @@ BEGIN
 		,IsRejected			BIT
 		)
 	
-	DECLARE @GroupInfo TABLE(
+	CREATE TABLE #GroupInfo(
 		GroupID SMALLINT,
 		GroupHeadLineID INT,
 		GroupHeadLineName NVARCHAR(50)
 	)	
 		
-	DECLARE @DepositDummySuper TABLE  (
+	CREATE TABLE #DepositDummySuper   (
 			CustID INT
 		)
 	
@@ -53,7 +53,7 @@ BEGIN
 		,ProductID			TINYINT DEFAULT(1)
 	)
 	
-	DECLARE @ViolatedSetting TABLE(
+	CREATE TABLE #ViolatedSetting (
 		CustID				INT
 		,ProductID			TINYINT
 		,SuperMax			SMALLMONEY
@@ -63,18 +63,20 @@ BEGIN
 
 
 	--Get deposit and dummy Super	
-	INSERT INTO @DepositDummySuper
+	INSERT INTO #DepositDummySuper
 	SELECT custid FROM dbo.Dep_CustSuper WITH(NOLOCK)
 	UNION
 	SELECT custid FROM dbo.Acc_CustDirect  WITH(NOLOCK) WHERE roleid = 4
 
+	CREATE CLUSTERED INDEX IDX_CustID ON #DepositDummySuper(CustID)
+	
 	--Get Real Credit Super/Direct Master/Direct Agent
 	INSERT INTO #DirectCusts(CustID,Site)
 	SELECT-- Super
 		cust.custid,cust.site
 	FROM  dbo.Customer cust WITH(NOLOCK)  
 	INNER JOIN dbo.CustSuper cs WITH(NOLOCK) ON cust.custid = cs.custid AND cs.IsInternal = 0	
-	LEFT JOIN @DepositDummySuper dd ON dd.CustID = cust.CustID
+	LEFT JOIN #DepositDummySuper dd ON dd.CustID = cust.CustID
 	WHERE cust.roleid = 4 AND cust.currency NOT IN (20 ,27 , 28) AND dd.CustID IS NULL
 	UNION ALL --Get Direct Master Accounts
 	SELECT 
@@ -166,12 +168,13 @@ BEGIN
 			ON main.CustID = ca.CustID
 	WHERE ca.groupID <> 0
 	
-	INSERT @GroupInfo
+	INSERT #GroupInfo
 	SELECT ca.groupid,ca.custid ,ci.username
 	FROM custaccount ca WITH(NOLOCK)
 	JOIN dbo.CustInfo ci WITH(NOLOCK) ON ci.CustID = ca.CustID
 	WHERE isgroupheadline=1 AND groupID <> 0
 	
+	CREATE CLUSTERED INDEX IDX_CustID ON #GroupInfo(GroupID)
 	
 	--Update Group Headline Name
 	UPDATE main
@@ -179,7 +182,7 @@ BEGIN
 		main.GroupHeadlineID = gi.GroupHeadlineID
 		,main.GroupHeadlineName = gi.GroupHeadlineName
 	FROM #DirectCusts main
-	JOIN @GroupInfo gi ON gi.GroupID = main.GroupID
+	JOIN #GroupInfo gi ON gi.GroupID = main.GroupID
 	
 	--Update status for Groups that do not have headline
 	UPDATE #DirectCusts
@@ -240,7 +243,7 @@ BEGIN
 	CREATE CLUSTERED INDEX IDX_sporttype_bettype ON #SportBetTypeMapping(sporttype,bettype)
 	
 	--SB - Deadball
-	INSERT @ViolatedSetting
+	INSERT #ViolatedSetting
 	SELECT main.CustID,p.ProductID
 		,cs.spositiontaking SuperMax
 		,cs.mpositiontaking MasterMax
@@ -259,7 +262,7 @@ BEGIN
 	
 			
 	--SB - Liveball
-	INSERT @ViolatedSetting
+	INSERT #ViolatedSetting
 	SELECT main.CustID,p.ProductID
 		,cs.slivepositiontaking SuperMax
 		,cs.mlivepositiontaking MasterMax
@@ -278,7 +281,7 @@ BEGIN
 			AND cs.SportType=1 AND cs.BetType IN (1,3,7,8)
 		  
 	--NG(Deadball),RC,VS
-	INSERT @ViolatedSetting
+	INSERT #ViolatedSetting
 	SELECT main.CustID,p.ProductID
 		,cs.spositiontaking SuperMax
 		,cs.mpositiontaking MasterMax
@@ -296,7 +299,7 @@ BEGIN
 			OR (p.SuperMax IS NOT NULL AND cs.spositiontaking <> p.SuperMax)
 			
 	--NG - Liveball
-	INSERT @ViolatedSetting
+	INSERT #ViolatedSetting
 	SELECT main.CustID,p.ProductID
 		,cs.slivepositiontaking SuperMax
 		,cs.mlivepositiontaking MasterMax
@@ -315,7 +318,7 @@ BEGIN
 			AND cs.SportType=161 AND cs.BetType IN (85,86,87,89,90)
 
 	--LC,KN
-	INSERT @ViolatedSetting
+	INSERT #ViolatedSetting
 	SELECT main.CustID,p.ProductID
 		,cs.spositiontaking SuperMax
 		,cs.mpositiontaking MasterMax
@@ -336,7 +339,7 @@ BEGIN
 	--Get serious violated PT settings to be displayed		
 	SELECT custid,ProductID,MAX(SuperMax) SuperMax,MAX(MasterMax) MasterMax,MAX(AgentMax) AgentMax
 	INTO #MaxViolatedSetting
-	FROM @ViolatedSetting
+	FROM #ViolatedSetting
 	GROUP BY custid,ProductID
 	
 	CREATE CLUSTERED INDEX IDX_sporttype_bettype ON #MaxViolatedSetting(custid,ProductID)
@@ -345,7 +348,7 @@ BEGIN
 	--List of violated CustID
 	SELECT DISTINCT CustID
 	INTO #ViolatedCustIDs
-	FROM @ViolatedSetting
+	FROM #ViolatedSetting
 	
 	
 	--Sum Final results
@@ -430,4 +433,5 @@ BEGIN
 	DROP TABLE #ViolatedCustIDs
 	DROP TABLE #DirectCusts
 	DROP TABLE #FinalResult
+	DROP TABLE #ViolatedSetting
 END
