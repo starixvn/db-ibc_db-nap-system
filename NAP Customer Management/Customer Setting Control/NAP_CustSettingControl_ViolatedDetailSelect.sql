@@ -1,4 +1,4 @@
-ALTER PROCEDURE [dbo].[NAP_CustSettingControl_ViolatedDetailsSelect] 
+ALTER PROCEDURE [dbo].[NAP_CustSettingControl_ViolatedDetailSelect] 
 	  @CustID INT
 	, @SiteID INT
 	, @Currency INT
