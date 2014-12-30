@@ -1,6 +1,6 @@
 ALTER PROCEDURE [dbo].[NAP_CustSettingControl_ViolatedDownlineSelect] 
 	  @CustID	INT
-	, @SiteID	NVARCHAR(50)
+	, @SiteID	INT
 	, @Currency INT
 	, @RoleID	TINYINT
 AS
