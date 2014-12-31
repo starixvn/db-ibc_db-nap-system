@@ -434,4 +434,6 @@ BEGIN
 	DROP TABLE #DirectCusts
 	DROP TABLE #FinalResult
 	DROP TABLE #ViolatedSetting
+	DROP TABLE #GroupInfo
+	DROP TABLE #DepositDummySuper
 END
