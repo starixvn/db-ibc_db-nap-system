@@ -1,6 +1,6 @@
 ﻿USE [bodb_NAP]
 GO
-/****** Object:  StoredProcedure [dbo].[NAP_Cust_Update]    Script Date: 8/1/2014 12:39:39 PM ******/
+/****** Object:  StoredProcedure [dbo].[NAP_Cust_Update]    Script Date: 06/06/2015 13:38:47 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -27,7 +27,8 @@ AS
 	Original:
 
 	Revisions:
-	    
+	    - 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
+
 	Param's Explanation:
 	• @CustId :
 		= custid from bodb02.dbo.Customer and bodb02.dbo.custinfo
@@ -101,7 +102,7 @@ BEGIN
 	END	
 
 	-- Update customer information
-	EXEC	[DBTXN].[CustDB].[dbo].[NAP_AdminInfo_Update]
+	EXEC	[DBCust].[CustDB].[dbo].[NAP_AdminInfo_Update]
 			@CustID		= @CustID,
 			@FirstName	= @FirstName,
 			@LastName	= @LastName,
@@ -150,5 +151,8 @@ BEGIN
 	@Duration		= @Duration
 END
 
+
 GO
 GRANT EXECUTE ON [dbo].[NAP_Cust_Update] TO [bodbAdminNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[NAP_Cust_Update] TO [vnteam] AS [dbo]

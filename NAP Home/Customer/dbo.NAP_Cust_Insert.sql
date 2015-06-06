@@ -1,6 +1,6 @@
 ﻿USE [bodb_NAP]
 GO
-/****** Object:  StoredProcedure [dbo].[NAP_Cust_Insert]    Script Date: 8/1/2014 12:39:00 PM ******/
+/****** Object:  StoredProcedure [dbo].[NAP_Cust_Insert]    Script Date: 06/06/2015 13:38:14 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -30,6 +30,7 @@ AS
 	Original:
 
 	Revisions:
+		- 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
 	    
 	Param's Explanation:
 	• @CustId :
@@ -87,7 +88,7 @@ BEGIN
 		END
 
 	-- create new user in customer/custinfo tables
-	EXEC	[DBTXN].[CustDB].[dbo].[NAP_Admin_Ins]
+	EXEC	[DBCust].[CustDB].[dbo].[NAP_Admin_Ins]
 			@FirstName		= @FirstName	OUTPUT,
 			@LastName		= @LastName		OUTPUT,
 			@Email			= @Email		OUTPUT,
@@ -159,5 +160,8 @@ BEGIN
 
 END
 
+
 GO
-GRANT EXECUTE ON [dbo].[NAP_Cust_Insert] TO [bodbAdminNet]
+GRANT EXECUTE ON [dbo].[NAP_Cust_Insert] TO [bodbAdminNet] AS [dbo]
+GO
+GRANT VIEW DEFINITION ON [dbo].[NAP_Cust_Insert] TO [vnteam] AS [dbo]
