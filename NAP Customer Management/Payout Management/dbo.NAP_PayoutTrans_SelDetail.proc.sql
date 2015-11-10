@@ -1,4 +1,9 @@
-USE bodb02
+USE [bodb02]
+GO
+/****** Object:  StoredProcedure [dbo].[NAP_PayoutTrans_SelDetail]    Script Date: 11/12/2015 11:40:04 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_SelDetail]
 (
@@ -8,7 +13,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBTXN.bodb02
+DB: DBEXT.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -22,11 +27,8 @@ BEGIN
 	DECLARE @transId3rd		NVARCHAR(64)
 		, @CustId			INT
 		, @RefNo			BIGINT
-		, @PayoutCode		NVARCHAR(250)
 		, @WinlostDate		SMALLDATETIME
-		, @WinAmount		MONEY
 		, @ProductId		SMALLINT
-		, @ProductName		SMALLINT
 	
 	DECLARE @MoveBetsDay 	SMALLDATETIME
 		, @BalanceUpDay 	SMALLDATETIME
@@ -45,19 +47,31 @@ BEGIN
 
 	-- PayoutTrans - main ticket
 	SELECT TOP(1)
-		@CustId			= p.CustId
-		, @RefNo 		= p.RefNo
-		, @ProductId 	= p.ProductId
-		, @ProductName	= s.SportName
-		, @WinlostDate 	= p.WinlostDate
-		, @WinAmount 	= p.WinAmount
-		, @PayoutCode 	= p.PayoutCode
-		
+		p.CustId
+		, p.UserName
+		, p.RefNo
+		, p.ProductId
+		, p.WinlostDate
+		, p.WinAmount
+		, p.PayoutCode
+		, c.Currency
+		, e.Currency AS CurrencyName
+		, r.site AS SiteName 
+	INTO #payoutTrans
 	FROM bodb02.dbo.PayoutTrans p WITH(NOLOCK)
-		LEFT JOIN dbo.Sports s
-		ON p.ProductId		= s.SportType
+		INNER JOIN bodb02.dbo.customer c WITH (NOLOCK)	
+		ON p.custid 	= c.custid
+		INNER JOIN bodb02.dbo.exchange e WITH(NOLOCK)
+		ON c.currency 	= e.exchangeid
+		INNER JOIN bodb02.dbo.customer r WITH (NOLOCK)	
+		ON c.recommend 	=  r.custid
 	WHERE p.PayoutTransId 	= @PayoutTransId
 	
+	SELECT @WinlostDate = WinlostDate
+		, @CustId		= CustId
+		, @RefNo		= RefNo
+		, @ProductId	= ProductId
+	FROM #payoutTrans
 	/*
 		ProductId
 		204: Collosus Bets
@@ -65,10 +79,10 @@ BEGIN
 	*/
 	IF(@WinlostDate > @MoveBetsDay )
 	BEGIN
-		IF(@ProductId IN (205))
+		IF(@ProductId IN (203,205))
 		BEGIN
 			SELECT @transId3rd	= b.TranId3rd
-			FROM dbo.BettransRnG b WITH(NOLOCK)
+			FROM bodb02.dbo.BettransRnG b WITH(NOLOCK)
 			WHERE b.transid 	= @RefNo
 				AND b.CustId	= @CustId
 		END
@@ -76,7 +90,7 @@ BEGIN
 		IF(@ProductId IN (204))
 		BEGIN
 			SELECT @transId3rd	= b.betcheck
-			FROM dbo.Bettransm b WITH(NOLOCK)
+			FROM bodb02.dbo.Bettransm b WITH(NOLOCK)
 			WHERE b.refno 		= @RefNo
 				AND b.bettype	= 18001
 				AND b.CustId	= @CustId
@@ -85,10 +99,10 @@ BEGIN
 	
 	IF(@WinlostDate BETWEEN @MoveBetsDay AND @BalanceUpDay)
 	BEGIN
-		IF(@ProductId IN (205))
+		IF(@ProductId IN (203,205))
 		BEGIN
 			SELECT @transId3rd	= b.TranId3rd
-			FROM dbo.BettransRnG14 b WITH(NOLOCK)
+			FROM bodb02.dbo.BettransRnG14 b WITH(NOLOCK)
 			WHERE b.transid 	= @RefNo
 				AND b.CustId	= @CustId
 		END
@@ -96,7 +110,7 @@ BEGIN
 		IF(@ProductId IN (204))
 		BEGIN
 			SELECT @transId3rd	= b.betcheck
-			FROM dbo.Bettransm14 b WITH(NOLOCK)
+			FROM bodb02.dbo.Bettransm14 b WITH(NOLOCK)
 			WHERE b.refno 		= @RefNo
 				AND b.bettype	= 18001
 				AND b.CustId	= @CustId
@@ -105,13 +119,13 @@ BEGIN
 	
 	IF(@WinlostDate < @BalanceUpDay)
 	BEGIN
-		--IF(@ProductId IN (205))
-		--BEGIN
-		--	SELECT @transId3rd	= b.TranId3rd
-		--	FROM [DBARC].[bodb_archive].dbo.BettransRnG b WITH(NOLOCK)
-		--	WHERE b.transid 	= @RefNo
-		--		AND b.CustId	= @CustId
-		--END
+		IF(@ProductId IN (203,205))
+		BEGIN
+			SELECT @transId3rd	= b.TranId3rd
+			FROM [DBARC].[bodb_archive].dbo.BettransRnG_bk b WITH(NOLOCK)
+			WHERE b.transid 	= @RefNo
+				AND b.CustId	= @CustId
+		END
 		
 		IF(@ProductId IN (204))
 		BEGIN
@@ -124,14 +138,9 @@ BEGIN
 	END
 	
 	SELECT 
-		@CustId			AS CustId
-		, @RefNo 		AS RefNo
-		, @ProductId 	AS ProductId
-		, @ProductName	AS ProductName
-		, @WinlostDate 	AS WinlostDate
-		, @WinAmount 	AS WinAmount
-		, @PayoutCode 	AS PayoutCode
+		p.*
 		, @transId3rd	AS TransId3rd
+	FROM #payoutTrans p
 	
 	-- SELECT payout trans detail in status
 	SELECT d.CreatedDate
@@ -150,9 +159,9 @@ BEGIN
 	
 	RETURN;
 END
+
 GO
 GRANT EXECUTE ON [dbo].[NAP_PayoutTrans_SelDetail] TO [bodbAdminNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[NAP_PayoutTrans_SelDetail] TO [vnteam]
 GO
-exec [NAP_PayoutTrans_SelDetail]

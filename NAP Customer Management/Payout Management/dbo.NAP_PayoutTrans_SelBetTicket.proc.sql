@@ -1,14 +1,19 @@
 USE [bodb02]
 GO
+/****** Object:  StoredProcedure [dbo].[NAP_PayoutTrans_SelBetTicket]    Script Date: 11/12/2015 11:40:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
 
-CREATE PROCEDURE [dbo].[NAP_PayoutTrans_SelBetTicket]
+ALTER PROCEDURE [dbo].[NAP_PayoutTrans_SelBetTicket]
 	@PayoutTransId	INT = 0
 	,@CustId		INT = 0
 AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBAGE.bodb02
+DB: DBEXT.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -24,7 +29,7 @@ BEGIN
 		, @WinlostDate		SMALLDATETIME
 		, @WinAmount		MONEY
 		, @ProductId		SMALLINT
-		, @ProductName		SMALLINT
+		, @ProductName		VARCHAR(50)
 	
 	DECLARE @MoveBetsDay 	SMALLDATETIME
 		, @BalanceUpDay 	SMALLDATETIME
@@ -51,83 +56,35 @@ BEGIN
 		, @WinAmount 	= p.WinAmount
 		
 	FROM bodb02.dbo.PayoutTrans p WITH(NOLOCK)
-		LEFT JOIN dbo.Sports s
+		LEFT JOIN bodb02.dbo.[f_ProductPayout]() s
 		ON p.ProductId		= s.SportType
 	WHERE p.PayoutTransId 	= @PayoutTransId
 		AND p.CustId		= @CustId
 	
 	/*
 		ProductId
-		204: Collosus Bets
+		204: Colossus Bets
 		205: Microgaming RNG Casino
 	*/
-	IF(@WinlostDate > @MoveBetsDay )
+	IF(@ProductId IN (204))
 	BEGIN
-		IF(@ProductId IN (204))
-		BEGIN
-			SELECT @transId3rd	= b.betcheck
-			FROM dbo.Bettransm b WITH(NOLOCK)
-			WHERE b.refno 		= @RefNo
-				AND b.bettype	= 18001
-				AND b.CustId	= @CustId
-				
-			SELECT transid, 
-				transdate,
-				bettype,
-				hdp1 AS Sold, 
-				(winlost - stake) AS WinLost,
-				statusid,
-				status
-			FROM dbo.bettransm WITH (NOLOCK)
-			WHERE custid 	= @CustId
-				AND refno 	= @RefNo
-				AND bettype BETWEEN 18002 AND 18005
-		END
+		EXEC bodb02.[dbo].[NAP_PayoutTrans_ColossusBets_SelTicket]
+		@RefNo			= @RefNo,
+		@CustId			= @CustId,
+		@WinlostDate	= @WinlostDate, 
+		@MoveBetsDay	= @MoveBetsDay,
+		@BalanceUpDay	= @BalanceUpDay,
+		@transId3rd		= @transId3rd OUTPUT
 	END
-	
-	IF(@WinlostDate BETWEEN @MoveBetsDay AND @BalanceUpDay)
+	IF(@ProductId IN (203,205))
 	BEGIN
-		IF(@ProductId IN (204))
-		BEGIN
-			SELECT @transId3rd	= b.betcheck
-			FROM dbo.Bettransm14 b WITH(NOLOCK)
-			WHERE b.refno 		= @RefNo
-				AND b.bettype	= 18001
-				AND b.CustId	= @CustId
-				
-			SELECT transid, 
-				transdate,
-				bettype,
-				hdp1 AS Sold, 
-				(winlost - stake) AS WinLost,
-				statusid,
-				status
-			FROM dbo.bettransm14 WITH (NOLOCK)
-			WHERE refno 	= @RefNo
-				AND bettype BETWEEN 18002 AND 18005
-		END
-	END
-	IF(@WinlostDate > @BalanceUpDay)
-	BEGIN
-		IF(@ProductId IN (204))
-		BEGIN
-			SELECT @transId3rd	= b.betcheck
-			FROM DBARC.bodb_archive.dbo.bettransm b WITH (NOLOCK)
-			WHERE b.refno 		= @RefNo
-				AND b.bettype	= 18001
-				AND b.CustId	= @CustId
-				
-			SELECT transid, 
-				transdate,
-				bettype,
-				hdp1 AS Sold, 
-				(winlost - stake) AS WinLost,
-				statusid,
-				status
-			FROM DBARC.bodb_archive.dbo.bettransm b WITH (NOLOCK)
-			WHERE refno 	= @RefNo
-				AND bettype BETWEEN 18002 AND 18005
-		END
+		EXEC bodb02.[dbo].[NAP_PayoutTrans_MCGRnG_SelTicket]
+		@TransId		= @RefNo,
+		@CustId			= @CustId,
+		@WinlostDate	= @WinlostDate, 
+		@MoveBetsDay	= @MoveBetsDay,
+		@BalanceUpDay	= @BalanceUpDay,
+		@transId3rd		= @transId3rd OUTPUT
 	END
 	
 	SELECT 
@@ -146,3 +103,4 @@ GO
 GRANT EXECUTE ON [dbo].[NAP_PayoutTrans_SelBetTicket] TO [bodbAdminNet]
 GO
 GRANT VIEW DEFINITION ON [dbo].[NAP_PayoutTrans_SelBetTicket] TO [vnteam] 
+GO
