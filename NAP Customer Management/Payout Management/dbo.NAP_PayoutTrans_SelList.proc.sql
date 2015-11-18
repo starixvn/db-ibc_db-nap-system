@@ -8,9 +8,9 @@ GO
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_SelList]
 (
 	@UserName			VARCHAR(100)	= ''
-	, @PayoutStatusIds	VARCHAR(255) 	= 'ALL'
-	, @SiteIds			VARCHAR(1000) 	= 'ALL'
-	, @ProductIds		VARCHAR(1000) 	= 'ALL'
+	, @PayoutStatusIds	VARCHAR(255) 	= NULL
+	, @SiteIds			VARCHAR(1000) 	= NULL
+	, @ProductIds		VARCHAR(1000) 	= NULL
 	, @FromDate			DATE			= NULL
 	, @ToDate			DATE			= NULL
 	, @PageIndex		INT				= 1
@@ -27,6 +27,7 @@ DB: DBEXT.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
+	- 20151116@bobby.nguyen: Update filering by site, product and status
 	
 Param's Explanation:
 	
@@ -57,9 +58,13 @@ BEGIN
 		, @curDate		= GETDATE()
 		
 	SELECT
-		@PayoutStatusIds= ISNULL(@PayoutStatusIds, 'ALL')
-		,@SiteIds 		= ISNULL(@SiteIds, 'ALL')
-		,@ProductIds 	= ISNULL(@ProductIds, 'ALL')
+		@PayoutStatusIds= ISNULL(@PayoutStatusIds, '')
+		,@SiteIds 		= ISNULL(@SiteIds, '')
+		,@ProductIds 	= ISNULL(@ProductIds, '')
+	
+	IF( @SiteIds = '' OR  @ProductIds = '' OR @PayoutStatusIds = '') 	
+		RETURN;
+	
 	
 	SELECT @FromDate	= ISNULL(@FromDate, CONVERT(DATE, CAST(YEAR(@curDate) AS VARCHAR(5)) + '0101'))
 		, @ToDate		= ISNULL(@ToDate, @curDate)
@@ -82,7 +87,7 @@ BEGIN
 			, @whereQuery		= '
 			WHERE p.WinlostDate BETWEEN ''' + CAST(@FromDate AS VARCHAR(15)) + ''' AND '''  + CAST(@ToDate AS VARCHAR(15)) + ''''
 		
-	IF(@SiteIds <> 'ALL')
+	IF(@SiteIds <> '')
 	BEGIN
 		SELECT @selQuery	+= '
 				INNER JOIN dbo.Customer c WITH(NOLOCK)
@@ -96,7 +101,7 @@ BEGIN
 			
 	END
 	
-	IF(@ProductIds <> 'ALL')
+	IF(@ProductIds <> '')
 	BEGIN
 		SELECT @whereQuery	+= '
 				AND p.ProductId IN (' + @ProductIds + ')'
@@ -110,7 +115,7 @@ BEGIN
 				AND p.UserName LIKE ''' + @UserName + ''''
 	END
 	
-	IF (@PayoutStatusIds <> 'ALL')
+	IF (@PayoutStatusIds <> '')
 	BEGIN
 		SELECT @whereQuery		+= ' 
 				AND p.PayoutStatusId IN (' + @PayoutStatusIds + ')'
@@ -161,7 +166,7 @@ BEGIN
 		, ISNULL(s.SiteName, '-') AS SiteName
 		, p.WinlostDate
 		, p.ProductId
-		, sp.SportName AS ProductName
+		, sp.ProductName
 		, p.WinAmount
 		, p.PayoutStatusId
 		, p.PayoutStatus

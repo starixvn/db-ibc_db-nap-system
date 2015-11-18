@@ -26,7 +26,7 @@ Param's Explanation:
 BEGIN
 	SET NOCOUNT ON;
 	
-	DECLARE @UpdDate 		SMALLDATETIME
+	DECLARE @UpdDate 		DATETIME
 	
 	SELECT @ErrCode 		= 0
 		, @ErrMsg 			= ''

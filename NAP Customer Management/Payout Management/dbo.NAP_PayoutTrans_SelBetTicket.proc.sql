@@ -30,6 +30,7 @@ BEGIN
 		, @WinAmount		MONEY
 		, @ProductId		SMALLINT
 		, @ProductName		VARCHAR(50)
+		, @SiteName			VARCHAR(100)
 	
 	DECLARE @MoveBetsDay 	SMALLDATETIME
 		, @BalanceUpDay 	SMALLDATETIME
@@ -54,8 +55,12 @@ BEGIN
 		, @ProductName	= s.SportName
 		, @WinlostDate 	= p.WinlostDate
 		, @WinAmount 	= p.WinAmount
-		
+		, @SiteName		= r.[site]
 	FROM bodb02.dbo.PayoutTrans p WITH(NOLOCK)
+		INNER JOIN bodb02.dbo.customer c WITH(NOLOCK)
+		ON p.custid		= c.custid
+		INNER JOIN bodb02.dbo.customer r WITH(NOLOCK)
+		ON c.recommend	= r.custid
 		LEFT JOIN bodb02.dbo.[f_ProductPayout]() s
 		ON p.ProductId		= s.SportType
 	WHERE p.PayoutTransId 	= @PayoutTransId
@@ -95,6 +100,7 @@ BEGIN
 		, @WinlostDate 	AS WinlostDate
 		, @WinAmount 	AS WinAmount
 		, @transId3rd	AS TransId3rd
+		, @SiteName		AS SiteName
 		
 	RETURN;
 	

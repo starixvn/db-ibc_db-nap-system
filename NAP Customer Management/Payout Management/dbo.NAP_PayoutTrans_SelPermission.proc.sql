@@ -20,6 +20,7 @@ DB: DBEXT.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
+	- 20151113@bobby.nguyen: Include Testing Licensee 
 	
 Param's Explanation:
 	- @AdminId: Id of admin user login
@@ -56,7 +57,7 @@ BEGIN
 	INSERT INTO @tblProduct	
 	SELECT 
 		s.sporttype
-		, s.SportName
+		, s.ProductName
 	FROM bodb02.[dbo].[f_ProductPayout] () s 
 	WHERE ((@BopingControl 	= 1 OR  @OneWorksControl = 1) AND s.sporttype IN (205)) --Microgaming RNG Casino
 		OR (@CreditControl 	= 1 AND s.sporttype IN (204)) --Colossus Bets
@@ -89,11 +90,17 @@ BEGIN
 			FROM CTE_SiteGroup g
 				INNER JOIN #LA_PartyList p 
 				ON g.PartyId = p.ParentId
-				INNER JOIN bodb02.dbo.Site s
+				INNER JOIN bodb02.dbo.Site s WITH(NOLOCK)
 				ON s.Site = p.PartyName OR s.Site = p.BranchName
 
 			WHERE (@BopingControl 		= 1 AND g.PartyName = 'Boping Licensees')
 				OR (@OneWorksControl 	= 1 AND g.PartyName = 'ONEWorks Licensees')
+			
+			-- Include Testing Licensee 
+			UNION ALL
+			SELECT 'ONEWorks Licensees' 	AS SiteControl
+				, 37 AS siteid
+				, 'spondemo' AS SiteName
 		)
 		INSERT INTO @tblSite
 		SELECT ls.SiteControl
