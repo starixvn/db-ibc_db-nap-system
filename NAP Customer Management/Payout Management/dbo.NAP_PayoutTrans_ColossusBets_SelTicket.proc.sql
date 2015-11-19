@@ -17,7 +17,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBEXT.bodb02
+DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -81,7 +81,7 @@ BEGIN
 	BEGIN
 		
 		SELECT @transId3rd	= b.betcheck
-		FROM DBARC.bodb_archive.dbo.bettransm b WITH (NOLOCK)
+		FROM bodb_archive.dbo.bettransm b WITH (NOLOCK)
 		WHERE b.refno 		= @RefNo
 			AND b.bettype	= 18001
 			AND b.CustId	= @CustId
@@ -94,7 +94,7 @@ BEGIN
 			statusid,
 			status
 			--,@transId3rd AS TransId3rd
-		FROM DBARC.bodb_archive.dbo.bettransm b WITH (NOLOCK)
+		FROM bodb_archive.dbo.bettransm b WITH (NOLOCK)
 		WHERE refno 	= @RefNo
 			AND bettype BETWEEN 18002 AND 18005
 		

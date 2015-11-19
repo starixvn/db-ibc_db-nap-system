@@ -16,7 +16,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBEXT.bodb02
+DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -29,6 +29,7 @@ Param's Explanation:
 	
 */
 BEGIN
+	
 	SET NOCOUNT ON;
 	
 	DECLARE @BopingControl 		BIT
@@ -72,7 +73,7 @@ BEGIN
 	
 		-- SELECT site control
 		INSERT INTO #LA_PartyList
-		EXEC [bodb_licensee].dbo.LA_PartyListSel
+		EXEC [DBLIC].[bodb_licensee].dbo.[NAP_PayoutTrans_PartyListSel]
 			
 		;WITH CTE_SiteGroup
 		AS
@@ -94,28 +95,43 @@ BEGIN
 				ON s.Site = p.PartyName OR s.Site = p.BranchName
 
 			WHERE (@BopingControl 		= 1 AND g.PartyName = 'Boping Licensees')
-				OR (@OneWorksControl 	= 1 AND g.PartyName = 'ONEWorks Licensees')
-			
+				
+			UNION ALL
+			SELECT g.PartyName 	AS SiteControl
+				, s.siteid
+				, p.PartyName 	AS SiteName
+			FROM CTE_SiteGroup g
+				INNER JOIN #LA_PartyList p 
+				ON g.PartyId = p.ParentId
+				INNER JOIN bodb02.dbo.Site s WITH(NOLOCK)
+				ON s.Site = p.PartyName OR s.Site = p.BranchName
+
+			WHERE (@OneWorksControl 	= 1 AND g.PartyName = 'ONEWorks Licensees')
+				
 			-- Include Testing Licensee 
 			UNION ALL
 			SELECT 'ONEWorks Licensees' 	AS SiteControl
 				, 37 AS siteid
 				, 'spondemo' AS SiteName
+				
+			WHERE (@OneWorksControl 	= 1)
+				
 		)
 		INSERT INTO @tblSite
 		SELECT ls.SiteControl
 			, ls.siteid
 			, ls.SiteName
 		FROM CTE_LicenseeSite ls
-			INNER JOIN [bodb_licensee].[dbo].[Licensees] lc WITH(NOLOCK) 
+			INNER JOIN [DBLIC].[bodb_licensee].[dbo].[Licensees] lc WITH(NOLOCK) 
 			ON ls.SiteName = lc.LicenseeName
-			INNER JOIN [bodb_licensee].[dbo].[LicenseeProduct3rd] ld WITH(NOLOCK) 
+			INNER JOIN [DBLIC].[bodb_licensee].[dbo].[LicenseeProduct3rd] ld WITH(NOLOCK) 
 			ON lc.LicenseeID = ld.LicenseeID
-			INNER JOIN [bodb_licensee].[dbo].[Product3rd] p WITH(NOLOCK) 
+			INNER JOIN [DBLIC].[bodb_licensee].[dbo].[Product3rd] p WITH(NOLOCK) 
 			ON ld.ProductID = p.ProductID
 			INNER JOIN @tblProduct tp 
 			ON p.ProductName = tp.ProductName		
-			
+
+		ORDER BY ls.SiteControl
 	
 		DROP TABLE #LA_PartyList
 	

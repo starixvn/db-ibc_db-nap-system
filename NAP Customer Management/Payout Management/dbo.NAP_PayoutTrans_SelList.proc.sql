@@ -23,7 +23,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBEXT.bodb02
+DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -90,7 +90,7 @@ BEGIN
 	IF(@SiteIds <> '')
 	BEGIN
 		SELECT @selQuery	+= '
-				INNER JOIN dbo.Customer c WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.Customer c WITH(NOLOCK)
 				ON p.custId 	= c.custId
 				INNER JOIN bodb02.dbo.Customer rec WITH(NOLOCK)
 				ON c.recommend 	= rec.custId
@@ -182,7 +182,7 @@ BEGIN
 		ON p.CustId			= s.CustId
 		OUTER APPLY (
 			SELECT TOP 1 CAST(1 AS BIT) AS IsNoted 
-			FROM [bodb_CustomerLog].dbo.PayoutDetail d WITH(NOLOCK)
+			FROM [DBLOG].[bodb_CustomerLog].dbo.PayoutDetail d WITH(NOLOCK)
 			WHERE d.PayoutTransId = p.PayoutTransId
 		) n
 		

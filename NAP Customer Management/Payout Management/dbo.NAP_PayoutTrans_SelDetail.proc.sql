@@ -13,7 +13,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBEXT.bodb02
+DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -122,7 +122,7 @@ BEGIN
 		IF(@ProductId IN (203,205))
 		BEGIN
 			SELECT @transId3rd	= b.TranId3rd
-			FROM [DBARC].[bodb_archive].dbo.BettransRnG_bk b WITH(NOLOCK)
+			FROM [bodb_archive].dbo.BettransRnG_bk b WITH(NOLOCK)
 			WHERE b.transid 	= @RefNo
 				AND b.CustId	= @CustId
 		END
@@ -130,7 +130,7 @@ BEGIN
 		IF(@ProductId IN (204))
 		BEGIN
 			SELECT @transId3rd	= b.betcheck
-			FROM [DBARC].[bodb_archive].dbo.Bettransm b WITH(NOLOCK)
+			FROM [bodb_archive].dbo.Bettransm b WITH(NOLOCK)
 			WHERE b.refno 		= @RefNo
 				AND b.bettype	= 18001
 				AND b.CustId	= @CustId
@@ -150,7 +150,7 @@ BEGIN
 		, d.PayoutNote
 		, d.IP
 		
-	FROM [bodb_CustomerLog].dbo.PayoutDetail d WITH(NOLOCK)
+	FROM [DBLOG].[bodb_CustomerLog].dbo.PayoutDetail d WITH(NOLOCK)
 		LEFT JOIN bodb02.dbo.customer c WITH(NOLOCK)
 		ON d.Creator = c.custid
 	WHERE d.PayoutTransId = @PayoutTransId

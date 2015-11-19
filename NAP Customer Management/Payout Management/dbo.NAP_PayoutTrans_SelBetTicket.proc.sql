@@ -13,7 +13,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBEXT.bodb02
+DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
