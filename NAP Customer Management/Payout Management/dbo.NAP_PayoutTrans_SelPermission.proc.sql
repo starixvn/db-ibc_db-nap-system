@@ -21,6 +21,7 @@ Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
 	- 20151113@bobby.nguyen: Include Testing Licensee 
+	- 20151126@bobby.nguyen: Bug #48175 - Check for existence of spondemo in LA setting
 	
 Param's Explanation:
 	- @AdminId: Id of admin user login
@@ -115,7 +116,7 @@ BEGIN
 				, 'spondemo' AS SiteName
 				
 			WHERE (@OneWorksControl 	= 1)
-				
+				AND NOT EXISTS (SELECT 1 FROM #LA_PartyList WHERE PartyName = 'spondemo')
 		)
 		INSERT INTO @tblSite
 		SELECT ls.SiteControl
