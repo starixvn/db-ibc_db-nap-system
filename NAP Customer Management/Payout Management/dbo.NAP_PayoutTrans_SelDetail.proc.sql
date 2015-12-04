@@ -17,6 +17,7 @@ DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
+	- 20151126@bobby.nguyen: Correct time range when selecting ticket tranId3rd info
 	
 Param's Explanation:
 	
@@ -97,7 +98,7 @@ BEGIN
 		END
 	END
 	
-	IF(@WinlostDate BETWEEN @MoveBetsDay AND @BalanceUpDay)
+	IF(@WinlostDate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 	BEGIN
 		IF(@ProductId IN (203,205))
 		BEGIN
