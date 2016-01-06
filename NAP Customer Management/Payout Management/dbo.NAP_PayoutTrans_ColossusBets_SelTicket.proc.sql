@@ -22,6 +22,7 @@ Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
 	- 20151126@bobby.nguyen: Correct time range when selecting ticket tranId3rd info
+	- 20160106@bobby.nguyen: #50364 - Update for CB change request
 	
 Param's Explanation:
 	
@@ -30,14 +31,19 @@ BEGIN
 
 	SET NOCOUNT ON
 	
+	DECLARE @bettransRefno	BIGINT
+	
 	SET @transId3rd	= ''
 		
 	IF(@WinlostDate > @MoveBetsDay )
 	BEGIN
+		SELECT @bettransRefno = refno
+		FROM bodb02.dbo.bettrans (NOLOCK) 
+		WHERE transid = @RefNo
 		
 		SELECT @transId3rd	= b.betcheck
 		FROM bodb02.dbo.Bettransm b WITH(NOLOCK)
-		WHERE b.refno 		= @RefNo
+		WHERE b.refno 		= @bettransRefno
 			AND b.bettype	= 18001
 			AND b.CustId	= @CustId
 			
@@ -51,17 +57,20 @@ BEGIN
 			--,@transId3rd AS TransId3rd
 		FROM bodb02.dbo.bettransm WITH (NOLOCK)
 		WHERE custid 	= @CustId
-			AND refno 	= @RefNo
+			AND refno 	= @bettransRefno
 			AND bettype BETWEEN 18002 AND 18005
 		
 	END
 	
 	IF(@WinlostDate BETWEEN @BalanceUpDay AND @MoveBetsDay)
 	BEGIN
+		SELECT @bettransRefno = refno
+		FROM bodb02.dbo.bettrans14 (NOLOCK) 
+		WHERE transid = @RefNo
 		
 		SELECT @transId3rd	= b.betcheck
 		FROM bodb02.dbo.Bettransm14 b WITH(NOLOCK)
-		WHERE b.refno 		= @RefNo
+		WHERE b.refno 		= @bettransRefno
 			AND b.bettype	= 18001
 			AND b.CustId	= @CustId
 			
@@ -74,16 +83,20 @@ BEGIN
 			status
 			--,@transId3rd AS TransId3rd
 		FROM bodb02.dbo.bettransm14 WITH (NOLOCK)
-		WHERE refno 	= @RefNo
+		WHERE refno 	= @bettransRefno
 			AND bettype BETWEEN 18002 AND 18005
 		
 	END
 	IF(@WinlostDate < @BalanceUpDay)
 	BEGIN
 		
+		SELECT @bettransRefno = refno
+		FROM bodb_archive.dbo.bettrans_bk (NOLOCK) 
+		WHERE transid = @RefNo
+		
 		SELECT @transId3rd	= b.betcheck
 		FROM bodb_archive.dbo.bettransm b WITH (NOLOCK)
-		WHERE b.refno 		= @RefNo
+		WHERE b.refno 		= @bettransRefno
 			AND b.bettype	= 18001
 			AND b.CustId	= @CustId
 			
@@ -96,7 +109,7 @@ BEGIN
 			status
 			--,@transId3rd AS TransId3rd
 		FROM bodb_archive.dbo.bettransm b WITH (NOLOCK)
-		WHERE refno 	= @RefNo
+		WHERE refno 	= @bettransRefno
 			AND bettype BETWEEN 18002 AND 18005
 		
 	END
