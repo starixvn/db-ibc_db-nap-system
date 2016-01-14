@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE PROCEDURE [dbo].[NAP_PayoutTrans_SMASendMessage]
+ALTER PROCEDURE [dbo].[NAP_PayoutTrans_SMASendMessage]
 (
 	@Creator 		INT
 	, @custId 		INT
@@ -15,10 +15,10 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBACC.bodb02
+DB: DBTXN.bodb02
 Original:
 Revisions:
-	- 20160106@bobby.nguyen: #50364 - Update for CB change request
+	- 20160106@bobby.nguyen: #50364 - Send SMA private message
 	
 Param's Explanation:
 	
@@ -35,25 +35,33 @@ BEGIN
 			, @srecommendUserName	NVARCHAR(50)
 			, @MessageId			INT
 			, @PostTime				DATETIME
-			, @SMAMessage			NVARCHAR(MAX)
+			, @SMAMessage			NVARCHAR(500)
+			, @SMAMessage_ch		NVARCHAR(500)
+			, @SMAMessage_cs		NVARCHAR(500)
+			, @SMAMessage_th		NVARCHAR(500)
+			, @SMAMessage_vn		NVARCHAR(500)
 			
 	SELECT @CreatorName	= username 
-		, @SMAMessage	= N'Dear value customer, a member under your line had won a Colossus Bet prize. You will receive 10% of the prize as winning share.'
-		, @PostTime		= GETDATE()
+		, @SMAMessage		= N'Dear valued customer, a member under your line had won a Colossus Bet prize. You will receive part of the prize as winning share.'
+		, @SMAMessage_ch	= N'尊敬的客戶, 您旗下的會員贏得了Colossus Bet 的獎金。您將收到該獎項的一部分獎金。'
+		, @SMAMessage_cs	= N'尊敬的客户, 您旗下的会员赢得了Colossus Bet 的奖金。您将收到该奖项的一部分奖金。'
+		, @SMAMessage_th	= N'เรียนลูกค้าที่เคารพ  สมาชิกของท่านได้รับรางวัล Colossus Bet และคุณก็จะได้รับส่วนแบ่งจากรางวัลนี้ด้วยค่ะ'
+		, @SMAMessage_vn	= N'Chào quý khách hàng, Một thành viên cấp dưới của bạn đã thắng giải Colossus Bet. Bạn cũng sẽ nhận được một phần của giải như là phần chia sẻ chiến thắng đó.'
+		, @PostTime			= GETDATE()
 	FROM CustDB.dbo.customer WITH(NOLOCK)
 	WHERE custId = @Creator
 			
 	EXECUTE [DBMSG].[bodb_Message].[dbo].[Dot_Msg_SetMessage2] 
 	   @MessageId 	= @MessageId OUTPUT
 	  ,@Content_en 	= @SMAMessage
-	  ,@Content_ch 	= NULL
-	  ,@Content_cs 	= NULL
+	  ,@Content_ch 	= @SMAMessage_ch
+	  ,@Content_cs 	= @SMAMessage_cs
 	  ,@Content_jp 	= NULL
 	  ,@Content_it 	= NULL
-	  ,@Content_th 	= NULL
+	  ,@Content_th 	= @SMAMessage_th
 	  ,@Content_ko 	= NULL
 	  ,@Content_es 	= NULL
-	  ,@Content_vn 	= NULL
+	  ,@Content_vn 	= @SMAMessage_vn
 	  ,@Content_id 	= NULL
 	  ,@MsgType		= 1
 	  ,@IsSticky	= 1

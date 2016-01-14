@@ -31,7 +31,7 @@ BEGIN
 		, @oldPayoutStatus	NVARCHAR(20)
 		, @custId			INT
 		, @refNo			BIGINT
-		, @MessageId		INT
+		, @productId		TINYINT
 	
 	SELECT @ErrCode 		= 0
 		, @ErrMsg 			= ''
@@ -51,11 +51,17 @@ BEGIN
 		SELECT TOP 1 @custId 	= custId
 			,@refNo				= refNo
 			,@oldPayoutStatus 	= PayoutStatus
+			,@productId			= ProductId
 		FROM [dbo].[PayoutTrans] p WITH(NOLOCK)
 		WHERE p.[PayoutTransId] = @PayoutTransId
 		
-		-- check for constraint payout status once it's completed
-		IF(@oldPayoutStatus <> @PayoutStatus AND @oldPayoutStatus = 'Completed') RETURN;
+		-- check for constraint of payout status once it's completed
+		IF(@oldPayoutStatus <> @PayoutStatus AND @oldPayoutStatus = 'Completed')
+		BEGIN
+			SELECT @ErrCode 	= 1002
+				, @ErrMsg		= 'The status info is invalid.'
+			RETURN;
+		END
 		
 		-- update payout status
 		IF(@oldPayoutStatus <> @PayoutStatus)
@@ -63,12 +69,15 @@ BEGIN
 			UPDATE p
 			SET [PayoutStatusId] 	= @PayoutStatusId
 				,[PayoutStatus] 	= @PayoutStatus
+				,[Winlostdate] 		= CASE WHEN @PayoutStatusId IN (4, 5) AND @productId IN (204) THEN @UpdDate ELSE Winlostdate END
 			FROM [dbo].[PayoutTrans] p WITH(ROWLOCK, UPDLOCK)
 			WHERE p.[PayoutTransId] = @PayoutTransId
 		
-			-- check for completing the payout trans
-			IF (@PayoutStatus = 'Completed')
+			-- check for [Completed,Expired] the CB's payout trans
+			--@PayoutStatus = 'Completed|Expired'
+			IF (@PayoutStatusId IN (4, 5) AND @productId IN (204))
 			BEGIN
+			
 				-- step 1: settle bettrans & bettransm & translog
 				EXEC dbo.[NAP_PayoutTrans_ColossusBet_Complete] @Transid = @refNo, @CustID = @custId
 				
@@ -78,12 +87,13 @@ BEGIN
 				END TRY
 				BEGIN CATCH
 					SELECT @ErrCode 	= ISNULL(ERROR_NUMBER(), 0)
-						, @ErrMsg		= ISNULL(ERROR_MESSAGE(), 0)
+						, @ErrMsg		= ISNULL(ERROR_MESSAGE(), '')
 				END CATCH
 				
 				-- step 3: UPD to allow to change member pwd
-				EXEC [DBCUST].[CustDB].[dbo].[Dot_Member_UpdateLockPassword] @CustID = @custId, @status = 0
-			END			
+				EXEC dbo.NAP_PayoutTrans_UpdateLockPassword @CustID = @custId, @ProductId = 204, @status = 0
+		
+			END
 		END
 		
 		IF(@@ERROR = 0)
@@ -129,7 +139,7 @@ BEGIN
 			
 		END
 		SELECT @ErrCode 	= ISNULL(ERROR_NUMBER(), 0)
-			, @ErrMsg		= ISNULL(ERROR_MESSAGE(), 0)
+			, @ErrMsg		= ISNULL(ERROR_MESSAGE(), '')
 	END
 	ELSE
 	BEGIN
