@@ -22,13 +22,18 @@ Revisions:
 	- 20160106@bobby.nguyen: #50364 - Update for CB change request
 	
 Param's Explanation:
-	
+	- @PayoutStatus & @PayoutStatusId:
+		+ 1: Open
+		+ 2: Verify
+		+ 3: Disbursed
+		+ 4: Completed
+		+ 5: Expired
 */
 BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @UpdDate 		DATETIME
-		, @oldPayoutStatus	NVARCHAR(20)
+		, @oldStatusId		TINYINT
 		, @custId			INT
 		, @refNo			BIGINT
 		, @productId		TINYINT
@@ -50,13 +55,13 @@ BEGIN
 	
 		SELECT TOP 1 @custId 	= custId
 			,@refNo				= refNo
-			,@oldPayoutStatus 	= PayoutStatus
+			,@oldStatusId 		= PayoutStatusId
 			,@productId			= ProductId
 		FROM [dbo].[PayoutTrans] p WITH(NOLOCK)
 		WHERE p.[PayoutTransId] = @PayoutTransId
 		
 		-- check for constraint of payout status once it's completed
-		IF(@oldPayoutStatus <> @PayoutStatus AND @oldPayoutStatus = 'Completed')
+		IF(@oldStatusId <> @PayoutStatusId AND @oldStatusId IN (4, 5)) -- 'Completed|Expired'
 		BEGIN
 			SELECT @ErrCode 	= 1002
 				, @ErrMsg		= 'The status info is invalid.'
@@ -64,12 +69,12 @@ BEGIN
 		END
 		
 		-- update payout status
-		IF(@oldPayoutStatus <> @PayoutStatus)
+		IF(@oldStatusId <> @PayoutStatusId)
 		BEGIN
 			UPDATE p
 			SET [PayoutStatusId] 	= @PayoutStatusId
 				,[PayoutStatus] 	= @PayoutStatus
-				,[Winlostdate] 		= CASE WHEN @PayoutStatusId IN (4, 5) AND @productId IN (204) THEN @UpdDate ELSE Winlostdate END
+				,[Winlostdate] 		= CASE WHEN @PayoutStatusId IN (4, 5) AND @productId IN (204) THEN CAST(@UpdDate AS DATE) ELSE Winlostdate END
 			FROM [dbo].[PayoutTrans] p WITH(ROWLOCK, UPDLOCK)
 			WHERE p.[PayoutTransId] = @PayoutTransId
 		
