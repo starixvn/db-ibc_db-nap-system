@@ -60,6 +60,7 @@ BEGIN
 			,[status]	= N'WON' 
 			, statusID	= 112
 			, betcheck	= ''
+			, ruben		= 1
 		WHERE transid	= @Transid 
 			AND custid 	= @custid
 			

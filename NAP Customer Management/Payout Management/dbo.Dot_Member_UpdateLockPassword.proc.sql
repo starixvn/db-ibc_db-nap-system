@@ -16,7 +16,7 @@ AS
 /*
 Created: 20151228@Austin
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBTXN.bodb02
+DB: DBCUST.CustDB
 Original:
 Revisions:
 	-- 20151228@Austin CREATE
