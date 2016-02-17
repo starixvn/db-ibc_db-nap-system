@@ -20,7 +20,7 @@ DB: DBACC/bodb02
 Revisions:
 	
 Paramters Explanation:
-	@TransDesc = 'choice=1-1;league=sasas asas;match=A vs B;result=0-0'
+	@TransDesc = 'choice=1-1;league=sasas asas;match=A vs B;result=0-0;ip=127.0.0.1'
 
 */
 
@@ -51,7 +51,7 @@ BEGIN
 	SELECT @choice = case when [index] = 1 then SUBSTRING(@TransDesc, Start, [Stop] - Start) else @choice end
 		,@league = case when [index] = 2 then SUBSTRING(@TransDesc, Start, [Stop] - Start) else @league end
 		,@match = case when [index] = 3 then SUBSTRING(@TransDesc, Start, [Stop] - Start) else @match end
-		,@result = case when [index] = 4 then SUBSTRING(@TransDesc, Start, 10) else @result end
+		,@result = case when [index] = 4 then SUBSTRING(@TransDesc, Start, [Stop] - Start) else @result end
 	FROM Pieces
 
 	
@@ -65,4 +65,6 @@ BEGIN
 	)
 	RETURN
 END
-
+go
+select *
+from [dbo].[f_NAP_CB_BonusTicket_EventInfo]('choice=1-1;league=sasas asas;match=A vs B;result=0-0;ip=127.0.0.1')

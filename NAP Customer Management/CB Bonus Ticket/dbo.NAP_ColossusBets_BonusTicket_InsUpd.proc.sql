@@ -3,17 +3,18 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[NAP_ColossusBets_BonusTicket_InsUpd]
-	@TransLogId		bigint
-	, @CustID 		int
-	, @UserID		int
-	, @WinAmount 	money
+	@RefNo			BIGINT
+	, @CustID 		INT
+	, @UserID		INT
+	, @WinAmount 	MONEY
 	, @status		NVARCHAR(10)
 	, @Choice		NVARCHAR(10)
 	, @League		NVARCHAR(250)
 	, @Match		NVARCHAR(250)
 	, @Result		NVARCHAR(10)
-	, @ErrCode 		int = 0 OUTPUT
-	, @ErrMsg 		nvarchar(200) = '' OUTPUT  
+	, @IP			VARCHAR(50)
+	, @ErrCode 		INT = 0 OUTPUT
+	, @ErrMsg 		NVARCHAR(200) = '' OUTPUT  
 
 AS
 /*
@@ -25,7 +26,7 @@ Revisions:
 	- 20160215@bobby.nguyen: #52058 - Update for CB change request - Insert bonus ticket
 	
 Param's Explanation:
-	- @TransLogId 	: Ticket's refno [translog.translogid, bettrans.refno]
+	- @RefNo 	: Ticket's refno [translog.translogid, bettrans.refno]
 	- @CustID 		: Customer Id
 	- @UserID		: Admin Id
 	
@@ -34,41 +35,55 @@ BEGIN
 	SET NOCOUNT ON;
     
     DECLARE 
-		@winlostdate 		SMALLDATETIME
-		, @gameId			SMALLINT
-		, @statusID			TINYINT
-		, @Stake			money
-		, @sdiscount 		decimal(9,8) 
-		, @adiscount 		decimal(9,8) 
-		, @discount 		decimal(9,8) 	
-		, @comm 			money
-		, @acomm 			money
-		, @scomm 			money
-		, @transdesc		NVARCHAR(1000)
-		, @pool				VARCHAR(50)
-		, @EventId 			INT
-		, @TranId3rd		VARCHAR(64)
+		@winlostdate 	SMALLDATETIME
+		, @gameId		SMALLINT
+		, @statusID		TINYINT
+		, @Stake		MONEY
+		, @sdiscount 	DECIMAL(9,8) 
+		, @adiscount 	DECIMAL(9,8) 
+		, @discount 	DECIMAL(9,8) 	
+		, @comm 		MONEY
+		, @acomm 		MONEY
+		, @scomm 		MONEY
+		, @transdesc	NVARCHAR(1000)
+		, @pool			VARCHAR(50)
+		, @EventId 		INT
+		, @TranId3rd	VARCHAR(64)
+		, @oldStatus 	NVARCHAR(10)
+		, @hasUpdated 	BIT
 	
 	SELECT @ErrCode 	= 0
 		, @ErrMsg		= ''
 		, @EventId 		= 0
 		, @TranId3rd	= ''
+		, @hasUpdated	= 0
     
+	-- select CB's ticket with won Jackpot
 	SELECT @TranId3rd 	= TranId3rd 
 		, @winlostdate 	= winlostdate 
 		, @eventId 		= eventID	
 		, @pool			= custom2
 		
-	from dbo.translog with(nolock) 
-	where custid		= @custID
-		and TransLogId 	= @TransLogId 
-		and statusID 	= 112
+	FROM dbo.translog b WITH(NOLOCK) 
+	WHERE custid		= @custID
+		AND TransLogId 	= @RefNo 
+		AND statusID 	= 112
 		AND gameId		= 18000
-	
-	IF (@TranId3rd IS NULL)
+		AND EXISTS ( -- Jackpot win
+			SELECT 1 
+			FROM dbo.bettransm WITH(NOLOCK) 
+			WHERE custID 	= b.custID 
+				AND refno 	= b.translogid 
+				AND bettype = 18005
+				AND statusID= 112
+		)
+		
+	IF (@TranId3rd IS NULL
+		OR @status NOT IN ('RUNNING', 'WON', 'LOSE')
+	)
 	BEGIN
 		SELECT @ErrCode = 101
-			, @ErrMsg	= 'Ticket is invalid.'
+			, @ErrMsg	= 'Ticket or status is invalid.'
 		RETURN
 	END
 	
@@ -92,28 +107,30 @@ BEGIN
 							+ ';league=' + @league 
 							+ ';match=' + @match 
 							+ ';result=' + @result 
+							+ ';ip=' + @IP
 	
+	-- check CB bonus ticket status
+	SELECT @oldStatus 	= [status]
+	FROM dbo.bettransm WITH(NOLOCK) 
+	WHERE custid		= @custID 
+		AND refno 		= @RefNo 
+		AND bettype		= @gameId
+				
 	
-	IF(NOT EXISTS (
-			SELECT 1 FROM dbo.bettransm WITH(NOLOCK) 
-			where custid	= @custID 
-				and refno 	= @TransLogId 
-				and bettype	= @gameId
-		) 
-	)
+	IF( @oldStatus IS NULL ) -- not exists
 	BEGIN
 		INSERT INTO dbo.bettransm 
 		(transdate, hdp1, hdp2, odds, stake, [status], winlost, creator, refno,winlostdate,
 		matchid,oddsspread, statusID, betcheck,oddsid,ruben,
 		custid, discount, adiscount, sdiscount,comm,acomm,scomm,bettype,transdesc) 
 		VALUES 
-		(GETDATE(),0,0,0,0, @status,@winAmount,@UserID, @TransLogId,@winlostdate,
+		(GETDATE(),0,0,0,0, @status,@winAmount,@UserID, @RefNo,@winlostdate,
 		204,0,@statusID,@TranId3rd,@EventId,0,
 		@CustID,0,0,0,0,0,0,@GameID,@transdesc)		      
 		       
-		
+		SET @hasUpdated = 1
 	END
-	ELSE
+	ELSE IF (@oldStatus = 'RUNNING') -- exists with running
 	BEGIN	
 		UPDATE b
 		SET status 		= @status
@@ -122,27 +139,34 @@ BEGIN
 			,transdesc	= @transdesc
 		FROM dbo.bettransm b WITH(ROWLOCK, UPDLOCK)
 		WHERE custid	= @custID 
-			and refno 	= @TransLogId 
-			and bettype	= @gameId
+			AND refno 	= @RefNo 
+			AND bettype	= @gameId
+			
+		SET @hasUpdated = 1
     END
 	
 	SELECT @ErrCode 	= @@ERROR
 		, @ErrMsg		= ERROR_MESSAGE()
-			
-	IF(@status = 'WON' AND @ErrCode = 0)
+	
+	-- check for inserting winning share
+	IF(@hasUpdated 		= 1 
+		AND @oldStatus 	= 'RUNNING' 
+		AND @status 	= 'WON' 
+		AND @ErrCode 	= 0
+	)
 	BEGIN
 		INSERT INTO bettransm 
 		(transdate, hdp1, hdp2, odds, stake, [status], winlost, creator, refno,winlostdate, 
 		matchid,oddsspread, statusID, betcheck,oddsid,ruben,
 		custid, discount, adiscount, sdiscount,comm,acomm,scomm,bettype) 
 		VALUES 
-		(GETDATE(),0,0,0,@Stake, 'LOSE',0,@CustID, @TransLogId,@winlostdate,
+		(GETDATE(),0,0,0,@Stake, 'LOSE',0,@CustID, @RefNo,@winlostdate,
 		204,0,113,@TranId3rd,@EventId,0,
-		@CustID,isnull(@discount,0),isnull(@adiscount,0),isnull(@sdiscount,0),isnull(@comm,0),isnull(@acomm,0),isnull(@scomm,0),18003)
+		@CustID,ISNULL(@discount,0),ISNULL(@adiscount,0),ISNULL(@sdiscount,0),ISNULL(@comm,0),ISNULL(@acomm,0),ISNULL(@scomm,0),18003)
 	END
 	
 	SELECT 
-		@TransLogId 	AS refno
+		@RefNo 			AS refno
 		, @CustID 		AS CustID
 		, @WinAmount 	AS WinAmount
 		, @status		AS Status

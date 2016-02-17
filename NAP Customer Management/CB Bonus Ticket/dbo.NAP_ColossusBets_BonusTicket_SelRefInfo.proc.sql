@@ -21,7 +21,8 @@ BEGIN
 	SET NOCOUNT ON;
     
     	
-    SELECT custID
+    SELECT @TranslogId AS refno 
+		, custID
 		, username
 		, custom2 		AS PoolName
 		, Tranid3rd
