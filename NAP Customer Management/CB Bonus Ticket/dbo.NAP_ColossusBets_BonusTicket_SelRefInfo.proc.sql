@@ -13,6 +13,7 @@ DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20160215@bobby.nguyen: #52058 - Update for CB change request - Insert bonus ticket
+	- 20160224@bobby.nguyen: #52058 - Correct translog status when winning Jack Pot price
 	
 Param's Explanation:
 	
@@ -29,9 +30,9 @@ BEGIN
 		, eventID
 	FROM dbo.translog b WITH(NOLOCK) 
 	WHERE translogid 	= @RefNo 
-		AND statusID 	= 112
+		--AND statusID 	= 112
 		AND gameId		= 18000
-		AND EXISTS ( -- Jackpot win
+		AND EXISTS ( -- Won Jackpot
 			SELECT 1 
 			FROM dbo.bettransm WITH(NOLOCK) 
 			WHERE custID 	= b.custID 
@@ -39,13 +40,7 @@ BEGIN
 				AND bettype = 18005
 				AND statusID= 112
 		)
-		-- AND NOT EXISTS ( -- Bonus ticket
-			-- SELECT 1 
-			-- FROM dbo.bettransm WITH(NOLOCK) 
-			-- WHERE custID 	= b.custID 
-				-- AND refno 	= b.translogid 
-				-- AND bettype = 18006
-		-- )
+	RETURN;
 END
 GO
 GO

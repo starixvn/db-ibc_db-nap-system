@@ -24,6 +24,7 @@ DB: DBTXN.bodb02
 Original:[Dot_Member_ColossusBet_InsertDetails_VendorGame_Test]
 Revisions:
 	- 20160215@bobby.nguyen: #52058 - Update for CB change request - Insert bonus ticket
+	- 20160224@bobby.nguyen: #52058 - Correct translog status when winning Jack Pot price
 	
 Param's Explanation:
 	- @RefNo 	: Ticket's refno [translog.translogid, bettrans.refno]
@@ -67,7 +68,7 @@ BEGIN
 	FROM dbo.translog b WITH(NOLOCK) 
 	WHERE custid		= @custID
 		AND TransLogId 	= @RefNo 
-		AND statusID 	= 112
+		--AND statusID 	= 112
 		AND gameId		= 18000
 		AND EXISTS ( -- Jackpot win
 			SELECT 1 

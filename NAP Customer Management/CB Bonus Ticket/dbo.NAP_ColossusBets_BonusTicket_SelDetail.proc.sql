@@ -13,6 +13,7 @@ DB: DBACC.bodb02
 Original:
 Revisions:
 	- 20160215@bobby.nguyen: #52058 - Update for CB change request - Insert bonus ticket
+	- 20160224@bobby.nguyen: #52058 - Correct translog status when winning Jack Pot price
 	
 Param's Explanation:
 	
@@ -51,7 +52,7 @@ BEGIN
 	) AS bm
 	
 	WHERE b.translogid 	= @RefNo 
-		AND b.statusID 	= 112
+		--AND b.statusID 	= 112
 		AND b.gameId	= 18000
 		
 END
