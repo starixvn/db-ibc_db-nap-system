@@ -23,6 +23,7 @@ Revisions:
 	- 20151012@bobby.nguyen: Initial
 	- 20151126@bobby.nguyen: Correct time range when selecting ticket tranId3rd info
 	- 20160106@bobby.nguyen: #50364 - Update for CB change request
+	- 20160224@bobby.nguyen: #52846 - Update range bettype for CB's Bonus ticket 18006
 	
 Param's Explanation:
 	
@@ -58,7 +59,7 @@ BEGIN
 		FROM bodb02.dbo.bettransm WITH (NOLOCK)
 		WHERE custid 	= @CustId
 			AND refno 	= @bettransRefno
-			AND bettype BETWEEN 18002 AND 18005
+			AND bettype BETWEEN 18002 AND 18006
 		
 	END
 	
@@ -84,7 +85,7 @@ BEGIN
 			--,@transId3rd AS TransId3rd
 		FROM bodb02.dbo.bettransm14 WITH (NOLOCK)
 		WHERE refno 	= @bettransRefno
-			AND bettype BETWEEN 18002 AND 18005
+			AND bettype BETWEEN 18002 AND 18006
 		
 	END
 	IF(@WinlostDate < @BalanceUpDay)
@@ -110,7 +111,7 @@ BEGIN
 			--,@transId3rd AS TransId3rd
 		FROM bodb_archive.dbo.bettransm b WITH (NOLOCK)
 		WHERE refno 	= @bettransRefno
-			AND bettype BETWEEN 18002 AND 18005
+			AND bettype BETWEEN 18002 AND 18006
 		
 	END
 		
