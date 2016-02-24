@@ -8,10 +8,10 @@ ALTER PROCEDURE [dbo].[NAP_ColossusBets_BonusTicket_InsUpd]
 	, @UserID		INT
 	, @WinAmount 	MONEY
 	, @status		NVARCHAR(10)
-	, @Choice		NVARCHAR(10)
-	, @League		NVARCHAR(250)
-	, @Match		NVARCHAR(250)
-	, @Result		NVARCHAR(10)
+	, @Choice		NVARCHAR(50) 	= '-'
+	, @League		NVARCHAR(250)	= '-'
+	, @Match		NVARCHAR(250)	= '-'
+	, @Result		NVARCHAR(50)	= '-'
 	, @IP			VARCHAR(50)
 	, @ErrCode 		INT = 0 OUTPUT
 	, @ErrMsg 		NVARCHAR(200) = '' OUTPUT  
@@ -150,7 +150,7 @@ BEGIN
 	
 	-- check for inserting winning share
 	IF(@hasUpdated 		= 1 
-		AND @oldStatus 	= 'RUNNING' 
+		AND (@oldStatus = 'RUNNING' OR @oldStatus IS NULL)
 		AND @status 	= 'WON' 
 		AND @ErrCode 	= 0
 	)

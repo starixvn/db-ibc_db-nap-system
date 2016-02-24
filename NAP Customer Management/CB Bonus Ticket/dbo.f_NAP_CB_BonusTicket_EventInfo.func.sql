@@ -10,7 +10,7 @@ ALTER FUNCTION [dbo].[f_NAP_CB_BonusTicket_EventInfo]
 (
 	@TransDesc 	NVARCHAR(1000)
 )  
-RETURNS @OutputTable TABLE(choice NVARCHAR(10), league Nvarchar(250), match Nvarchar(250), result nvarchar(10) )
+RETURNS @OutputTable TABLE(choice NVARCHAR(50), league NVARCHAR(250), match NVARCHAR(250), result NVARCHAR(50) )
 AS  
 /*
 Created: 20140306@bobby
@@ -32,10 +32,10 @@ BEGIN
 	DECLARE @Separate CHAR(1) = ';'
 
 		
-	DECLARE @choice VARCHAR(10)
-		, @league	VARCHAR(200)
-		, @match	VARCHAR(200)
-		, @result	VARCHAR(10)
+	DECLARE @choice VARCHAR(100)
+		, @league	VARCHAR(300)
+		, @match	VARCHAR(300)
+		, @result	VARCHAR(100)
 
 	;WITH Pieces([Index], Start, [Stop])
 	AS 
@@ -58,13 +58,13 @@ BEGIN
 
 	INSERT INTO @OutputTable(choice, league, match, result)
 	(
-		SELECT SUBSTRING(@choice, charindex('=', @choice)+1, 10) as choice
+		SELECT SUBSTRING(@choice, charindex('=', @choice)+1, 50) as choice
 			,SUBSTRING(@league, charindex('=', @league)+1, 250) as league
 			,SUBSTRING(@match, charindex('=', @match)+1, 250) as match
-			,SUBSTRING(@result, charindex('=', @result)+1, 10) as result
+			,SUBSTRING(@result, charindex('=', @result)+1, 50) as result
 	)
 	RETURN
 END
 go
 select *
-from [dbo].[f_NAP_CB_BonusTicket_EventInfo]('choice=1-1;league=sasas asas;match=A vs B;result=0-0;ip=127.0.0.1')
+from [dbo].[f_NAP_CB_BonusTicket_EventInfo]('choice=1-1;league=sasas asas;match=A vs B;result=10-10;ip=127.0.0.1')

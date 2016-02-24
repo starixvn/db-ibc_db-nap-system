@@ -3,7 +3,7 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[NAP_ColossusBets_BonusTicket_SelRefInfo]
-	@TranslogId 		BIGINT
+	@RefNo 		BIGINT
 
 AS
 /*
@@ -21,14 +21,14 @@ BEGIN
 	SET NOCOUNT ON;
     
     	
-    SELECT @TranslogId AS refno 
+    SELECT @RefNo AS refno 
 		, custID
 		, username
 		, custom2 		AS PoolName
 		, Tranid3rd
 		, eventID
 	FROM dbo.translog b WITH(NOLOCK) 
-	WHERE translogid 	= @TranslogId 
+	WHERE translogid 	= @RefNo 
 		AND statusID 	= 112
 		AND gameId		= 18000
 		AND EXISTS ( -- Jackpot win

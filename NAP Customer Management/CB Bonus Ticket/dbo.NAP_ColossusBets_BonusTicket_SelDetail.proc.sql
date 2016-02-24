@@ -3,7 +3,7 @@ USE [bodb02]
 GO
 
 ALTER PROCEDURE [dbo].[NAP_ColossusBets_BonusTicket_SelDetail]
-	@TranslogId 		BIGINT
+	@RefNo 		BIGINT
 
 AS
 /*
@@ -50,7 +50,7 @@ BEGIN
 			AND bettype = 18006
 	) AS bm
 	
-	WHERE b.translogid 	= @TranslogId 
+	WHERE b.translogid 	= @RefNo 
 		AND b.statusID 	= 112
 		AND b.gameId	= 18000
 		

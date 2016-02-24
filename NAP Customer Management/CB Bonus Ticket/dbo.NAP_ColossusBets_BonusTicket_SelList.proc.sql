@@ -26,10 +26,10 @@ BEGIN
 		, bm.winamount
 		, bm.[status]
 		, bm.[statusID]
-		, bm.match
-		, bm.league
-		, bm.choice
-		, bm.result
+		, ISNULL(bm.match, '-') AS match
+		, ISNULL(bm.league, '-') AS league
+		, ISNULL(bm.choice, '-') AS choice
+		, ISNULL(bm.result, '-') AS result
 		
 	FROM dbo.translog b WITH(NOLOCK) 
 	CROSS APPLY (
