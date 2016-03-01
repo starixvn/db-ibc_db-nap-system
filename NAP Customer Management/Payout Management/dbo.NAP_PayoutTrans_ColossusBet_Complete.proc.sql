@@ -22,16 +22,17 @@ BEGIN
 	
 	SET NOCOUNT ON;
 	
-	DECLARE @translogid 	BIGINT 
-		,@winlostdate 		SMALLDATETIME
+	DECLARE @translogid BIGINT 
+		,@winlostdate 	SMALLDATETIME
 	
-	SET @ErrCode =-1
+	SELECT @winlostdate	= CAST(GETDATE() AS DATE) 
+		, @ErrCode 		= -1
+		, @ErrMsg		= ''
 	
 	SELECT TOP 1
 		@translogid 	= refno        
 		,@ErrCode 		= 0
 		,@ErrMsg 		= 'success'
-		,@winlostdate 	= CONVERT(VARCHAR(10), CURRENT_TIMESTAMP, 120)			  
 	FROM dbo.bettrans WITH (NOLOCK)
 	WHERE transid 		= @Transid 
 		AND custid 		= @custid 
