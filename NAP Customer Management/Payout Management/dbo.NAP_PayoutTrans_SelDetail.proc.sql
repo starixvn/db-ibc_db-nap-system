@@ -18,6 +18,7 @@ Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
 	- 20151126@bobby.nguyen: Correct time range when selecting ticket tranId3rd info
+	- 20160106@bobby.nguyen: #50364 - Update for CB change request
 	
 Param's Explanation:
 	
@@ -58,6 +59,8 @@ BEGIN
 		, c.Currency
 		, e.Currency AS CurrencyName
 		, r.site AS SiteName 
+		, p.PayoutStatus
+		, p.PayoutStatusId
 	INTO #payoutTrans
 	FROM bodb02.dbo.PayoutTrans p WITH(NOLOCK)
 		INNER JOIN bodb02.dbo.customer c WITH (NOLOCK)	
@@ -92,9 +95,9 @@ BEGIN
 		BEGIN
 			SELECT @transId3rd	= b.betcheck
 			FROM bodb02.dbo.Bettransm b WITH(NOLOCK)
-			WHERE b.refno 		= @RefNo
+			WHERE b.CustId	= @CustId
 				AND b.bettype	= 18001
-				AND b.CustId	= @CustId
+				AND b.refno 	IN (SELECT refno FROM bodb02.dbo.bettrans (NOLOCK) WHERE transid = @RefNo)
 		END
 	END
 	
@@ -112,9 +115,9 @@ BEGIN
 		BEGIN
 			SELECT @transId3rd	= b.betcheck
 			FROM bodb02.dbo.Bettransm14 b WITH(NOLOCK)
-			WHERE b.refno 		= @RefNo
+			WHERE b.CustId	= @CustId
 				AND b.bettype	= 18001
-				AND b.CustId	= @CustId
+				AND b.refno 	IN (SELECT refno FROM bodb02.dbo.bettrans14 (NOLOCK) WHERE transid = @RefNo)
 		END
 	END
 	
@@ -132,9 +135,9 @@ BEGIN
 		BEGIN
 			SELECT @transId3rd	= b.betcheck
 			FROM [bodb_archive].dbo.Bettransm b WITH(NOLOCK)
-			WHERE b.refno 		= @RefNo
+			WHERE b.CustId	= @CustId
 				AND b.bettype	= 18001
-				AND b.CustId	= @CustId
+				AND b.refno 	IN (SELECT refno FROM bodb_archive.dbo.bettrans_bk (NOLOCK) WHERE transid = @RefNo)
 		END
 	END
 	

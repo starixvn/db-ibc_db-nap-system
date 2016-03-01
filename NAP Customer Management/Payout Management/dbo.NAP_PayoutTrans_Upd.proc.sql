@@ -19,14 +19,24 @@ DB: DBTXN.bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
+	- 20160106@bobby.nguyen: #50364 - Update for CB change request
 	
 Param's Explanation:
-	
+	- @PayoutStatus & @PayoutStatusId:
+		+ 1: Open
+		+ 2: Verify
+		+ 3: Disbursed
+		+ 4: Completed
+		+ 5: Expired
 */
 BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @UpdDate 		DATETIME
+		, @oldStatusId		TINYINT
+		, @custId			INT
+		, @refNo			BIGINT
+		, @productId		TINYINT
 	
 	SELECT @ErrCode 		= 0
 		, @ErrMsg 			= ''
@@ -42,12 +52,54 @@ BEGIN
 		AND @IP					<> ''
 	)
 	BEGIN
-		UPDATE p
-		SET [PayoutStatusId] 	= @PayoutStatusId
-		  ,[PayoutStatus] 		= @PayoutStatus
-		  
-		FROM [dbo].[PayoutTrans] p WITH(ROWLOCK, UPDLOCK)
+	
+		SELECT TOP 1 @custId 	= custId
+			,@refNo				= refNo
+			,@oldStatusId 		= PayoutStatusId
+			,@productId			= ProductId
+		FROM [dbo].[PayoutTrans] p WITH(NOLOCK)
 		WHERE p.[PayoutTransId] = @PayoutTransId
+		
+		-- check for constraint of payout status once it's completed
+		IF(@oldStatusId <> @PayoutStatusId AND @oldStatusId IN (4, 5)) -- 'Completed|Expired'
+		BEGIN
+			SELECT @ErrCode 	= 1002
+				, @ErrMsg		= 'The status info is invalid.'
+			RETURN;
+		END
+		
+		-- update payout status
+		IF(@oldStatusId <> @PayoutStatusId)
+		BEGIN
+			UPDATE p
+			SET [PayoutStatusId] 	= @PayoutStatusId
+				,[PayoutStatus] 	= @PayoutStatus
+				,[Winlostdate] 		= CASE WHEN @PayoutStatusId IN (4, 5) AND @productId IN (204) THEN CAST(@UpdDate AS DATE) ELSE Winlostdate END
+			FROM [dbo].[PayoutTrans] p WITH(ROWLOCK, UPDLOCK)
+			WHERE p.[PayoutTransId] = @PayoutTransId
+		
+			-- check for [Completed,Expired] the CB's payout trans
+			--@PayoutStatus = 'Completed|Expired'
+			IF (@PayoutStatusId IN (4, 5) AND @productId IN (204))
+			BEGIN
+			
+				-- step 1: settle bettrans & bettransm & translog
+				EXEC dbo.[NAP_PayoutTrans_ColossusBet_Complete] @Transid = @refNo, @CustID = @custId
+				
+				-- step 2: send out SMA announcement private message
+				BEGIN TRY
+					EXEC dbo.NAP_PayoutTrans_SMASendMessage @Creator = @Creator, @custId = @custId, @BettransId = @refNo
+				END TRY
+				BEGIN CATCH
+					SELECT @ErrCode 	= ISNULL(ERROR_NUMBER(), 0)
+						, @ErrMsg		= ISNULL(ERROR_MESSAGE(), '')
+				END CATCH
+				
+				-- step 3: UPD to allow to change member pwd
+				EXEC dbo.NAP_PayoutTrans_UpdateLockPassword @CustID = @custId, @ProductId = 204, @status = 0
+		
+			END
+		END
 		
 		IF(@@ERROR = 0)
 		BEGIN
@@ -92,7 +144,7 @@ BEGIN
 			
 		END
 		SELECT @ErrCode 	= ISNULL(ERROR_NUMBER(), 0)
-			, @ErrMsg		= ISNULL(ERROR_MESSAGE(), 0)
+			, @ErrMsg		= ISNULL(ERROR_MESSAGE(), '')
 	END
 	ELSE
 	BEGIN
