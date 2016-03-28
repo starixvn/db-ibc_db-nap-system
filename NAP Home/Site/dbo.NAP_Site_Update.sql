@@ -6,28 +6,32 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[NAP_Site_Update]
-    @SiteId			INT
-	,@SiteName		VARCHAR(50)
-	,@Description	VARCHAR(200)		= NULL
-    ,@URL			VARCHAR(200)		= NULL
-	,@TestURL		VARCHAR(200)		= NULL
-    ,@IsActive		BIT
-    ,@Environment	VARCHAR(10)									--Values : UAT,LIVE
-	,@CurrentUserId	INT     
-    ,@CurrentSiteId INT	
-	,@LogDate		DATETIME
-	,@LoginIP		VARCHAR(30)			= ''
-	,@Language		VARCHAR(20)			= 'en-us'
-	,@ErrCode		INT					= 0			OUTPUT 
-	,@ErrMsg		NVARCHAR(1000)		= ''		OUTPUT 
+	@SiteId				INT,
+	@SiteName			VARCHAR(50),
+	@SiteKey			VARCHAR(50),
+	@SecretAccessKey	VARCHAR(200),
+	@Description		VARCHAR(200)	= NULL,
+	@URL				VARCHAR(200)	= NULL,
+	@TestURL			VARCHAR(200)	= NULL,
+	@IsActive			BIT,
+	@Environment		VARCHAR(10),	-- Values : UAT,LIVE
+	@CurrentUserId		INT,
+	@CurrentSiteId		INT,
+	@LogDate			DATETIME,
+	@LoginIP			VARCHAR(30)		= '',
+	@Language			VARCHAR(20)		= 'en-us',
+	@ErrCode			INT				= 0			OUTPUT,
+	@ErrMsg			NVARCHAR(1000)		= ''		OUTPUT
 AS
-/*  
- * Created	: 20120809@Edward
- * Task		: Update information of site
- * DB		: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 
+
+/*
+	Created: 20120809@Edward
+	Task: Update information of site
+	DB: DBNAP.bodb_NAP
+	Revisions:
+	Param's Explanation:
+		- 20160322@Kos: Add SiteKey, SecretAccessKey [#Redmine: 50864]
+	
 	*** WRITE LOG template:
 	Main: 
 		<root><xml path="r" />
@@ -42,74 +46,81 @@ BEGIN
 	SET NOCOUNT ON
 
 	-- For write log
-	DECLARE @startRun	DATETIME  
-		,@endRun		DATETIME  
+	DECLARE @startRun	DATETIME
+		,@endRun		DATETIME
 		,@duration		INT
 		,@logSPData		VARCHAR(5000)
 		,@logSPDataOld	VARCHAR(5000)
 		,@xml			XML
 
-	SET @startRun = GETDATE()	
+	SET @startRun = GETDATE()
 	-- write log before update
 	SET @xml = (
-		SELECT @SiteId			AS '@si'	
-				,s.SiteName		AS '@s'
-				,s.Description	AS '@d'
-				,s.Environment	AS '@e'	
-				,s.IsActive		AS '@i'
-		FROM Sites AS s WITH(NOLOCK)
-		WHERE s.SiteId = @SiteId				
+		SELECT @SiteId			AS '@si'
+			,s.SiteName			AS '@s'
+			,s.SiteKey			AS '@sk'
+			,s.SecretAccessKey	AS '@sak'
+			,s.Description		AS '@d'
+			,s.Environment		AS '@e'
+			,s.IsActive			AS '@i'
+		FROM dbo.Sites AS s WITH(NOLOCK)
+		WHERE s.SiteId = @SiteId
 		FOR XML PATH('r'), TYPE
-	)	
+	)
 
-	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
+	SET @logSPDataOld = REPLACE(CONVERT(VARCHAR(MAX), @xml), '" />', '"/"')
 
 	-- Update site information
-	UPDATE dbo.Sites 
-	SET SiteName = @SiteName
-        ,Description = @Description
-        ,Environment = @Environment
-        ,IsActive = @IsActive
-        ,URL = @URL
-		,TestURL = @TestURL
-    WHERE SiteId = @SiteId
-	
+	UPDATE dbo.Sites WITH (ROWLOCK, UPDLOCK)
+	SET
+		SiteName = @SiteName,
+		SiteKey = @SiteKey,
+		SecretAccessKey = @SecretAccessKey,
+		Description = @Description,
+		Environment = @Environment,
+		IsActive = @IsActive,
+		URL = @URL,
+		TestURL = @TestURL
+	WHERE SiteId = @SiteId
+
 	-- Check error
 	IF @@ERROR > 0
-		BEGIN
-			SELECT 
-				@ErrCode = 1, 
-				@ErrMsg = 'Fail to insert information of the SiteId ' + CONVERT(VARCHAR(10), @SiteId)
-			RETURN
-		END		
+	BEGIN
+		SELECT 
+			@ErrCode = 1, 
+			@ErrMsg = 'Fail to insert information of the SiteId ' + CONVERT(VARCHAR(10), @SiteId)
+		RETURN
+	END
 
 	--write log after update
 	SET @xml = (
-		SELECT @SiteId			AS '@si'	
-				,@SiteName		AS '@s'
-				,@Description	AS '@d'
-				,@Environment	AS '@e'	
-				,@IsActive		AS '@i'				
+		SELECT @SiteId			AS '@si'
+			,@SiteName			AS '@s'
+			,@SiteKey			AS '@sk'
+			,@SecretAccessKey	AS '@sak'
+			,@Description		AS '@d'
+			,@Environment		AS '@e'
+			,@IsActive			AS '@i'
 		FOR XML PATH('r'), TYPE
-	)	
+	)
 
-	SET @logSPData = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
+	SET @logSPData = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')
 
-	SET @endRun	= GETDATE()  
-	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
-			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
-	@UserId			= @CurrentUserId,
-	@SPName			= 'NAP_Site_Update',
-	@ObjectId		= @SiteId,
-	@ObjectTypeId	= 3,			--Object type : Site
-	@Language		= @Language,
-	@SiteID			= @CurrentSiteId,
-	@IP				= @LoginIP,
-	@Date			= @LogDate,
-	@Data			= @logSPData,
-	@OldData		= @logSPDataOld,
-	@Duration		= @Duration
+	SET @endRun = GETDATE()
+	SET @duration = DATEDIFF(MILLISECOND, @startRun, @endRun)
+
+	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert
+		@UserId			= @CurrentUserId,
+		@SPName			= 'NAP_Site_Update',
+		@ObjectId		= @SiteId,
+		@ObjectTypeId	= 3,			--Object type : Site
+		@Language		= @Language,
+		@SiteID			= @CurrentSiteId,
+		@IP				= @LoginIP,
+		@Date			= @LogDate,
+		@Data			= @logSPData,
+		@OldData		= @logSPDataOld,
+		@Duration		= @Duration
 
 END
 

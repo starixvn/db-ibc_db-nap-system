@@ -8,26 +8,32 @@ GO
 ALTER PROCEDURE [dbo].[NAP_Site_GetById]
 	@SiteId INT
 AS
-/*  
- * Created	: 20120809@Edward
- * Task		: Get information of site
- * DB		: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 
+
+/*
+	Created: 20120809@Edward
+	Task: Get information of site
+	DB: DBNAP.bodb_NAP
+	Revisions:
+		- 20160322@Kos: Add SiteKey, SecretAccessKey [#Redmine: 50864]
+
+	Param's Explanation: 
 */
+
 BEGIN
 	SET NOCOUNT ON
 
-    SELECT SiteId
-		,SiteName
-        ,Description
-        ,URL
-		,TestURL
-        ,IsActive
-        ,Environment
-    FROM dbo.Sites WITH (NOLOCK)
-    WHERE SiteId = @SiteId
+	SELECT
+		SiteId,
+		SiteName,
+		SiteKey,
+		SecretAccessKey,
+		Description,
+		URL,
+		TestURL,
+		IsActive,
+		Environment
+	FROM dbo.Sites WITH (NOLOCK)
+	WHERE SiteId = @SiteId
 END
 
 GO

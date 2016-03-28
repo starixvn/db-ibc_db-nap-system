@@ -6,32 +6,34 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[NAP_Site_InsertWithSiteURL]
-	@SiteId			INT								OUTPUT
-	,@SiteName		VARCHAR(50)
-	,@Description	VARCHAR(200)		= NULL
-    ,@SiteURLs		VARCHAR(MAX)		= NULL
-    ,@IsActive		BIT
-    ,@Environment	VARCHAR(10)								-- Values: UAT | LIVE
-	,@CurrentUserId	INT     
-    ,@CurrentSiteId INT	
-	,@LogDate		DATETIME
-	,@LoginIP		VARCHAR(30)			= ''
-	,@Language		VARCHAR(20)			= 'en-us'
-	,@ErrCode		INT					= 0			OUTPUT 
-	,@ErrMsg		NVARCHAR(1000)		= ''		OUTPUT 
+	@SiteId				INT							OUTPUT,
+	@SiteName			VARCHAR(50),
+	@Description		VARCHAR(200)	= NULL,
+	@SiteURLs			VARCHAR(MAX)	= NULL,
+	@IsActive			BIT,
+	@Environment		VARCHAR(10),					-- Values: UAT | LIVE
+	@CurrentUserId		INT,
+	@CurrentSiteId		INT,
+	@SecretAccessKey	VARCHAR(200),
+	@SiteKey			VARCHAR(50),
+	@LogDate			DATETIME,
+	@LoginIP			VARCHAR(30)		= '',
+	@Language			VARCHAR(20)		= 'en-us',
+	@ErrCode			INT				= 0			OUTPUT,
+	@ErrMsg				NVARCHAR(1000)	= ''		OUTPUT
 AS
-/*  
- * Created: 20120809@Edward
- * Changed: 20121009@Lewis
- *   + Removed @URL, @TestURL
- *   + Added @SiteURLs
- * Task: Add a new site
- * DB: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation:
- *   + Urls sample:
-		<ROOT>
+
+/*
+	Created: 20120809@Edward
+	Task: Add a new site
+	DB: bodb_NAP
+	Revisions:
+		- 20121009@Lewis: Remove @URL, @TestURL, add @SiteURLs
+		- 20160328@Kos: Add SecretAccessKey, SiteKey
+
+	Param's Explanation:
+	+ Urls sample:
+	<ROOT>
 			<SiteURL
 				URL="http://www.example.com/"
 				Environment="LIVE"
@@ -54,13 +56,14 @@ AS
 		</root>
 	Sub: 
 		<root><xml path="r/z" />
-				<row item="SiteURLId" alias="si" />				
+				<row item="SiteURLId" alias="si" />
 				<row item="URL" alias="u" />
 				<row item="Environment" alias="e" />
 				<row item="IsDefault" alias="id" />
 				<row item="IsActive" alias="ia" />
 		</root>
 */
+
 BEGIN
 	SET NOCOUNT ON
 
@@ -72,144 +75,152 @@ BEGIN
 		,@xml			XML
 	SET @startRun = GETDATE()
 
-	-- create site
-
+	-- Create site
 	INSERT INTO dbo.Sites (
-          SiteName
-        , Description
-        , IsActive
-        , Environment)
-    VALUES(
-          @SiteName
-        , @Description
-        , @IsActive
-        , @Environment)
-	
+		SiteName,
+		Description,
+		IsActive,
+		Environment,
+		SecretAccessKey,
+		SiteKey)
+	VALUES (
+		@SiteName,
+		@Description,
+		@IsActive,
+		@Environment,
+		@SecretAccessKey,
+		@SiteKey)
+
 	SET @SiteId = SCOPE_IDENTITY()
-	
-	IF (@SiteId > 0)
-		BEGIN
-			
-			EXEC NAP_Functions_GenerateNAPFunction @SiteId,@Environment
 
-			-- assign portal admin is site admin in this site
-			INSERT UserSite(
-				UserId
-				,SiteId
-				,Level
-				,IsActive
-				,LastLoginDate
-				,CreatedBy
-				,CreatedDate
-				,ModifiedBy
-				,ModifiedDate)
-			SELECT DISTINCT 
-				us.UserId 
-				,@SiteId
-				,50
-				,1
-				,NULL
-				,@CurrentUserId
-				,@LogDate
-				,@CurrentUserId
-				,@LogDate
-			FROM UserSite AS us WITH (NOLOCK)
-			WHERE 
-				us.Level = 100		-- Portal Admin
-				AND SiteId = 1		-- NAP Admin Site ID
-						
-			-- assign permission for site admin		
-			INSERT dbo.UserFunction
-			(
-				UserId,
-				FunctionId,
-				SiteId,
-				Policy,		
-				CreatedBy,	
-				CreatedDate,
-				ModifiedBy,
-				ModifiedDate
-			)
-			SELECT
-				us.UserId,
-				f.FunctionId,
-				@SiteId,
-				policy = CASE f.CRUD
-					WHEN 0 THEN 1
-					WHEN 1 THEN 2
-				END,
-				@CurrentUserId,
-				@LogDate,
-				@CurrentUserId,
-				@LogDate
-			FROM 
-				UserSite AS us WITH (NOLOCK)			
-				INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON us.SiteId = f.SiteId
-			WHERE
-				us.SiteId = @SiteId
-				AND	us.[Level] IN (50, 100) -- Site admin: 50, Portal admin: 100			
-			
-		END	
+	IF @SiteId > 0
+	BEGIN
+		EXEC NAP_Functions_GenerateNAPFunction @SiteId,@Environment
 
-	-- insert site URL	
+		-- assign portal admin is site admin in this site
+		INSERT UserSite (
+			UserId,
+			SiteId,
+			Level,
+			IsActive,
+			LastLoginDate,
+			CreatedBy,
+			CreatedDate,
+			ModifiedBy,
+			ModifiedDate)
+		SELECT DISTINCT 
+			us.UserId,
+			@SiteId,
+			50,
+			1,
+			NULL,
+			@CurrentUserId,
+			@LogDate,
+			@CurrentUserId,
+			@LogDate
+		FROM dbo.UserSite AS us WITH (NOLOCK)
+		WHERE 
+			us.Level = 100		-- Portal Admin
+			AND SiteId = 1		-- NAP Admin Site ID
+
+		-- Assign permission for site admin
+		INSERT dbo.UserFunction
+		(
+			UserId,
+			FunctionId,
+			SiteId,
+			Policy,
+			CreatedBy,
+			CreatedDate,
+			ModifiedBy,
+			ModifiedDate
+		)
+		SELECT
+			us.UserId,
+			f.FunctionId,
+			@SiteId,
+			policy = CASE f.CRUD
+				WHEN 0 THEN 1
+				WHEN 1 THEN 2
+			END,
+			@CurrentUserId,
+			@LogDate,
+			@CurrentUserId,
+			@LogDate
+		FROM
+			dbo.UserSite AS us WITH (NOLOCK)
+			INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON us.SiteId = f.SiteId
+		WHERE
+			us.SiteId = @SiteId AND us.[Level] IN (50, 100) -- Site admin: 50, Portal admin: 100
+	END
+
+	-- Insert site URL
 	SET @xml = CONVERT(XML, @SiteURLs)
 
-	INSERT dbo.SiteURL (SiteId,URL, Environment, IsDefault, IsActive)
-	SELECT	@SiteId
-			,T.C.value('./@URL', 'VARCHAR(100)')
-			,T.C.value('./@Environment', 'VARCHAR(10)')
-			,T.C.value('./@IsDefault', 'BIT')
-			,T.C.value('./@IsActive', 'BIT')
-	FROM @xml.nodes('/ROOT/SiteURL') as [T](C) --T: table, C: column		
+	INSERT dbo.SiteURL (
+		SiteId,
+		URL,
+		Environment,
+		IsDefault,
+		IsActive)
+	SELECT
+		@SiteId,
+		T.C.value('./@URL', 'VARCHAR(100)'),
+		T.C.value('./@Environment', 'VARCHAR(10)'),
+		T.C.value('./@IsDefault', 'BIT'),
+		T.C.value('./@IsActive', 'BIT')
+	FROM @xml.nodes('/ROOT/SiteURL') AS [T](C) --T: table, C: column
 
---#region Handles Errors and Logging
-
+	--#region Handles Errors and Logging
 	IF @@ERROR > 0
 		BEGIN
 			SELECT 
-				@ErrCode = 1, 
+				@ErrCode = 1,
 				@ErrMsg = 'Failed to insert site [SiteId = ' + COALESCE(CAST(@SiteId AS VARCHAR(10)), '') + ']'
 			RETURN
-		END		
+		END
 
-	--write log
+	-- Write log
 	SET @xml = (
-		SELECT @SiteId			AS '@si'	
-				,@SiteName		AS '@s'
-				,@Description	AS '@d'
-				,@Environment	AS '@e'	
-				,@IsActive		AS '@i'
-				,(
-					SELECT 	su.SiteURLId	AS '@si'
-							,su.URL			AS '@u'	
-							,su.Environment	AS '@e'
-							,su.IsDefault	AS '@id'
-							,su.IsActive	AS '@ia'
-					FROM SiteURL AS su WITH (NOLOCK)
-					WHERE SiteId = @SiteId
-					FOR XML PATH('z'), TYPE	
-				)
+		SELECT
+			@SiteId				AS '@si',
+			@SiteName			AS '@s',
+			@Description		AS '@d',
+			@Environment		AS '@e',
+			@IsActive			AS '@i',
+			@SecretAccessKey	AS '@sak',
+			@SiteKey			AS '@sk',
+			(
+				SELECT
+					su.SiteURLId	AS '@si',
+					su.URL			AS '@u',
+					su.Environment	AS '@e',
+					su.IsDefault	AS '@id',
+					su.IsActive		AS '@ia'
+				FROM dbo.SiteURL AS su WITH (NOLOCK)
+				WHERE SiteId = @SiteId
+				FOR XML PATH('z'), TYPE
+			)
 		FOR XML PATH('r'), TYPE
-	)	
+	)
 
-	SET @logSPData = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
+	SET @logSPData = REPLACE(CONVERT(VARCHAR(MAX), @xml), '" />', '"/"')
 
-	SET @endRun	= GETDATE()  
-	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
-			
+	SET @endRun = GETDATE()
+	SET @duration = DATEDIFF(MILLISECOND, @startRun, @endRun)
+
 	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
-	@UserId			= @CurrentUserId,
-	@SPName			= 'NAP_Site_InsertWithSiteURL',
-	@ObjectId		= @SiteId,
-	@ObjectTypeId	= 3,			--Object type : Site
-	@Language		= @Language,
-	@SiteID			= @CurrentSiteId,
-	@IP				= @LoginIP,
-	@Date			= @LogDate,
-	@Data			= @logSPData,
-	@OldData		= @logSPDataOld,
-	@Duration		= @Duration
-
+		@UserId			= @CurrentUserId,
+		@SPName			= 'NAP_Site_InsertWithSiteURL',
+		@ObjectId		= @SiteId,
+		@ObjectTypeId	= 3,			--Object type : Site
+		@Language		= @Language,
+		@SiteID			= @CurrentSiteId,
+		@IP				= @LoginIP,
+		@Date			= @LogDate,
+		@Data			= @logSPData,
+		@OldData		= @logSPDataOld,
+		@Duration		= @Duration
 END
 
 GO
