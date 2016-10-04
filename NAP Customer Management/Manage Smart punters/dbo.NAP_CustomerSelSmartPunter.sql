@@ -12,7 +12,7 @@
 	DB: DBACC/bodb02
 	
 	Revisions:
-	
+	- 20161004@Modify to write log when user select smart punters RedmineID: #58901
 	Parameter's Explanation:
 		@status: 0: all  
 				1- open
@@ -40,9 +40,9 @@
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid, username, username2, closed, reject, e.currency, site, super, t.master, t.agent, t.creator, createdate, remark
+	SELECT custid, username,roleid, username2, closed, reject, e.currency, site, super, t.master, t.agent, t.creator, createdate, remark
 	FROM (
-		SELECT ROW_NUMBER() OVER(ORDER BY c.username ASC) rn, c.custid, c.username, c.username2, isnull(ci.closed,0) as closed, isnull(ci.reject,0) as reject, ci.currency, ag.site, sag.username as super, mag.username as master, ag.username as agent, creator.username as creator, s.createdate, s.remark
+		SELECT ROW_NUMBER() OVER(ORDER BY c.username ASC) rn, c.custid, c.username,c.roleid, c.username2, isnull(ci.closed,0) as closed, isnull(ci.reject,0) as reject, ci.currency, ag.site, sag.username as super, mag.username as master, ag.username as agent, creator.username as creator, s.createdate, s.remark
 		FROM SmartPunterList s WITH(NOLOCK)
 			INNER JOIN customer c WITH(NOLOCK) ON s.custid = c.custid
 			INNER JOIN custinfo ci WITH(NOLOCK) ON s.custid = ci.custid

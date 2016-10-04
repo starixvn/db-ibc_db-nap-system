@@ -14,6 +14,7 @@ AS
 		DB: DBTXN/CustDB
 		
 		Revisions:
+		- 20161003@Modify to write log when user select smart punters RedmineID: #58901
 	*/ 
 BEGIN
 	SET NOCOUNT ON
@@ -36,12 +37,12 @@ BEGIN
 	FROM customer WITH(NOLOCK)
 	WHERE username = @username OR username2 = @username
 	
-	IF @RoleID <> 1 OR @custid IS NULL
-	BEGIN		
-		SELECT @ErrMsg = 'This username/nickname is not available.'
-				,@ErrCode = 100
-		RETURN
-	END
+	--IF @RoleID <> 1 OR @custid IS NULL
+	--BEGIN		
+	--	SELECT @ErrMsg = 'This username/nickname is not available.'
+	--			,@ErrCode = 100
+	--	RETURN
+	--END
 	
 	IF EXISTS (SELECT 1 FROM SmartPunterList WITH(NOLOCK) WHERE CustID = @CustID)
 	BEGIN		
