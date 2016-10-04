@@ -4,8 +4,8 @@
 	@userid		INT,
 	@IP			VARCHAR(30),
 	@ErrCode	INT = 0 OUTPUT,
-	@ErrMsg		VARCHAR(500) = '' OUTPUT
-	
+	@ErrMsg		VARCHAR(500) = '' OUTPUT,
+	@RoleID		TINYINT
 AS
 	/*
 		Created: Johnson
@@ -25,7 +25,7 @@ BEGIN
 	SET	@startRun = GETDATE()
 	
 	Declare @CustID int,
-			@RoleID tinyint,
+			@_RoleID tinyint,
 			@Currency int
 	
 	--Check permission
@@ -33,16 +33,16 @@ BEGIN
 	IF @ErrCode <> 0
 		RETURN
 	
-	SELECT @CustID = custid, @roleid = roleid 
+	SELECT @CustID = custid, @_roleid = roleid 
 	FROM customer WITH(NOLOCK)
 	WHERE username = @username OR username2 = @username
 	
-	--IF @RoleID <> 1 OR @custid IS NULL
-	--BEGIN		
-	--	SELECT @ErrMsg = 'This username/nickname is not available.'
-	--			,@ErrCode = 100
-	--	RETURN
-	--END
+	IF @RoleID <> @_roleid OR @custid IS NULL
+	BEGIN		
+		SELECT @ErrMsg = 'This username and level are not matched.'
+				,@ErrCode = 100
+		RETURN
+	END
 	
 	IF EXISTS (SELECT 1 FROM SmartPunterList WITH(NOLOCK) WHERE CustID = @CustID)
 	BEGIN		
