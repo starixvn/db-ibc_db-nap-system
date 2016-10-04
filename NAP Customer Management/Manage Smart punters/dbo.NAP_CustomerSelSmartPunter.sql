@@ -12,7 +12,7 @@
 	DB: DBACC/bodb02
 	
 	Revisions:
-	- 20161004@Modify to write log when user select smart punters RedmineID: #58901
+	- 20161004 Winnie: @Modify to write log when user select smart punters RedmineID: #58901
 	Parameter's Explanation:
 		@status: 0: all  
 				1- open
