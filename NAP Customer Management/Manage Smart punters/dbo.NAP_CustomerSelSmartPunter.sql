@@ -40,7 +40,11 @@
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid, username,roleid, username2, closed, reject, e.currency, site, super, t.master, t.agent, t.creator, createdate, remark
+	SELECT custid, username,CASE WHEN roleid=1 THEN 'member'
+								 WHEN roleid=2 THEN 'agent'
+								 WHEN roleid=3 THEN 'master'
+								 WHEN roleid=4 THEN 'super' END AS Level
+	, username2, closed, reject, e.currency, site, super, t.master, t.agent, t.creator, createdate, remark
 	FROM (
 		SELECT ROW_NUMBER() OVER(ORDER BY c.username ASC) rn, c.custid, c.username,c.roleid, c.username2, isnull(ci.closed,0) as closed, isnull(ci.reject,0) as reject, ci.currency, ag.site, sag.username as super, mag.username as master, ag.username as agent, creator.username as creator, s.createdate, s.remark
 		FROM SmartPunterList s WITH(NOLOCK)
