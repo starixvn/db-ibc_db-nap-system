@@ -14,7 +14,7 @@ AS
 		DB: DBTXN/CustDB
 		
 		Revisions:
-		- 20161003@Modify to write log when user select smart punters RedmineID: #58901
+		- 20161003@Winnie: Modify to write log when user select smart punters RedmineID: #58901
 	*/ 
 BEGIN
 	SET NOCOUNT ON
@@ -75,7 +75,7 @@ BEGIN
 	
 	-- write log
 	DECLARE @LogData NVARCHAR(4000)
-	SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName/NickName="' + COALESCE(@UserName,SPACE(1)) + '" ' 
+	SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName="' + COALESCE(@UserName,SPACE(1)) + '" ' 
 							+ 'Remark="' + COALESCE(@Remark,SPACE(1)) + '" '	
 							+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '
 							+ 'ErrMsg="' + coalesce(@ErrMsg,space(1))+'" '
@@ -93,7 +93,7 @@ BEGIN
 			@Duration = @duration
 	END TRY
 	BEGIN CATCH
-		SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName/Nickname="' + COALESCE(@UserName,SPACE(1)) + '" ' 
+		SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName="' + COALESCE(@UserName,SPACE(1)) + '" ' 
 							+ 'Remark="' + COALESCE(@Remark,SPACE(1)) + '" '	
 							+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '
 							+ 'ErrMsg="' + coalesce(ERROR_MESSAGE(),space(1))+'" '
