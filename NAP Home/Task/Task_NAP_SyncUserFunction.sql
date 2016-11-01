@@ -1,6 +1,6 @@
 USE [bodb_NAP]
 GO
-/****** Object:  StoredProcedure [dbo].[Task_NAP_SyncUserFunction]    Script Date: 10/28/2014 00:02:26 ******/
+/****** Object:  StoredProcedure [dbo].[Task_NAP_SyncUserFunction]    Script Date: 10/31/2016 22:08:00 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -29,6 +29,8 @@ AS
  *		20141015@Kos	: Add NAP IMS (LicenseeSettlement, Report, CreateInvoice, Invoice) functions
  *		20141021@Kos	: Add NAP Acc Report (AG Casino Win Loss) functions
  *		20141028@Dan	: Add Daily WinLoss (2h) Soccer Minor Bettype functions
+ *		20141118@Dan	: Add Customer Management functions
+ *		20151210@Dan	: Stop synch for Invoice site
  * Param's Explanation:      
  */    
 
@@ -206,7 +208,7 @@ BEGIN
 	SELECT 918, 296		   -- Create Invoice   
 
 	-- Import group permission    
-		
+/*		
 	INSERT INTO dbo.GroupFunction (    
 		GroupId,     
 		FunctionId,     
@@ -430,7 +432,7 @@ BEGIN
 		OR (uf.Policy = 1 AND mp.Policy <> 1)  
 		OR (uf.Policy > 1 AND mp.Policy = 0)  
 		OR (uf.Policy > 1 AND mp.Policy = 1 AND f.CRUD = 1))     
-
+*/
 	-- End Accounting Report
 
 	-- Begin Special Delete
@@ -492,7 +494,7 @@ BEGIN
 	SELECT 898, 335			 	-- Void settled tickets
 
 	-- Import group permission    
-		
+/*		
 	INSERT INTO dbo.GroupFunction (    
 		GroupId,     
 		FunctionId,     
@@ -531,8 +533,8 @@ BEGIN
 				INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON fmt.NAPFunctionId = f.FunctionId    
 				INNER JOIN @GroupMappingTable AS gmt ON gp.GroupID = gmt.AccountingGroupId
 			WHERE     
-				gp.FuncID IN ( SELECT DISTINCT AccountingFunctionId FROM @FunctionMappingTable )    
-				AND NOT EXISTS ( SELECT 1     
+				--gp.FuncID IN ( SELECT DISTINCT AccountingFunctionId FROM @SpecialDeleteFunctionMappingTable )    
+				NOT EXISTS ( SELECT 1     
 						FROM dbo.GroupFunction AS gf WITH (NOLOCK)     
 						WHERE gf.GroupId = gmt.NAPGroupId AND gf.FunctionId = f.FunctionId )    
 		) AS t   
@@ -731,7 +733,7 @@ BEGIN
 		OR (uf.Policy = 1 AND temp.MaxPolicy <> 1)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 0)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 1 AND temp.CRUD = 1))     
-
+*/
 	-- End Special Delete
 
 	-- Begin Customer Management
@@ -757,7 +759,12 @@ BEGIN
 	--SELECT 921, 347	UNION ALL	-- Turnover Monitor
 	--SELECT 912, 348  	UNION ALL	-- Turnover Usage
 	--SELECT 857, 320	UNION ALL	-- Turnover Monitor
-	--SELECT 859, 321  				-- Turnover Usage
+	--SELECT 859, 321  	UNION ALL	-- Turnover Usage
+	--SELECT 962, 336 UNION ALL 	-- TurnoverControl
+	--SELECT 963, 337 UNION ALL 	-- Global Setting
+	--SELECT 912, 338 UNION ALL 	-- Turnover Monitor
+	--SELECT 964, 339 UNION ALL 	-- Notification Setting
+	--SELECT 965, 340  			-- Turnover Control Notification
 
 	-- Production    
 
@@ -777,7 +784,13 @@ BEGIN
 	SELECT 857, 320	UNION ALL	-- Turnover Monitor
 	SELECT 859, 321 UNION ALL	-- Turnover Usage
 	SELECT 860, 324	UNION ALL	-- Loss Control
-	SELECT 861, 325  			-- Loss Monitor
+	SELECT 861, 325 UNION ALL  	-- Loss Monitor
+	SELECT 921, 338 UNION ALL 	-- TurnoverControl
+	SELECT 922, 340 UNION ALL 	-- Global Setting
+	SELECT 857, 341 UNION ALL 	-- Turnover Monitor
+	SELECT 923, 339 UNION ALL 	-- Notification Setting
+	SELECT 924, 342  			-- Turnover Control Notification
+
 
 	-- Import group permission    
 		
@@ -819,8 +832,8 @@ BEGIN
 				INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON fmt.NAPFunctionId = f.FunctionId    
 				INNER JOIN @GroupMappingTable AS gmt ON gp.GroupID = gmt.AccountingGroupId
 			WHERE     
-				gp.FuncID IN ( SELECT DISTINCT AccountingFunctionId FROM @FunctionMappingTable )    
-				AND NOT EXISTS ( SELECT 1     
+				--gp.FuncID IN ( SELECT DISTINCT AccountingFunctionId FROM @CustomerManagementFunctionMappingTable )    
+				NOT EXISTS ( SELECT 1     
 						FROM dbo.GroupFunction AS gf WITH (NOLOCK)     
 						WHERE gf.GroupId = gmt.NAPGroupId AND gf.FunctionId = f.FunctionId )    
 		) AS t   
@@ -1078,7 +1091,7 @@ BEGIN
 	SELECT 804, 32  				-- View Result Settlement 
 
 	-- Import group permission    
-		
+/*		
 	INSERT INTO dbo.GroupFunction (    
 		GroupId,     
 		FunctionId,     
@@ -1117,8 +1130,8 @@ BEGIN
 				INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON fmt.NAPFunctionId = f.FunctionId    
 				INNER JOIN @GroupMappingTable AS gmt ON gp.GroupID = gmt.AccountingGroupId
 			WHERE     
-				gp.FuncID IN ( SELECT DISTINCT AccountingFunctionId FROM @FunctionMappingTable )    
-				AND NOT EXISTS ( SELECT 1     
+				--gp.FuncID IN ( SELECT DISTINCT AccountingFunctionId FROM @SettlementFunctionMappingTable )    
+				NOT EXISTS ( SELECT 1     
 						FROM dbo.GroupFunction AS gf WITH (NOLOCK)     
 						WHERE gf.GroupId = gmt.NAPGroupId AND gf.FunctionId = f.FunctionId )    
 		) AS t   
@@ -1331,6 +1344,7 @@ BEGIN
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 0)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 1 AND temp.CRUD = 1))     
 
+*/
 	-- End Settlement
 
 	-- Begin CRM
@@ -1373,7 +1387,7 @@ BEGIN
 	SELECT 819, 111  			-- Feedback
 
 	-- Import group permission    
-	
+	/*
 	INSERT INTO dbo.GroupFunction (    
 		GroupId,     
 		FunctionId,     
@@ -1612,7 +1626,7 @@ BEGIN
 		OR (uf.Policy = 1 AND temp.MaxPolicy <> 1)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 0)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 1 AND temp.CRUD = 1))     
-
+*/
 	-- End CRM
 
 	-- Begin IMS
@@ -1638,6 +1652,7 @@ BEGIN
 	SELECT 714, 296	UNION ALL	-- CreateInvoice 
 	SELECT 713, 296				-- Invoice 
 
+/*
 	-- Import group permission    
 	
 	INSERT INTO dbo.GroupFunction (    
@@ -1880,5 +1895,6 @@ BEGIN
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 1 AND temp.CRUD = 1))     
 
 	-- End IMS
+*/
 
 END
