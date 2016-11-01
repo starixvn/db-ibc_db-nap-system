@@ -31,6 +31,7 @@ AS
  *		20141028@Dan	: Add Daily WinLoss (2h) Soccer Minor Bettype functions
  *		20141118@Dan	: Add Customer Management functions
  *		20151210@Dan	: Stop synch for Invoice site
+		20161101@Kos	: Add NAP Customer Management (View IPVN) [#Redmine: 58901]
  * Param's Explanation:      
  */    
 
@@ -789,7 +790,8 @@ BEGIN
 	SELECT 922, 340 UNION ALL 	-- Global Setting
 	SELECT 857, 341 UNION ALL 	-- Turnover Monitor
 	SELECT 923, 339 UNION ALL 	-- Notification Setting
-	SELECT 924, 342  			-- Turnover Control Notification
+	SELECT 924, 342 UNION ALL	-- Turnover Control Notification
+	SELECT 1177, 45				-- View IPVN
 
 
 	-- Import group permission    
