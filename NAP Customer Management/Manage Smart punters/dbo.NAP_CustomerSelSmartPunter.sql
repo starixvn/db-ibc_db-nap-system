@@ -12,7 +12,7 @@
 	DB: DBACC/bodb02
 	
 	Revisions:
-	
+	- 20161004 Winnie: @Modify to write log when user select smart punters RedmineID: #58901
 	Parameter's Explanation:
 		@status: 0: all  
 				1- open
@@ -40,15 +40,18 @@
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid, username, username2, closed, reject, e.currency, site, super, t.master, t.agent, t.creator, createdate, remark
+	SELECT custid, username,roleid
+	, username2, closed, reject, e.currency, site, super, t.master, t.agent, t.creator, createdate, remark
 	FROM (
-		SELECT ROW_NUMBER() OVER(ORDER BY c.username ASC) rn, c.custid, c.username, c.username2, isnull(ci.closed,0) as closed, isnull(ci.reject,0) as reject, ci.currency, ag.site, sag.username as super, mag.username as master, ag.username as agent, creator.username as creator, s.createdate, s.remark
+		SELECT ROW_NUMBER() OVER(ORDER BY c.username ASC) rn, ci.custid,c.username,c.roleid, c.username2, isnull(ci.closed,0) as closed, isnull(ci.reject,0) as reject, ci.currency,
+		CASE WHEN c.roleid=1 THEN ag.site
+				ELSE c.site END AS Site, sag.username as super, mag.username as master, ag.username as agent, creator.username as creator, s.createdate, s.remark
 		FROM SmartPunterList s WITH(NOLOCK)
 			INNER JOIN customer c WITH(NOLOCK) ON s.custid = c.custid
 			INNER JOIN custinfo ci WITH(NOLOCK) ON s.custid = ci.custid
-			INNER JOIN customer ag WITH(NOLOCK) ON ci.recommend = ag.custid
-			INNER JOIN custinfo mag WITH(NOLOCK) ON ci.mrecommend = mag.custid
-			INNER JOIN custinfo sag WITH(NOLOCK) ON ci.srecommend = sag.custid
+			LEFT JOIN customer ag WITH(NOLOCK) ON ci.recommend  = ag.custid 
+			LEFT JOIN custinfo mag WITH(NOLOCK) ON ci.mrecommend = mag.custid
+			LEFT JOIN custinfo sag WITH(NOLOCK) ON ci.srecommend = sag.custid
 			INNER JOIN custinfo creator WITH(NOLOCK) ON s.creator = creator.custid
 		WHERE s.custid IN (SELECT custid FROM #tmpCust)
 	) t
@@ -57,7 +60,7 @@
 			
 						
  END
- GO
+GO
  
  GRANT EXECUTE ON [dbo].[NAP_CustomerSelSmartPunter] TO [bodbAdminNet]
  

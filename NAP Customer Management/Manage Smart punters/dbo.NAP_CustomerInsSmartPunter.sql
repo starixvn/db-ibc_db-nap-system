@@ -4,8 +4,8 @@
 	@userid		INT,
 	@IP			VARCHAR(30),
 	@ErrCode	INT = 0 OUTPUT,
-	@ErrMsg		VARCHAR(500) = '' OUTPUT
-	
+	@ErrMsg		VARCHAR(500) = '' OUTPUT,
+	@RoleID		TINYINT
 AS
 	/*
 		Created: Johnson
@@ -14,6 +14,7 @@ AS
 		DB: DBTXN/CustDB
 		
 		Revisions:
+		- 20161003@Winnie: Modify to write log when user select smart punters RedmineID: #58901
 	*/ 
 BEGIN
 	SET NOCOUNT ON
@@ -24,7 +25,7 @@ BEGIN
 	SET	@startRun = GETDATE()
 	
 	Declare @CustID int,
-			@RoleID tinyint,
+			@_RoleID tinyint,
 			@Currency int
 	
 	--Check permission
@@ -32,13 +33,13 @@ BEGIN
 	IF @ErrCode <> 0
 		RETURN
 	
-	SELECT @CustID = custid, @roleid = roleid 
+	SELECT @CustID = custid, @_roleid = roleid 
 	FROM customer WITH(NOLOCK)
 	WHERE username = @username OR username2 = @username
 	
-	IF @RoleID <> 1 OR @custid IS NULL
+	IF @RoleID <> @_roleid OR @custid IS NULL
 	BEGIN		
-		SELECT @ErrMsg = 'This username/nickname is not available.'
+		SELECT @ErrMsg = 'This username and level are not matched.'
 				,@ErrCode = 100
 		RETURN
 	END
@@ -74,7 +75,7 @@ BEGIN
 	
 	-- write log
 	DECLARE @LogData NVARCHAR(4000)
-	SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName/NickName="' + COALESCE(@UserName,SPACE(1)) + '" ' 
+	SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName="' + COALESCE(@UserName,SPACE(1)) + '" ' 
 							+ 'Remark="' + COALESCE(@Remark,SPACE(1)) + '" '	
 							+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '
 							+ 'ErrMsg="' + coalesce(@ErrMsg,space(1))+'" '
@@ -92,7 +93,7 @@ BEGIN
 			@Duration = @duration
 	END TRY
 	BEGIN CATCH
-		SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName/Nickname="' + COALESCE(@UserName,SPACE(1)) + '" ' 
+		SELECT @LogData = '<Nap_CustomerInsSmartPunter UserName="' + COALESCE(@UserName,SPACE(1)) + '" ' 
 							+ 'Remark="' + COALESCE(@Remark,SPACE(1)) + '" '	
 							+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '
 							+ 'ErrMsg="' + coalesce(ERROR_MESSAGE(),space(1))+'" '
