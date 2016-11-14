@@ -5,37 +5,39 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[Task_NAP_SyncUserFunction]    
-AS    
+ALTER PROCEDURE [dbo].[Task_NAP_SyncUserFunction]
+AS
 
-/*      
- * Created : 20130523@Kos    
- * Task  : Import user function and permission from NAP to Accounting    
- * DB  : DBNAP/bodb_NAP    
- *      
- * Revisions:    
- *		20130819@Kos	: Add Special Delete functions
- *		20130829@Kos	: Add Total SMA and Member Active function
- *		20140326@Kos	: Add Customer Management functions
- *		20140408@Kos	: Add Settlement functions
- *		20140526@Kos	: Add NAP CM (Control Turnover) functions
- *		20140530@Kos	: Add NAP CM (Loss Control) functions and NAP Acc Report (Smart Punter)
- *		20140604@Kos	: Add NAP CM (Manage Robots) functions
- *		20140617@Kos	: Add NAP CRM functions
- *		20140701@Kos	: Active user site which have permission on Settlement
- *		20140714@Kos	: Add NAP CM (Manage Smart Punter) functions
- *		20140715@Kos	: Add NAP Acc Report (Keno Win Loss, Total Credit Accounts Enabled/Disabled per Product) functions
- *		20141001@Kos	: Add NAP Special Delete (Void By Bet ID, Void Unsettled Tickets, Void Settled Tickets) functions
- *		20141015@Kos	: Add NAP IMS (LicenseeSettlement, Report, CreateInvoice, Invoice) functions
- *		20141021@Kos	: Add NAP Acc Report (AG Casino Win Loss) functions
- *		20141028@Dan	: Add Daily WinLoss (2h) Soccer Minor Bettype functions
- *		20141118@Dan	: Add Customer Management functions
- *		20151210@Dan	: Stop synch for Invoice site
-		20161101@Kos	: Add NAP Customer Management (View IPVN) [#Redmine: 58901]
- * Param's Explanation:      
- */    
+/*
+	Created: 20130523@Kos
+	Task: Import user function and permission from NAP to Accounting
+	DB: DBNAP/bodb_NAP
 
-BEGIN    
+	Revisions:
+			- 20130819@Kos	: Add Special Delete functions
+			- 20130829@Kos	: Add Total SMA and Member Active function
+			- 20140326@Kos	: Add Customer Management functions
+			- 20140408@Kos	: Add Settlement functions
+			- 20140526@Kos	: Add NAP CM (Control Turnover) functions
+			- 20140530@Kos	: Add NAP CM (Loss Control) functions and NAP Acc Report (Smart Punter)
+			- 20140604@Kos	: Add NAP CM (Manage Robots) functions
+			- 20140617@Kos	: Add NAP CRM functions
+			- 20140701@Kos	: Active user site which have permission on Settlement
+			- 20140714@Kos	: Add NAP CM (Manage Smart Punter) functions
+			- 20140715@Kos	: Add NAP Acc Report (Keno Win Loss, Total Credit Accounts Enabled/Disabled per Product) functions
+			- 20141001@Kos	: Add NAP Special Delete (Void By Bet ID, Void Unsettled Tickets, Void Settled Tickets) functions
+			- 20141015@Kos	: Add NAP IMS (LicenseeSettlement, Report, CreateInvoice, Invoice) functions
+			- 20141021@Kos	: Add NAP Acc Report (AG Casino Win Loss) functions
+			- 20141028@Dan	: Add Daily WinLoss (2h) Soccer Minor Bettype functions
+			- 20141118@Dan	: Add Customer Management functions
+			- 20151210@Dan	: Stop synch for Invoice site
+			- 20161101@Kos	: Add NAP Customer Management (View IPVN) [#Redmine: 58901]
+			- 20161114@Kos	: Fix parent function permission
+
+	Param's Explanation:
+*/
+
+BEGIN
 
 	SET NOCOUNT ON    
 
@@ -761,9 +763,9 @@ BEGIN
 	--SELECT 912, 348  	UNION ALL	-- Turnover Usage
 	--SELECT 857, 320	UNION ALL	-- Turnover Monitor
 	--SELECT 859, 321  	UNION ALL	-- Turnover Usage
-	--SELECT 962, 336 UNION ALL 	-- TurnoverControl
-	--SELECT 963, 337 UNION ALL 	-- Global Setting
-	--SELECT 912, 338 UNION ALL 	-- Turnover Monitor
+	--SELECT 962, 338 UNION ALL 	-- TurnoverControl
+	--SELECT 963, 340 UNION ALL 	-- Global Setting
+	--SELECT 912, 341 UNION ALL 	-- Turnover Monitor
 	--SELECT 964, 339 UNION ALL 	-- Notification Setting
 	--SELECT 965, 340  			-- Turnover Control Notification
 
@@ -988,8 +990,7 @@ BEGIN
 		t.FunctionId,    
 		t.SiteId 
 
-	-- Update user permission    
-
+	-- Update user permission
 	UPDATE uf    
 	SET uf.Policy = CASE temp.MaxPolicy    
 						WHEN 0 THEN 0  -- None    
@@ -1013,7 +1014,7 @@ BEGIN
 					dbo.UserFunction AS uf WITH (NOLOCK)
 					INNER JOIN @CustomerManagementFunctionMappingTable AS fmt ON uf.FunctionId = fmt.NAPFunctionId    
 					INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON fmt.NAPFunctionId = f.FunctionId    
-					INNER JOIN dbo.UserSite AS us     
+					INNER JOIN dbo.UserSite AS us WITH (NOLOCK)
 						ON     
 							uf.UserId = us.UserId    
 							AND us.SiteId = @CustomerManagementSiteId    
@@ -1034,6 +1035,39 @@ BEGIN
 		OR (uf.Policy = 1 AND temp.MaxPolicy <> 1)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 0)  
 		OR (uf.Policy > 1 AND temp.MaxPolicy = 1 AND temp.CRUD = 1))     
+
+	-- Correct parent function permission
+	UPDATE uf
+	SET uf.Policy = CASE temp.MaxPolicy
+						WHEN 0 THEN 0	-- None
+						WHEN 1 THEN 1	-- Read
+						ELSE CASE
+								WHEN f.CRUD = 0 THEN 1
+								WHEN f.CRUD = 1 THEN 2
+							END
+					END
+	FROM dbo.UserFunction AS uf WITH (ROWLOCK, UPDLOCK)
+		INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+		INNER JOIN
+			(
+				SELECT
+					ufp.UserId,
+					ufp.FunctionId,
+					MAX(uf.Policy) AS MaxPolicy
+				FROM UserFunction AS uf WITH (NOLOCK)
+					INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+					INNER JOIN dbo.UserFunction AS ufp WITH (NOLOCK) ON ufp.FunctionId = f.ParentId AND uf.UserId = ufp.UserId
+					INNER JOIN dbo.UserSite AS us WITH (NOLOCK) ON uf.UserId = us.UserId
+				WHERE uf.SiteId = @CustomerManagementSiteId
+					AND ufp.SiteId = @CustomerManagementSiteId
+					 AND us.SiteId = @CustomerManagementSiteId 
+					AND uf.Policy > 0 AND ufp.Policy = 0
+					AND us.Level = 0
+				GROUP BY ufp.UserId,
+					ufp.FunctionId,
+					ufp.Policy
+			) AS temp
+			ON uf.FunctionId = temp.FunctionId AND uf.UserId = temp.UserId
 
 	-- End CustomerManagement
 
