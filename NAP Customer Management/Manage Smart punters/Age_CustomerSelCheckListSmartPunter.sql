@@ -87,7 +87,7 @@ AS
             @IsRestricted = @IsRestricted
       END
 END  
-
+GO
 
 GRANT EXECUTE ON [dbo].Age_CustomerSelCheckListSmartPunter TO BODBDownlineNetView
 GRANT EXECUTE ON [dbo].Age_CustomerSelCheckListSmartPunter TO BODBDownlineNet
