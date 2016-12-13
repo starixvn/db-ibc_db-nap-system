@@ -79,12 +79,23 @@ AS
 
 	IF ( @ActionID <> 0 )
       BEGIN
-          EXEC dblog.bodb_customerlog.dbo.Age_userlog_smartpunterinsmultiple
-            @Userid = @userid,
-            @ListUserName = @tmpListUserName,
-            @ActionID = @ActionID,
-            @IP = @IP,
-            @IsRestricted = @IsRestricted
+			IF (@tmpListUserName<>'')
+			
+				  EXEC dblog.bodb_customerlog.dbo.Age_userlog_smartpunterinsmultiple
+					@Userid = @userid,
+					@ListUserName = @tmpListUserName,
+					@ActionID = @ActionID,
+					@IP = @IP,
+					@IsRestricted = @IsRestricted
+			
+			ELSE
+					EXEC dblog.bodb_customerlog.dbo.NAP_UserLog_SmartPunterIns
+					@Userid = @userid,
+					@CustId = NULL,
+					@ActionID = @ActionID,
+					@IP = @IP,
+					@IsRestricted = @IsRestricted,
+					@UplineId=NULL
       END
 END  
 GO
