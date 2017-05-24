@@ -22,6 +22,8 @@ Revisions:
 	- 20151012@bobby.nguyen: Initial
 	- 20151113@bobby.nguyen: Include Testing Licensee 
 	- 20151126@bobby.nguyen: Bug #48175 - Check for existence of spondemo in LA setting
+	- 20170524@bobby.nguyen: 77139 - Get licensee  list being offered payout products by distinct
+
 	
 Param's Explanation:
 	- @AdminId: Id of admin user login
@@ -119,7 +121,7 @@ BEGIN
 				AND NOT EXISTS (SELECT 1 FROM #LA_PartyList WHERE PartyName = 'spondemo')
 		)
 		INSERT INTO @tblSite
-		SELECT ls.SiteControl
+		SELECT DISTINCT ls.SiteControl
 			, ls.siteid
 			, ls.SiteName
 		FROM CTE_LicenseeSite ls
