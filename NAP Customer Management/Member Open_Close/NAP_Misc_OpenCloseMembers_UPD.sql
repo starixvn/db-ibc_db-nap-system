@@ -51,7 +51,7 @@ BEGIN
 	FROM @TempCust t
 	INNER JOIN Customer c WITH(NOLOCK) ON t.custid=c.custid
 	LEFT JOIN CustLoginInfo_Member cl WITH(NOLOCK) ON t.custid=cl.CustID
-	WHERE t.custid IS NULL AND c.roleid=1
+	WHERE cl.custid IS NULL AND c.roleid=1
 
 	if (@@error <> 0)
 	begin
@@ -125,7 +125,7 @@ BEGIN
 	FROM @TempCust t
 	INNER JOIN Customer c WITH(NOLOCK) ON t.custid=c.custid
 	LEFT JOIN CustLoginInfo_Member cl WITH(NOLOCK) ON t.custid=cl.CustID
-	WHERE t.custid IS NULL AND c.roleid=1
+	WHERE  cl.custid  IS NULL AND c.roleid=1
 
 	if (@@error <> 0)
 	begin
