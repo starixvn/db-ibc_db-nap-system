@@ -46,6 +46,13 @@ BEGIN
 
 	UPDATE CustLoginInfo_Member with(rowlock,updlock) SET ClosedReason=1  where custid in (select custid from @TempCust)
 
+	INSERT INTO [CustLoginInfo_Member]([CustID],[SecurityCode],[IP],[LastChangedID],[LastChangedDate],ClosedReason)
+	SELECT t.Custid,NULL,@IP,@UserID,GETDATE(),1
+	FROM @TempCust t
+	INNER JOIN Customer c WITH(NOLOCK) ON t.custid=c.custid
+	LEFT JOIN CustLoginInfo_Member cl WITH(NOLOCK) ON t.custid=cl.CustID
+	WHERE t.custid IS NULL AND c.roleid=1
+
 	if (@@error <> 0)
 	begin
 		Select @ErrMsg =
@@ -112,6 +119,13 @@ BEGIN
 	UPDATE CustLoginInfo with(rowlock,updlock) SET ClosedReason=0  where custid in (select custid from @TempCust)
 
 	UPDATE CustLoginInfo_Member with(rowlock,updlock) SET ClosedReason=0  where custid in (select custid from @TempCust)
+
+	INSERT INTO [CustLoginInfo_Member]([CustID],[SecurityCode],[IP],[LastChangedID],[LastChangedDate],ClosedReason)
+	SELECT t.Custid,NULL,@IP,@UserID,GETDATE(),0
+	FROM @TempCust t
+	INNER JOIN Customer c WITH(NOLOCK) ON t.custid=c.custid
+	LEFT JOIN CustLoginInfo_Member cl WITH(NOLOCK) ON t.custid=cl.CustID
+	WHERE t.custid IS NULL AND c.roleid=1
 
 	if (@@error <> 0)
 	begin
