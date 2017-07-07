@@ -13,7 +13,7 @@ Created: 20080911@whoknow
 Task : Update status 'closed' for customer
 DB: DBTXN/CustDB
 Original:
-		--20170601@Winnie: Apply color for closed account
+		--20170601@Winnie: Apply color for closed account [RedmineID: #74494]
 Param's Explanation:
 	• @custid: list custid need to be updated
 	• @updatetype: 0: close account
