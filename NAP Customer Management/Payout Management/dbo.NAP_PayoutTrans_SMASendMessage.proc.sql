@@ -1,10 +1,4 @@
-USE [bodb02]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_PayoutTrans_SelDetail]    Script Date: 11/12/2015 11:40:04 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+/*<info serverAlias="DBTXN-bodb02" executers="" viewers="vnteam" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_SMASendMessage]
 (
 	@Creator 		INT
@@ -15,10 +9,11 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBTXN.bodb02
+DB: DBTXN-bodb02
 Original:
 Revisions:
 	- 20160106@bobby.nguyen: #50364 - Send SMA private message
+	- 20170711@bobby.nguyen: #79865 - Change message type (NOT special) when sending email to SMA
 	
 Param's Explanation:
 	
@@ -63,8 +58,8 @@ BEGIN
 	  ,@Content_es 	= NULL
 	  ,@Content_vn 	= @SMAMessage_vn
 	  ,@Content_id 	= NULL
-	  ,@MsgType		= 1
-	  ,@IsSticky	= 1
+	  ,@MsgType		= 1 -- message to customer (personal)
+	  ,@IsSticky	= 0 -- is not special message
 	  ,@Creator 	= @Creator
 	  ,@CreatorName	= @CreatorName
 	  ,@IsTest		= 0

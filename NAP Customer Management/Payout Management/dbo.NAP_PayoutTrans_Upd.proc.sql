@@ -1,5 +1,4 @@
-USE bodb02
-GO
+/*<info serverAlias="DBTXN-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_Upd]
 (
 	@PayoutTransId		INT
@@ -15,7 +14,7 @@ AS
 /*
 Created: 20151012@bobby.nguyen
 Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBTXN.bodb02
+DB: DBTXN-bodb02
 Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
@@ -156,8 +155,4 @@ BEGIN
 	
 	RETURN;
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_PayoutTrans_Upd] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_PayoutTrans_Upd] TO [vnteam]
 GO
