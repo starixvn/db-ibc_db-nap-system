@@ -15,6 +15,10 @@ AS
 		Date: 2014-05-30
 		Task: Update info for robot account
 		DB: DBTXN/CustDB
+		
+		Revision:
+				- 20171115@Vicky: change location check permission [RedmineID: #86455]
+
 	*/ 
 BEGIN
 	SET NOCOUNT ON 
@@ -25,7 +29,7 @@ BEGIN
 	SET	@startRun = GETDATE()
 	
 		--Check permission
-	EXEC DBPOLICY.bodb02.dbo.Acc_Con_CheckPermission @custid=@userid,@funcname='[ManageRobots]',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+	EXEC DBNAP.bodb_NAP.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageRobots',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 	IF @ErrCode <> 0
 		RETURN
 	

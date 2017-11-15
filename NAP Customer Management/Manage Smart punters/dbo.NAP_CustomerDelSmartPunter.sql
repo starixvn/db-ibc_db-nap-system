@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE CustDB
 GO
 
@@ -16,6 +16,7 @@ AS
 	DB: DBTXN/CustDB
 	
 	Revisions:
+		- 20171115@Vicky: change location check permission [RedmineID: #86455]		
 	
 	Paramter's Explanation:
 */
@@ -28,7 +29,7 @@ BEGIN
 	SET	@startRun = GETDATE()
 	
 	--Check permission
-	EXEC DBPOLICY.bodb02.dbo.Acc_Con_CheckPermission @custid=@userid,@funcname='[SmartPunter]',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+	EXEC DBNAP.bodb_NAP.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='AccountingReport',@FunctionKey='SmartPunter',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 	IF @ErrCode <> 0
 		RETURN
 		
