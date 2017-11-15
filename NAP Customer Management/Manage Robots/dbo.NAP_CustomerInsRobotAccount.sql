@@ -1,7 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE CustDB
 GO
-
 ALTER PROCEDURE [dbo].[NAP_CustomerInsRobotAccount]
 	@usernames varchar(4000),
 	@status bit= 1,
