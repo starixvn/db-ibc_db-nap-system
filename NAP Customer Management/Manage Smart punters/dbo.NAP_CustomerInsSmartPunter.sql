@@ -1,4 +1,4 @@
- /*<info serverAlias="DBTXN-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+ /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
  ALTER PROCEDURE [dbo].[NAP_CustomerInsSmartPunter]
 	@username	VARCHAR(50),
 	@remark		NVARCHAR(200) = '',
@@ -12,7 +12,7 @@ AS
 		Created: Johnson
 		Date: 2014-06-10
 		Task: Insert customer into smart punter list
-		DB: DBTXN/CustDB
+		DB: DBCUST/CustDB
 		
 		Revisions:
 		- 20161003@Winnie: Modify to write log when user select smart punters RedmineID: #58901

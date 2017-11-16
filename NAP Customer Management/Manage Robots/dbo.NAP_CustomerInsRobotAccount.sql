@@ -15,7 +15,7 @@ AS
 		Created: Johnson
 		Date: 2014-05-30
 		Task: Insert robot accounts
-		DB: DBTXN/CustDB
+		DB: DBCUST/CustDB
 		
 		Revision:
 				- 20171115@Vicky: change location check permission [RedmineID: #86455]

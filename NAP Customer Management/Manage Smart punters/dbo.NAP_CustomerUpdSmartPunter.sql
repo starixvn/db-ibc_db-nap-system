@@ -1,4 +1,4 @@
-﻿ /*<info serverAlias="DBTXN-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+﻿ /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
  ALTER PROCEDURE [dbo].[NAP_CustomerUpdSmartPunter]
 	@custid		INT,
 	@remark	NVARCHAR(200) = '',
@@ -11,7 +11,7 @@
 	Created: Johnson
 	Date:2014-06-11
 	Task: Update smart punter info
-	DB: DBTXN/CustDB
+	DB: DBCUST/CustDB
 	
 	Revisions:
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]

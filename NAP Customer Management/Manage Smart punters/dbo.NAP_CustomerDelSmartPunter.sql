@@ -13,7 +13,7 @@ AS
 	Created: Johnson
 	Date: 2014-06-11
 	Task: Remove customer out of smart punter list
-	DB: DBTXN/CustDB
+	DB: DBCUST/CustDB
 	
 	Revisions:
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]		
