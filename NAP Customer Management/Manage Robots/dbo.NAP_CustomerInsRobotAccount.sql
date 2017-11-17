@@ -1,4 +1,7 @@
-﻿ 
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE CustDB
+GO
+
 ALTER PROCEDURE [dbo].[NAP_CustomerInsRobotAccount]
 	@usernames varchar(4000),
 	@status bit= 1,
@@ -52,28 +55,32 @@ BEGIN
 		WHERE custid IS NULL
 		
 		RETURN
-	END	
+	END
+	
+	IF EXISTS (SELECT * FROM @tmpUser GROUP BY custid HAVING COUNT(1) <> 1)
+	BEGIN
+		SELECT @ErrCode = 101, @ErrMsg = 'There are duplicated members: '
+		
+		SELECT TOP (100) @ErrMsg = @ErrMsg + username + ','
+		FROM @tmpUser 
+		GROUP BY custid, username  
+		HAVING COUNT(1) <> 1
+		
+		RETURN
+	END
 
-	IF EXISTS (SELECT TOP(1) 1 FROM RobotList_tmp WITH(NOLOCK) WHERE custid IN (SELECT custid FROM @tmpUser))
-		OR EXISTS (SELECT * FROM @tmpUser GROUP BY custid HAVING COUNT(1) <> 1)
+	IF EXISTS (SELECT TOP(1) 1 FROM RobotList WITH(NOLOCK) WHERE custid IN (SELECT custid FROM @tmpUser))
 	BEGIN
 		SELECT @ErrCode = -100, @ErrMsg = 'There are existing members : '
 		
-		SELECT TOP(100) @ErrMsg = @ErrMsg + username + ','
-		FROM (
-				SELECT TOP(100) username
-				FROM @tmpUser t 
-					INNER JOIN RobotList_tmp r WITH(NOLOCK) ON t.custid = r.custid
-				UNION ALL 
-				SELECT TOP (100) username
-				FROM @tmpUser 
-				GROUP BY custid, username  
-				HAVING COUNT(1) <> 1
-			) t		 
-	END		
-	
-	
-	INSERT INTO RobotList_tmp([custid]
+		SELECT TOP (100) @ErrMsg = @ErrMsg + username + ','
+		FROM @tmpUser t 
+			INNER JOIN RobotList r WITH(NOLOCK) ON t.custid = r.custid
+
+		RETURN 
+	END
+		
+	INSERT INTO RobotList([custid]
            ,[isActive]
            ,[creator]
            ,[createdate]           
@@ -81,7 +88,7 @@ BEGIN
     OUTPUT INSERTED.custid,0 INTO @tmpCust
 	SELECT t.custid, @status, @userid, GETDATE(), @remark
 	FROM @tmpUser t
-		LEFT JOIN RobotList_tmp r WITH(NOLOCK) ON t.custid = r.custid
+		LEFT JOIN RobotList r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.custid IS NULL
 	
 	IF @@ROWCOUNT <> 0
@@ -108,7 +115,7 @@ BEGIN
 		
 		IF @@ROWCOUNT = 0 BREAK;
 		
-		SELECT @LogData = '<Acc_CustomerInsRobotAccount username="' + COALESCE(@log_username,SPACE(1)) + '" ' 
+		SELECT @LogData = '<NAP_CustomerInsRobotAccount username="' + COALESCE(@log_username,SPACE(1)) + '" ' 
 								+ 'status="' + COALESCE(CAST(@status AS varchar(10)),SPACE(1)) + '" '
 								+ 'remark="' + COALESCE(@remark,SPACE(1)) + '" '
 								+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '
@@ -124,7 +131,7 @@ BEGIN
 				@Duration = @duration
 		END TRY
 		BEGIN CATCH
-			SELECT @LogData = '<Acc_CustomerInsRobotAccount username="' + COALESCE(@log_username,SPACE(1)) + '" ' 
+			SELECT @LogData = '<NAP_CustomerInsRobotAccount username="' + COALESCE(@log_username,SPACE(1)) + '" ' 
 									+ 'status="' + COALESCE(CAST(@status AS varchar(10)),SPACE(1)) + '" '
 									+ 'remark="' + COALESCE(@remark,SPACE(1)) + '" '
 									+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '
@@ -136,20 +143,9 @@ BEGIN
 				@Custid = @CustID,
 				@ActionID = 649,
 				@TrackingValue = @LogData,
-				@Duration = @duration								
-		
+				@Duration = @duration										
 		END CATCH
-	END
-		
-
+	END		
 END
-
-
-
 GO
 
-GRANT EXECUTE ON [dbo].[NAP_CustomerInsRobotAccount] TO [bodbAdminNet] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[NAP_CustomerInsRobotAccount] TO [vnteam] AS [dbo]
-GO

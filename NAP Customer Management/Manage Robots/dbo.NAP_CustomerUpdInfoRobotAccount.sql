@@ -1,4 +1,8 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_CustomerUpdInfoRobotAccount]
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE CustDB
+GO
+
+ALTER PROCEDURE [dbo].[NAP_CustomerUpdInfoRobotAccount]
 	@custid INT,
 	@remark VARCHAR(200)= '',
 	@userid INT,
@@ -27,7 +31,7 @@ BEGIN
 	
 	DECLARE @old_remark varchar(200)
 	
-	SELECT @old_remark = remark FROM RobotList_tmp WITH(NOLOCK) WHERE custid = @custid
+	SELECT @old_remark = remark FROM RobotList WITH(NOLOCK) WHERE custid = @custid
 	
 	IF @@ROWCOUNT = 0
 	BEGIN
@@ -38,7 +42,7 @@ BEGIN
 	
 	IF @old_remark = @remark RETURN
 	
-	UPDATE RobotList_tmp WITH(UPDLOCK,ROWLOCK)
+	UPDATE RobotList WITH(UPDLOCK,ROWLOCK)
 	SET remark = @remark,
 		lastmodifyuser = @userid,
 		lastmodifytime = GETDATE()
@@ -101,14 +105,7 @@ BEGIN
 		
 	END CATCH
 END
-
-
 GO
 
-GRANT EXECUTE ON [dbo].[NAP_CustomerUpdInfoRobotAccount] TO [bodbAdminNet] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[NAP_CustomerUpdInfoRobotAccount] TO [vnteam] AS [dbo]
-GO
 
 

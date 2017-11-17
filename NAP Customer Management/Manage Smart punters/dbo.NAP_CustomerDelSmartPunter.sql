@@ -1,4 +1,8 @@
-﻿ ALTER PROCEDURE [dbo].[Nap_CustomerDelSmartPunter]
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE CustDB
+GO
+
+ ALTER PROCEDURE [dbo].[Nap_CustomerDelSmartPunter]
 	@custid		INT,
 	@userid		INT,
 	@IP			VARCHAR(50),
@@ -46,7 +50,8 @@ BEGIN
 	
 	-- write log
 	DECLARE @LogData NVARCHAR(4000)
-	SELECT @LogData = '<Nap_CustomerDelSmartPunter ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '												
+	SELECT @LogData = '<Nap_CustomerDelSmartPunter custid="'+ coalesce(cast(@custid as varchar(20)),space(1)) + '" '												
+					+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '												
 					+ 'ErrMsg="' + coalesce(@ErrMsg,space(1))+'" '
 					+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'
 					
@@ -62,7 +67,8 @@ BEGIN
 			@Duration = @duration
 	END TRY
 	BEGIN CATCH
-		SELECT @LogData = '<Nap_CustomerDelSmartPunter ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '												
+		SELECT @LogData = '<Nap_CustomerDelSmartPunter custid="' + coalesce(cast(@custid as varchar(20)),space(1)) + '" '												
+					+ 'ErrCode="' + coalesce(cast(@ErrCode as varchar(50)),space(1)) + '" '												
 					+ 'ErrMsg="' + coalesce(ERROR_MESSAGE(),space(1))+'" '
 					+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'
 					
@@ -75,8 +81,6 @@ BEGIN
 	END CATCH
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Nap_CustomerDelSmartPunter] TO [bodbAdminNet]
 
 
 

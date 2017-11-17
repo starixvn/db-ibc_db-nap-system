@@ -1,4 +1,8 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_CustomerUpdStatusRobotAccount]
+﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE CustDB
+GO
+
+ALTER PROCEDURE [dbo].[NAP_CustomerUpdStatusRobotAccount]
 	@custids VARCHAR(4000),
 	@status BIT,
 	@userid INT,
@@ -33,7 +37,7 @@ BEGIN
 	UPDATE t
 	SET old_status = isActive
 	FROM @tmpCust t
-		INNER JOIN RobotList_tmp r WITH(NOLOCK) ON t.custid = r.custid
+		INNER JOIN RobotList r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.isActive <> @status
 	
 	
@@ -41,7 +45,7 @@ BEGIN
 	SET isActive = @status,
 		lastmodifyuser = @userid,
 		lastmodifytime = GETDATE()
-	FROM RobotList_tmp r WITH(UPDLOCK,ROWLOCK)
+	FROM RobotList r WITH(UPDLOCK,ROWLOCK)
 		INNER JOIN @tmpCust t ON r.custid = t.custid
 	WHERE t.old_status is not null
 	
@@ -110,14 +114,4 @@ BEGIN
 		END CATCH
 	END
 END
-
-
 GO
-
-GRANT EXECUTE ON [dbo].[NAP_CustomerUpdStatusRobotAccount] TO [bodbAdminNet] AS [dbo]
-GO
-
-GRANT VIEW DEFINITION ON [dbo].[NAP_CustomerUpdStatusRobotAccount] TO [vnteam] AS [dbo]
-GO
-
-
