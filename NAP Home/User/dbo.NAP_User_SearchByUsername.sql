@@ -6,56 +6,62 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[NAP_User_SearchByUsername]
-    @Username	NVARCHAR(50),
+	@Username	NVARCHAR(50),
 	@PageIndex	INT,
 	@PageSize	INT,
-	@TotalRows	INT	= 0	OUTPUT
+	@TotalRows	INT			= 0	OUTPUT
 AS
 
-/*  
- * Created: 20120820@Edward
- * Task : Search user by username
- * DB: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 
+/*
+	Created: 20120820@Edward
+	Task : Search user by username
+	DB: DBNAP.bodb_NAP
+	Revisions:
+		- 20171124@Kos: Return additional column Closed [Redmine: #87124]
+
+	Param's Explanation:
 */
 
 BEGIN
+	SET NOCOUNT ON
 
-	DECLARE @FirstRec INT, @LastRec INT
+	DECLARE @FirstRec INT,
+		@LastRec INT
+
 	SELECT @FirstRec = ((@PageIndex - 1) * @PageSize) + 1
 	SELECT @LastRec = ((@PageIndex * @PageSize + 1)) - 1
 
-	SET NOCOUNT ON
+	-- Gets total rows
+	SET @TotalRows = (
+		SELECT COUNT(1)
+		FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
+		WHERE c.roleid > 4
+			AND c.username LIKE '%' + @Username + '%'
+			AND NOT EXISTS (SELECT 1 FROM Users WITH (NOLOCK) WHERE UserId = c.custid)
+	)
 
-	-- gets total rows
-	SET @TotalRows = (SELECT COUNT(1)
-					  FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
-					  WHERE roleid > 4
-						  and c.username LIKE '%' + @Username + '%'
-						  AND c.custid NOT IN (SELECT UserId FROM Users WITH (NOLOCK)))
-
-	-- gets data
-	SELECT TOP (@PageSize) *
-	FROM
-		(SELECT 
-			c.custid AS UserId, 
-			c.firstname, 
-			c.lastname, 
-			c.username, 
-			row_number() OVER (ORDER BY c.username) AS num
+	-- Gets data
+	SELECT TOP(@PageSize) *
+	FROM (
+		SELECT
+			c.custid AS UserId,
+			c.firstname,
+			c.lastname,
+			c.username,
+			ci.closed,
+			ROW_NUMBER() OVER (ORDER BY c.username) AS num
 		 FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
-		 WHERE roleid > 4						  
-			 and c.username LIKE '%' + @Username + '%'
-			 AND c.custid NOT IN (SELECT UserId FROM Users WITH (NOLOCK))) AS Temp
-	WHERE
-		Temp.num >= @FirstRec
-		AND Temp.num <= @LastRec
-
+			INNER JOIN bodb02.dbo.custInfo AS ci WITH (NOLOCK) ON c.custid = ci.custid
+		 WHERE c.roleid > 4
+			AND c.username LIKE '%' + @Username + '%'
+			AND NOT EXISTS (SELECT 1 FROM Users WITH (NOLOCK) WHERE UserId = c.custid)
+		) AS Temp
+	WHERE Temp.num BETWEEN @FirstRec AND @LastRec
+	ORDER BY Temp.num
 END
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_SearchByUsername] TO [bodbAdminNet] AS [dbo]
 GO
 GRANT VIEW DEFINITION ON [dbo].[NAP_User_SearchByUsername] TO [vnteam] AS [dbo]
+GO
