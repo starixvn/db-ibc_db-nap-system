@@ -1,3 +1,4 @@
+/*<info serverAlias="DBACC-bodb02" executers="" viewers="vnteam" isFunction="1" isNested="0"></info>*/
 USE [bodb02]
 GO
 
@@ -17,6 +18,7 @@ AS
 	Task :	#47290 - Colossus Bets & MCG RnG Casino Payout Management
 	DB:		DBACC.bodb02
  	Revisions: 
+		- 20180103@Paul: Add RNG Casino [RedmineID #88709]
 
 */
 
@@ -37,7 +39,7 @@ BEGIN
 		ON p.ProductId = sp.ProductId
 		INNER JOIN dbo.Sports s WITH(NOLOCK)
 		ON sp.SportType = s.SportType
-	WHERE p.ProductId IN (15, 17)
+	WHERE p.ProductId IN (6, 15, 17)
 
 	
 	RETURN
