@@ -1,4 +1,5 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_CustomerInsSmartPunter]
+ /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+ ALTER PROCEDURE [dbo].[NAP_CustomerInsSmartPunter]
 	@username	VARCHAR(50),
 	@remark		NVARCHAR(200) = '',
 	@userid		INT,
@@ -11,10 +12,12 @@ AS
 		Created: Johnson
 		Date: 2014-06-10
 		Task: Insert customer into smart punter list
-		DB: DBTXN/CustDB
+		DB: DBCUST/CustDB
 		
 		Revisions:
 		- 20161003@Winnie: Modify to write log when user select smart punters RedmineID: #58901
+		- 20171115@Vicky: change location check permission [RedmineID: #86455]
+
 	*/ 
 BEGIN
 	SET NOCOUNT ON
@@ -29,7 +32,7 @@ BEGIN
 			@Currency int
 	
 	--Check permission
-	EXEC DBPOLICY.bodb02.dbo.Acc_Con_CheckPermission @custid=@userid,@funcname='[SmartPunter]',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+	EXEC DBNAP.bodb_NAP.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageSmartPunters',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 	IF @ErrCode <> 0
 		RETURN
 	
@@ -108,5 +111,3 @@ BEGIN
 	
 END
 GO
-
-GRANT EXECUTE ON [dbo].[Nap_CustomerInsSmartPunter] TO [bodbAdminNet]

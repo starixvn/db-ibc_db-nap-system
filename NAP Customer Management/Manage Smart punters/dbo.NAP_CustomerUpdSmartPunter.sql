@@ -1,4 +1,5 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_CustomerUpdSmartPunter]
+﻿ /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+ ALTER PROCEDURE [dbo].[NAP_CustomerUpdSmartPunter]
 	@custid		INT,
 	@remark	NVARCHAR(200) = '',
 	@userid		INT,
@@ -10,9 +11,10 @@
 	Created: Johnson
 	Date:2014-06-11
 	Task: Update smart punter info
-	DB: DBTXN/CustDB
+	DB: DBCUST/CustDB
 	
 	Revisions:
+		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 	
 	Parameter's Explanation:
  */
@@ -23,8 +25,8 @@
 			@duration	INT
 	SET	@startRun = GETDATE()
 	
-		--Check permission
-	EXEC DBPOLICY.bodb02.dbo.Acc_Con_CheckPermission @custid=@userid,@funcname='[SmartPunter]',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+	--Check permission
+	EXEC DBNAP.bodb_NAP.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageSmartPunters',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 	IF @ErrCode <> 0
 		RETURN
 	
@@ -105,5 +107,3 @@
 	
  END
  GO
- 
- GRANT EXECUTE ON [dbo].[NAP_CustomerUpdSmartPunter] TO [bodbAdminNet]

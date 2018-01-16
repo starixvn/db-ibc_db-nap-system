@@ -1,7 +1,6 @@
-﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE CustDB
 GO
-
 ALTER PROCEDURE [dbo].[NAP_CustomerInsRobotAccount]
 	@usernames varchar(4000),
 	@status bit= 1,
@@ -15,8 +14,10 @@ AS
 		Created: Johnson
 		Date: 2014-05-30
 		Task: Insert robot accounts
-		DB: DBTXN/CustDB
+		DB: DBCUST/CustDB
 		
+		Revision:
+				- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -30,7 +31,7 @@ BEGIN
 	SET	@startRun = GETDATE()
 	
 		--Check permission
-	EXEC DBPOLICY.bodb02.dbo.Acc_Con_CheckPermission @custid=@userid,@funcname='[ManageRobots]',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+	EXEC DBNAP.bodb_NAP.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageRobots',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 	IF @ErrCode <> 0
 		RETURN
 	
