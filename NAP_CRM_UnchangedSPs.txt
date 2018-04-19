@@ -1,3 +1,0 @@
-NAP Customer Management\Payout Management\Dot_Intg_Settlement_Jackpotwin_Credit.sql
-NAP Customer Management\Payout Management\Dot_Intg_SummaryRefNo_Retrieve.sql
-NAP Customer Management\Payout Management\dbo.NAP_PayoutTrans_SelList.proc.sql
