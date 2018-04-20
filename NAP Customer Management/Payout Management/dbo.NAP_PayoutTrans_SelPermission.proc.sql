@@ -1,3 +1,4 @@
+/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
 /****** Object:  StoredProcedure [dbo].[NAP_PayoutTrans_SelPermission]    Script Date: 11/12/2015 11:38:28 AM ******/
@@ -23,7 +24,7 @@ Revisions:
 	- 20151113@bobby.nguyen: Include Testing Licensee 
 	- 20151126@bobby.nguyen: Bug #48175 - Check for existence of spondemo in LA setting
 	- 20170524@bobby.nguyen: 77139 - Get licensee  list being offered payout products by distinct
-
+	- 20180103@Paul: Add RNG Casino [RedmineID #88709]
 	
 Param's Explanation:
 	- @AdminId: Id of admin user login
@@ -65,7 +66,7 @@ BEGIN
 	FROM bodb02.[dbo].[f_ProductPayout] () s 
 	WHERE ((@BopingControl 	= 1 OR  @OneWorksControl = 1) AND s.sporttype IN (205)) --Microgaming RNG Casino
 		OR (@CreditControl 	= 1 AND s.sporttype IN (204)) --Colossus Bets
-		
+		OR ((@BopingControl = 1 OR @OneWorksControl = 1 OR @CreditControl = 1) AND s.sporttype IN (208, 209, 210))
 	
 	IF(@BopingControl 		= 1
 		OR @OneWorksControl = 1

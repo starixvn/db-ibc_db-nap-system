@@ -1,3 +1,4 @@
+/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
 /****** Object:  StoredProcedure [dbo].[NAP_PayoutTrans_SelList]    Script Date: 11/12/2015 11:39:28 AM ******/

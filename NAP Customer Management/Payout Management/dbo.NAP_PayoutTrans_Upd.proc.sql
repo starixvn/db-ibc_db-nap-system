@@ -19,6 +19,7 @@ Original:
 Revisions:
 	- 20151012@bobby.nguyen: Initial
 	- 20160106@bobby.nguyen: #50364 - Update for CB change request
+	- 20180104@Paul: Add new status [Cancelled], process for RNG Casino [RedmineID #88709]
 	
 Param's Explanation:
 	- @PayoutStatus & @PayoutStatusId:
@@ -27,6 +28,7 @@ Param's Explanation:
 		+ 3: Disbursed
 		+ 4: Completed
 		+ 5: Expired
+		+ 6: Cancelled
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -60,7 +62,7 @@ BEGIN
 		WHERE p.[PayoutTransId] = @PayoutTransId
 		
 		-- check for constraint of payout status once it's completed
-		IF(@oldStatusId <> @PayoutStatusId AND @oldStatusId IN (4, 5)) -- 'Completed|Expired'
+		IF(@oldStatusId <> @PayoutStatusId AND @oldStatusId IN (4, 5, 6)) -- 'Completed|Expired|Cancelled'
 		BEGIN
 			SELECT @ErrCode 	= 1002
 				, @ErrMsg		= 'The status info is invalid.'
@@ -73,7 +75,9 @@ BEGIN
 			UPDATE p
 			SET [PayoutStatusId] 	= @PayoutStatusId
 				,[PayoutStatus] 	= @PayoutStatus
-				,[Winlostdate] 		= CASE WHEN @PayoutStatusId IN (4, 5) AND @productId IN (204) THEN CAST(@UpdDate AS DATE) ELSE Winlostdate END
+				,[Winlostdate] 		= CASE WHEN @PayoutStatusId IN (4, 5) AND @productId IN (204) THEN CAST(@UpdDate AS DATE)
+											WHEN @PayoutStatusId IN (4, 5, 6) AND @productId IN (208, 209, 210) THEN CAST(@UpdDate AS DATE) 
+										ELSE Winlostdate END
 			FROM [dbo].[PayoutTrans] p WITH(ROWLOCK, UPDLOCK)
 			WHERE p.[PayoutTransId] = @PayoutTransId
 		
@@ -97,6 +101,16 @@ BEGIN
 				-- step 3: UPD to allow to change member pwd
 				EXEC dbo.NAP_PayoutTrans_UpdateLockPassword @CustID = @custId, @ProductId = 204, @status = 0
 		
+			END
+
+			IF @PayoutStatusId IN (4, 5, 6) AND @productId IN (208, 209, 210)
+			BEGIN
+				IF @PayoutStatusId IN (4, 5)
+				BEGIN
+					EXEC dbo.Dot_Intg_Settlement_Jackpotwin_Credit @transid_rng = @refNo, @custid = @custId, @winlostdate = @UpdDate
+				END
+
+				EXEC dbo.NAP_PayoutTrans_UpdateLockPassword @CustID = @custId, @ProductId = @productId, @status = 0
 			END
 		END
 		

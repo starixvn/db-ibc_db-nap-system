@@ -1,3 +1,4 @@
+/*<info serverAlias="DBTXN-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
 USE bodb02
 GO
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_UpdateLockPassword]
@@ -14,7 +15,8 @@ DB: DBTXN.bodb02
 Original:
 Revisions:
 	- 20160106@bobby.nguyen: Initial - Check for updating member locking pwd
-	
+	- 20180104@Paul: Add new status [Cancelled] for RNG Casino [RedmineID #88709]
+
 Param's Explanation:
 	
 */
@@ -26,7 +28,7 @@ BEGIN
 			FROM dbo.PayoutTrans (NOLOCK) 
 			WHERE CustID = @CustId 
 				AND ProductId = @ProductId
-				AND PayoutStatusId NOT IN  (4, 5)--('Completed', 'Expired') 
+				AND PayoutStatusId NOT IN  (4, 5, 6)--('Completed', 'Expired', 'Cancelled') 
 		)
 	) 
 	BEGIN
@@ -34,3 +36,4 @@ BEGIN
 	END
 	RETURN;
 END
+GO
