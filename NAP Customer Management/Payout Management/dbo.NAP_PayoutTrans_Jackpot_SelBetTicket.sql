@@ -9,8 +9,10 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-CREATE PROCEDURE [dbo].[NAP_PayoutTrans_Jackpot_SelBetTicket]
-	@RefNo BIGINT
+ALTER PROCEDURE [dbo].[NAP_PayoutTrans_Jackpot_SelBetTicket]
+	@RefNo			BIGINT,
+	@MoveBetsDay	SMALLDATETIME,
+	@BalanceUpDay	SMALLDATETIME
 AS
 /*
 	Created: 20180109@Paul
@@ -19,6 +21,7 @@ AS
 	Original:
 	Revisions:
 		- 20180109@Paul: Initial version
+		- 20180502@Paul: Hot fix [RedmineID: #94448]
 	
 	Param's Explanation:
 	
@@ -26,9 +29,33 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
-	SELECT RefNo2
-	FROM dbo.bettransRnG WITH(NOLOCK)
-	WHERE transid = @RefNo;
+	DECLARE @WinlostDate SMALLDATETIME;
+
+	SELECT @WinlostDate = WinlostDate
+	FROM dbo.PayoutTrans WITH(NOLOCK)
+	WHERE RefNo = @RefNo;
+
+	IF @WinlostDate > @MoveBetsDay
+	BEGIN
+		SELECT RefNo2
+		FROM dbo.bettransRnG WITH(NOLOCK)
+		WHERE transid = @RefNo;
+	END
+
+	IF @WinlostDate BETWEEN @BalanceUpDay AND @MoveBetsDay
+	BEGIN
+		SELECT RefNo2
+		FROM dbo.bettransRnG14 WITH(NOLOCK)
+		WHERE transid = @RefNo;
+	END
+
+	IF @WinlostDate < @BalanceUpDay
+	BEGIN
+		SELECT RefNo2
+		FROM bodb_Archive.dbo.bettransRnG_bk WITH(NOLOCK)
+		WHERE transid = @RefNo
+			AND winlostdate = @WinlostDate;
+	END
 
 	SET NOCOUNT OFF;
 END
