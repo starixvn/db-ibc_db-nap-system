@@ -97,8 +97,8 @@ BEGIN
         ,ModifiedBy		=	@ModifiedBy
         ,ModifiedDate	=	@ModifiedDate
     FROM @TableFunctionPolicy AS Temp
-    WHERE dbo.UserFunction.UserId	=	@UserId
-    AND dbo.UserFunction.FunctionId	=	Temp.FunctionId   
+    WHERE dbo.NAP_UserFunction.UserId	=	@UserId
+    AND dbo.NAP_UserFunction.FunctionId	=	Temp.FunctionId   
     
 	--Insert new policy for function of user
     INSERT INTO dbo.NAP_UserFunction (
