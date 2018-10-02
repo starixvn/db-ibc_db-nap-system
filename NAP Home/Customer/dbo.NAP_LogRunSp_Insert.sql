@@ -15,7 +15,7 @@ AS
 /*
 	Created: 20121311@Kos
 	Task: Add new log user run sp
-	DB: bodb_NAP
+	DB: DBNAP/bodb_NAPLog
 
 	Revisions:
 		 - 20180925@Helen: Missing GIT Source Code, Get Code from PRO [Redmine:100493]

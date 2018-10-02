@@ -11,7 +11,7 @@ AS
 /*  
  * Created: 20120823@Edward
  * Task : User check in
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
  * Revisions:
 	- 20121026@Edward: add input param LoginDate

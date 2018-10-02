@@ -20,7 +20,7 @@ AS
 /*
 	Created: 20120809@Edward
 	Task: Add a new site
-	DB: bodb_NAP
+	DB: DBPOL-NAP_UserControl
 	Revisions:
 		- 20121009@Lewis: Remove @URL, @TestURL, add @SiteURLs
 		- 20160328@Kos: Add SecretAccessKey, SiteKey

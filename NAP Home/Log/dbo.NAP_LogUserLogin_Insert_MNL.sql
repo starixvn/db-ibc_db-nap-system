@@ -14,7 +14,7 @@ AS
 /*
 	Created: 20120709@Edward
 	Task :				
-	DB: bodb_NAP
+	DB: DBNAP/bodb_NAPLOG
 	Original:
 	Revisions:
 		- 20180925@Helen: DB052.bodb_NAP Migration, Move to bodb_NAPLOG - [Redmine:100493]	    

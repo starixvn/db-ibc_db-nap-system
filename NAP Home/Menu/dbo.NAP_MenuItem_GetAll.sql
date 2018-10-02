@@ -7,7 +7,7 @@ AS
 /**  
  * Created: 20120813@Kos
  * Task : Get all menu items
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
  * Revisions:  
 	   - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]

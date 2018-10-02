@@ -12,7 +12,7 @@ AS
 /*  
  * Created: 20120823@Edward
  * Task : User SSO check in
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
  * Revisions:
 	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
