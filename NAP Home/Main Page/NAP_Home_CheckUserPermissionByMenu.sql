@@ -1,3 +1,4 @@
+/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Home_CheckUserPermissionByMenu] 
 	@UserId INT
 	,@SiteId INT
@@ -8,10 +9,10 @@ ALTER PROCEDURE [dbo].[NAP_Home_CheckUserPermissionByMenu]
 AS
 /*	Created: 20140808@Sophia
 	Task: Check permission of user can access the menus of site  
-	DB: DBNAP/bodb_NAP
+	DB: DBPOL-NAP_UserControl
 	
 	Revisions:	
-		
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 	
 	Param's Explanation:
 	- @UserId: User ID.
@@ -44,7 +45,7 @@ BEGIN
 									FROM	(
 												-- Get function permissions of an user on a site.
 												SELECT	FunctionId, Policy
-												FROM	dbo.UserFunction WITH (NOLOCK)
+												FROM	dbo.NAP_UserFunction WITH (NOLOCK)
 												WHERE	UserId = @UserId
 														AND SiteId = @SiteId
 											) AS UP
@@ -52,18 +53,18 @@ BEGIN
 											(
 												-- Get group permissions of an user on a site.
 												SELECT	GF.FunctionId, GF.Policy
-												FROM	dbo.GroupFunction AS GF WITH (NOLOCK)
-													INNER JOIN dbo.Users AS US WITH (NOLOCK)
+												FROM	dbo.NAP_GroupFunction AS GF WITH (NOLOCK)
+													INNER JOIN dbo.NAP_Users AS US WITH (NOLOCK)
 														ON GF.GroupId = US.GroupId
 												WHERE	US.UserId = @UserId
 														AND GF.SiteId = @SiteId
 											) AS GP
 										ON UP.FunctionId = GP.FunctionId
 								) AS UF
-							INNER JOIN dbo.MenuItems AS MN WITH (NOLOCK)
+							INNER JOIN dbo.NAP_MenuItems AS MN WITH (NOLOCK)
 								ON	UF.FunctionId = MN.FunctionId
 									AND UF.Policy >= MN.Policy
-							INNER JOIN dbo.Functions AS FT WITH (NOLOCK)
+							INNER JOIN dbo.NAP_Functions AS FT WITH (NOLOCK)
 								ON	UF.FunctionId = FT.FunctionId
 						WHERE	(
 									@Environment = 'UAT' OR (@Environment <> 'UAT' AND @Environment = MN.Environment AND @Environment = FT.Environment)
@@ -77,7 +78,7 @@ BEGIN
 				DECLARE @MenuItemName NVARCHAR(50) 
 				
 				SELECT  @MenuItemName = MenuItemName
-				FROM	dbo.MenuItems WITH (NOLOCK)
+				FROM	dbo.NAP_MenuItems WITH (NOLOCK)
 				WHERE	MenuItemId = @MenuId
 				
 

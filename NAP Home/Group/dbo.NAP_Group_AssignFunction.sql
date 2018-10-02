@@ -1,14 +1,8 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Group_AssignFunction]    Script Date: 8/1/2014 1:36:18 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Group_AssignFunction]
 	@GroupId			INT
 	,@SiteId			INT
-	,@Value				NVARCHAR(4000)
+	,@Value				NVARCHAR(MAX)
     ,@ModifiedBy		INT
     ,@ModifiedDate		DATETIME
     ,@CurrentUserId		INT
@@ -20,12 +14,14 @@ ALTER PROCEDURE [dbo].[NAP_Group_AssignFunction]
 	,@ErrMsg			NVARCHAR(1000)	=   ''		OUTPUT 
 AS
 /*  
- * Created	: 20120814@Edward
- * Task		: Assign function to group
- * DB	: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 
+	Created	: 20120814@Edward
+	Task	: Assign function to group
+	DB		: DBPOL/NAP_UserControl
+
+	Revisions:     
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+
+	Param's Explanation: 
 	• @Value	: is xml 
 		<ROOT>
 			<FunctionPolicy FunctionId="1" SiteId="1" Policy="2"></FunctionPolicy>
@@ -66,7 +62,7 @@ BEGIN
 	-- Data xml for write log
 	SELECT FunctionId, Policy,GroupId
 	INTO #TempData
-	FROM GroupFunction AS gf WITH(NOLOCK)
+	FROM dbo.NAP_GroupFunction AS gf WITH(NOLOCK)
 	WHERE	gf.GroupId		= @GroupId
 			AND gf.SiteId	= @SiteId
 
@@ -95,7 +91,7 @@ BEGIN
 	FROM @xml.nodes('/ROOT/FunctionPolicy') as [T](C) --T: table, C: column		
 	
 	--Update Policy = 0 for function not set to group
-	UPDATE dbo.GroupFunction
+	UPDATE dbo.NAP_GroupFunction
     SET Policy        =   0
         ,ModifiedBy   =   @ModifiedBy
         ,ModifiedDate =   @ModifiedDate    
@@ -105,17 +101,17 @@ BEGIN
 								FROM @TableFunctionPolicy )
 	
 	--Update policy for function of group
-	UPDATE dbo.GroupFunction
+	UPDATE dbo.NAP_GroupFunction
     SET Policy			=	Temp.Policy
         ,ModifiedBy		=	@ModifiedBy
         ,ModifiedDate	=	@ModifiedDate
     FROM @TableFunctionPolicy AS Temp
     WHERE 
-		dbo.GroupFunction.GroupId = @GroupId
-		AND dbo.GroupFunction.FunctionId = Temp.FunctionId 
+		dbo.NAP_GroupFunction.GroupId = @GroupId
+		AND dbo.NAP_GroupFunction.FunctionId = Temp.FunctionId 
     
     --Insert new policy for function of group
-    INSERT INTO dbo.GroupFunction (
+    INSERT INTO dbo.NAP_GroupFunction (
         GroupId
         , FunctionId
         , SiteId
@@ -137,7 +133,7 @@ BEGIN
     WHERE NOT EXISTS 
         (
              SELECT TOP(1) *
-                FROM dbo.GroupFunction AS gf WITH (NOLOCK)
+                FROM dbo.NAP_GroupFunction AS gf WITH (NOLOCK)
                 WHERE gf.GroupId=@GroupId
                 AND gf.FunctionId= Temp.FunctionId				
         )
@@ -156,7 +152,7 @@ BEGIN
 				,(					
 					SELECT gf.FunctionId	AS '@f'
 						,gf.Policy			AS '@p'
-					FROM GroupFunction AS gf WITH (NOLOCK)
+					FROM dbo.NAP_GroupFunction AS gf WITH (NOLOCK)
 					LEFT JOIN #TempData t ON gf.FunctionId = t.FunctionId AND gf.Policy = t.Policy
 					WHERE gf.GroupId = @GroupId
 					AND gf.SiteId = @SiteId
@@ -171,7 +167,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Group_AssignFunction',
 	@ObjectId		= @GroupId,
@@ -184,7 +180,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_AssignFunction] TO [bodbAdminNet] AS [dbo]
 GO

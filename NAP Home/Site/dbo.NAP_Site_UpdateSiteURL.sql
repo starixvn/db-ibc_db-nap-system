@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_UpdateSiteURL]    Script Date: 8/1/2014 1:44:48 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_UpdateSiteURL]
     @SiteURLId		INT
 	,@SiteId		INT
@@ -25,7 +19,9 @@ AS
  * Task		: Update information of site url
  * DB		: bodb_NAP
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation:
  */
 BEGIN
@@ -49,7 +45,7 @@ BEGIN
 							,su.Environment	AS '@e'
 							,su.IsDefault	AS '@id'
 							,su.IsActive	AS '@ia'
-					FROM SiteURL AS su WITH (NOLOCK)
+					FROM dbo.NAP_SiteURL AS su WITH (NOLOCK)
 					WHERE SiteId = @SiteId
 					FOR XML PATH('z'), TYPE	
 				)
@@ -58,7 +54,7 @@ BEGIN
 
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')
 	-- Update site url information
-	UPDATE dbo.SiteURL
+	UPDATE dbo.NAP_SiteURL
 	SET SiteId = @SiteId
 		,URL = @URL
 		,Environment = @Environment
@@ -84,7 +80,7 @@ BEGIN
 							,su.Environment	AS '@e'
 							,su.IsDefault	AS '@id'
 							,su.IsActive	AS '@ia'
-					FROM SiteURL AS su WITH (NOLOCK)
+					FROM dbo.NAP_SiteURL AS su WITH (NOLOCK)
 					WHERE SiteId = @SiteId
 					FOR XML PATH('z'), TYPE	
 				)
@@ -96,7 +92,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Site_UpdateSiteURL',
 	@ObjectId		= @SiteId,

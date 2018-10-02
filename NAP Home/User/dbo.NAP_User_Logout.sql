@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_Logout]    Script Date: 8/1/2014 1:51:27 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_Logout]
 	@OnUserID INT
 AS
@@ -12,9 +6,11 @@ AS
 /*  
  * Created: 20120820@Edward
  * Task : User logout
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 		
 */
 
@@ -25,22 +21,20 @@ BEGIN
 	SET @userId = 0	
 
 	SELECT @userId = ou.UserId
-	FROM OnUser AS ou WITH (NOLOCK) 
+	FROM dbo.NAP_OnUser AS ou WITH (NOLOCK) 
 	WHERE Id = @OnUserID AND SiteId = 0
 	
 	IF(@userId != 0)
 	BEGIN
-		UPDATE OnUser WITH (ROWLOCK, UPDLOCK)
+		UPDATE dbo.NAP_OnUser WITH (ROWLOCK, UPDLOCK)
 		SET IsKickedOut = 1 
 		WHERE UserId = @UserId 	
 		AND SiteId != 0
 	END
 
-	DELETE FROM OnUser WHERE Id = @OnUserID
+	DELETE FROM dbo.NAP_OnUser WHERE Id = @OnUserID
 
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_Logout] TO [bodbAdminNet]
 GO

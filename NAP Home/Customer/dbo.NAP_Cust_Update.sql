@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Cust_Update]    Script Date: 06/06/2015 13:38:47 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Cust_Update]
 	@CustId				INT,
 	@FirstName			NVARCHAR (50)	=	NULL,
@@ -23,12 +17,13 @@ AS
 /*
 	Created: 20120709@Edward
 	Task : Update NAP user information and bodb02.dbo.Customer
-	DB: bodb_NAP
+	DB: DBPOL-NAP_UserControl
 	Original:
 
 	Revisions:
 	    - 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
-
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation:
 	• @CustId :
 		= custid from bodb02.dbo.Customer and bodb02.dbo.custinfo
@@ -70,9 +65,9 @@ BEGIN
 				,cu.firstname	AS '@f'
 				,cu.lastname	AS '@l'
 				,cu.email		AS '@e'
-		FROM [bodb02].[dbo].Customer AS cu WITH(NOLOCK)
-		INNER JOIN Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
-		LEFT JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
+		FROM CUSTDB.dbo.Customer AS cu WITH(NOLOCK)
+			INNER JOIN dbo.NAP_Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
+			LEFT JOIN dbo.NAP_Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE cu.custid = @CustId 
 		FOR XML PATH('r'), TYPE
 	)	
@@ -83,14 +78,14 @@ BEGIN
 	DECLARE @dbGroupID INT
 
 	SELECT @dbGroupID = GroupId
-	FROM dbo.Users WITH (NOLOCK)
+	FROM dbo.NAP_Users WITH (NOLOCK)
 	WHERE UserId = @CustID
 
 		-- Update user group if change group
 	IF(@dbGroupID <> @GroupID)
 		BEGIN	
-			UPDATE Users
-			SET GroupId		= @GroupID
+			UPDATE dbo.NAP_Users
+				SET GroupId		= @GroupID
 			WHERE UserId	= @CustID		
 		END
 	IF @@ERROR <> 0
@@ -102,7 +97,7 @@ BEGIN
 	END	
 
 	-- Update customer information
-	EXEC	[DBCust].[CustDB].[dbo].[NAP_AdminInfo_Update]
+	EXEC [CustDB].[dbo].[NAP_AdminInfo_Update]
 			@CustID		= @CustID,
 			@FirstName	= @FirstName,
 			@LastName	= @LastName,
@@ -126,8 +121,8 @@ BEGIN
 				,@LastName		AS '@l'
 				,@Email			AS '@e'
 		FROM [bodb02].[dbo].Customer AS cu WITH(NOLOCK)
-		INNER JOIN Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
-		LEFT JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
+			INNER JOIN dbo.NAP_Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
+			LEFT JOIN dbo.NAP_Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE cu.custid = @CustId 
 		FOR XML PATH('r'), TYPE
 	)	
@@ -137,7 +132,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Cust_Update',
 	@ObjectId		= @CustId,

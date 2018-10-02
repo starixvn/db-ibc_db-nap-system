@@ -1,4 +1,4 @@
-﻿
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_MenuItem_GetParentById]
 	@MenuItemId		INT,
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
@@ -10,6 +10,8 @@ AS
  * DB: bodb_NAP
  *  
  * Revisions:     
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
  * Param's Explanation: 
  */
 
@@ -22,20 +24,20 @@ BEGIN
 	
 	-- Get SiteId
 	SELECT @SiteId = SiteId
-	FROM MenuItems
+	FROM dbo.NAP_MenuItems WITH (NOLOCK)
 	WHERE MenuItemId = @MenuItemId
 
 	-- Get all menu item is child of this menu item in site
 	;WITH MenuItemChild AS(
 		SELECT  MenuItemId 
-		FROM    MenuItems WITH (NOLOCK)
+		FROM    dbo.NAP_MenuItems WITH (NOLOCK)
 		WHERE   MenuItemId = @MenuItemId
 
 		UNION ALL
 
 		SELECT  t.MenuItemId 
 		FROM    
-			MenuItems AS t WITH (NOLOCK) 
+			dbo.NAP_MenuItems AS t WITH (NOLOCK) 
 			INNER JOIN MenuItemChild AS r ON t.ParentId = r.MenuItemId
 	)
 
@@ -62,11 +64,11 @@ BEGIN
 		m.ModifiedDate,
 		m.Environment	
 	FROM 
-		dbo.MenuItems AS m WITH (NOLOCK)
-		INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
-		INNER JOIN dbo.Sites AS s WITH (NOLOCK) ON m.SiteId = s.SiteId
-		LEFT JOIN bodb02.dbo.custInfo AS cb WITH (NOLOCK) ON m.CreatedBy = cb.custid
-		LEFT JOIN bodb02.dbo.custInfo AS mb WITH (NOLOCK) ON m.ModifiedBy = mb.custid
+		dbo.NAP_MenuItems AS m WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON m.SiteId = s.SiteId
+		LEFT JOIN CustDB.dbo.custInfo AS cb WITH (NOLOCK) ON m.CreatedBy = cb.custid
+		LEFT JOIN CustDB.dbo.custInfo AS mb WITH (NOLOCK) ON m.ModifiedBy = mb.custid
 	WHERE 
 		m.MenuItemId NOT IN ( 
 			SELECT  MenuItemId 

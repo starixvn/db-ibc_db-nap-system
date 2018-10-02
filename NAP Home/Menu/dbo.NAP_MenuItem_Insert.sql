@@ -1,4 +1,4 @@
-﻿ 
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_MenuItem_Insert]
     @MenuItemId			INT							OUTPUT,	
 	@FunctionId			INT,	
@@ -29,7 +29,8 @@ AS
  * DB		: bodb_NAP
  *  
  * Revisions:    
-
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 
 		• Main	:	
 				<root><xml path="r" />
@@ -65,7 +66,7 @@ BEGIN
 	SET @startRun = GETDATE()	
 
 	-- Insert new menu item
-	INSERT INTO dbo.MenuItems 
+	INSERT INTO dbo.NAP_MenuItems 
 	(
 		FunctionId,
 		SiteId,
@@ -128,9 +129,9 @@ BEGIN
 				,@URL				AS '@u'
 				,@DisplayOrder		AS '@o'
 				,@IsActive			AS '@i'
-		FROM MenuItems AS m WITH (NOLOCK)
-		INNER JOIN Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
-		INNER JOIN Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		FROM dbo.NAP_MenuItems AS m WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
 		WHERE m.MenuItemId = @MenuItemId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -140,7 +141,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_MenuItem_Insert',
 	@ObjectId		= @MenuItemId,

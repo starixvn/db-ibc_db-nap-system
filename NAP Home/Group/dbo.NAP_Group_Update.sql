@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Group_Update]    Script Date: 8/1/2014 1:38:17 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Group_Update]
 	@GroupId			INT
 	,@GroupName			VARCHAR(50)
@@ -22,13 +16,14 @@ ALTER PROCEDURE [dbo].[NAP_Group_Update]
 AS
 
 /*  
- * Created	: 20120810@Edward
- * Task		: Update information of group
- * DB		: bodb_NAP
- *  
- * Revisions:     
+	Created	: 20120810@Edward
+	Task	: Update information of group
+	DB		: DBPOL/NAP_UserControl
 
- * Param's Explanation: 
+	Revisions:     
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
+	Param's Explanation: 
 	• Main	:	<root><xml path="r" />
 					<row item="GroupId" alias="gi" />
 					<row item="GroupName" alias="g" />					
@@ -55,7 +50,7 @@ BEGIN
 				,g.GroupName		AS '@g'
 				,g.Description		AS '@d'				
 				,g.IsActive			AS '@i'
-		FROM Groups AS g WITH (NOLOCK)
+		FROM dbo.NAP_Groups AS g WITH (NOLOCK)
 		WHERE g.GroupId = @GroupId	
 		FOR XML PATH('r'), TYPE
 	)	
@@ -63,7 +58,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
 
 	-- Update group information
-	UPDATE dbo.Groups
+	UPDATE dbo.NAP_Groups
     SET GroupName		= @GroupName
         ,Description	= @Description
         ,IsActive		= @IsActive
@@ -93,7 +88,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Group_Update',
 	@ObjectId		= @GroupId,
@@ -106,8 +101,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_Update] TO [bodbAdminNet] AS [dbo]
 GO

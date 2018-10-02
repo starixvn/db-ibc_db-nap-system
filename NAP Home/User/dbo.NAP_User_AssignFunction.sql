@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_AssignFunction]    Script Date: 8/1/2014 1:45:25 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_AssignFunction]
     @UserId             INT
 	,@SiteId            INT
@@ -25,7 +19,9 @@ AS
  * Task : Assign function to user
  * DB: bodb_NAP
  *  
- * Revisions:     
+ * Revisions: 
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	    
  * Param's Explanation: 
 		- Value : '<ROOT><FunctionPolicy SiteId="4" FunctionId="4" Policy="1"></FunctionPolicy></ROOT>'  
 	
@@ -55,7 +51,7 @@ BEGIN
 	  
 	SELECT FunctionId, Policy, UserId
 	INTO #TempData
-	FROM UserFunction uf WITH(NOLOCK)
+	FROM dbo.NAP_UserFunction uf WITH(NOLOCK)
 	WHERE uf.UserId			= @UserId	
 			AND uf.SiteId	= @SiteId
 
@@ -86,7 +82,7 @@ BEGIN
 	FROM @xml.nodes('/ROOT/FunctionPolicy') as [T](C) --T: table, C: column	
 
 	--Update Policy = 0 for function not set to user
-    UPDATE dbo.UserFunction
+    UPDATE dbo.NAP_UserFunction
     SET Policy        =   0
         ,ModifiedBy   =   @ModifiedBy
         ,ModifiedDate =   @ModifiedDate    
@@ -96,7 +92,7 @@ BEGIN
 							FROM @TableFunctionPolicy )
 
 	--Update policy for function of user
-	UPDATE dbo.UserFunction
+	UPDATE dbo.NAP_UserFunction
     SET Policy			=	Temp.Policy
         ,ModifiedBy		=	@ModifiedBy
         ,ModifiedDate	=	@ModifiedDate
@@ -105,7 +101,7 @@ BEGIN
     AND dbo.UserFunction.FunctionId	=	Temp.FunctionId   
     
 	--Insert new policy for function of user
-    INSERT INTO dbo.UserFunction (
+    INSERT INTO dbo.NAP_UserFunction (
         UserId
         , FunctionId
         , SiteId
@@ -128,7 +124,7 @@ BEGIN
     WHERE  NOT EXISTS          
            (               
                 SELECT TOP(1) *
-                FROM dbo.UserFunction AS uf WITH(NOLOCK)
+                FROM dbo.NAP_UserFunction AS uf WITH(NOLOCK)
                 WHERE uf.UserId = @UserId
                 AND uf.FunctionId = Temp.FunctionId
             )    
@@ -151,7 +147,7 @@ BEGIN
 					SELECT 						
 						uf.FunctionId	AS '@f'
 						,uf.Policy		AS '@p'
-					FROM UserFunction uf WITH(NOLOCK)
+					FROM dbo.NAP_UserFunction uf WITH(NOLOCK)
 					LEFT JOIN #TempData t ON uf.FunctionId = t.FunctionId AND uf.Policy = t.Policy
 					WHERE uf.UserId = @UserId	
 					AND uf.SiteId = @SiteId
@@ -166,7 +162,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_User_AssignFunction',
 	@ObjectId		= @UserId,

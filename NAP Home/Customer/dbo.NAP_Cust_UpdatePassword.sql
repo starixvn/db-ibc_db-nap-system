@@ -1,12 +1,4 @@
-﻿USE [CustDB]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Cust_UpdatePassword]    Script Date: 8/1/2014 10:16:23 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-/****** Object:  Stored Procedure dbo.NAP_Cust_UpdatePassword    Script Date: 2/19/2014 11:08:51 AM ******/
-/****** Object:  Stored Procedure dbo.NAP_Cust_UpdatePassword    Script Date: 12/9/2013 12:53:47 PM ******/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Cust_UpdatePassword]
 	@CustId			INT,
 	@UserPwd		NVARCHAR (50),
@@ -22,11 +14,13 @@ AS
 /*
 	Created: 20120709@Edward
 	Task : Update user password from bodb02.dbo.Customer
-	DB: DBTRANS.bodb02
+	DB: DBCUST/CUSTDB
 	Original:
 
 	Revisions:
-	• 20140219@Kos:	Sync password with AdminSiteTable    
+		- 20140219@Kos:	Sync password with AdminSiteTable
+	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	    
 	Param's Explanation:
 	• @CustId :
 		= custid from bodb02.dbo.Customer and bodb02.dbo.custinfo
@@ -126,7 +120,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 	
-	EXEC DBNAP.bodb_NAPLOG.dbo.NAP_LogRunSp_Insert
+	EXEC NAP_UserControl.dbo.NAP_RunSP_WriteLog
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Cust_UpdatePassword',
 	@ObjectId		= @CustId,
@@ -139,3 +133,4 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
+GO

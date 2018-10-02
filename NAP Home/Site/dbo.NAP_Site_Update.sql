@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_Update]    Script Date: 8/1/2014 1:43:56 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_Update]
 	@SiteId				INT,
 	@SiteName			VARCHAR(50),
@@ -31,6 +25,7 @@ AS
 	Revisions:
 	Param's Explanation:
 		- 20160322@Kos: Add SiteKey, SecretAccessKey [#Redmine: 50864]
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 	
 	*** WRITE LOG template:
 	Main: 
@@ -63,7 +58,7 @@ BEGIN
 			,s.Description		AS '@d'
 			,s.Environment		AS '@e'
 			,s.IsActive			AS '@i'
-		FROM dbo.Sites AS s WITH(NOLOCK)
+		FROM dbo.NAP_Sites AS s WITH(NOLOCK)
 		WHERE s.SiteId = @SiteId
 		FOR XML PATH('r'), TYPE
 	)
@@ -71,7 +66,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(VARCHAR(MAX), @xml), '" />', '"/"')
 
 	-- Update site information
-	UPDATE dbo.Sites WITH (ROWLOCK, UPDLOCK)
+	UPDATE dbo.NAP_Sites WITH (ROWLOCK, UPDLOCK)
 	SET
 		SiteName = @SiteName,
 		SiteKey = @SiteKey,
@@ -109,7 +104,7 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration = DATEDIFF(MILLISECOND, @startRun, @endRun)
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert
+	EXEC dbo.NAP_RunSP_WriteLog
 		@UserId			= @CurrentUserId,
 		@SPName			= 'NAP_Site_Update',
 		@ObjectId		= @SiteId,

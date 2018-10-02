@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_GetByUsername]    Script Date: 8/1/2014 1:50:16 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_GetByUsername]
     @Username NVARCHAR(50)
 AS
@@ -14,7 +8,9 @@ AS
  * Task : Get user by username
  * DB: bodb_NAP
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 
 */
 
@@ -38,12 +34,12 @@ BEGIN
         ,ci2.custid		AS ModifierId
         ,ci2.username	AS ModifierUsername
     FROM 
-		dbo.Users AS u WITH (NOLOCK)
-		INNER JOIN bodb02.dbo.Customer AS C WITH (NOLOCK) ON u.UserId = c.custid
-		INNER JOIN bodb02.dbo.custInfo AS ci WITH (NOLOCK) ON u.UserId = ci.custid
-		LEFT JOIN dbo.Groups AS g WITH (NOLOCK) ON g.GroupId = u.GroupId
-		LEFT JOIN bodb02.dbo.custInfo AS ci1 WITH (NOLOCK) ON u.CreatedBy = ci1.custid
-		LEFT JOIN bodb02.dbo.custInfo AS ci2 WITH (NOLOCK) ON u.ModifiedBy = ci2.custid
+		dbo.NAP_Users AS u WITH (NOLOCK)
+		INNER JOIN CustDB.dbo.Customer AS C WITH (NOLOCK) ON u.UserId = c.custid
+		INNER JOIN CustDB.dbo.custInfo AS ci WITH (NOLOCK) ON u.UserId = ci.custid
+		LEFT JOIN dbo.NAP_Groups AS g WITH (NOLOCK) ON g.GroupId = u.GroupId
+		LEFT JOIN CustDB.dbo.custInfo AS ci1 WITH (NOLOCK) ON u.CreatedBy = ci1.custid
+		LEFT JOIN CustDB.dbo.custInfo AS ci2 WITH (NOLOCK) ON u.ModifiedBy = ci2.custid
     WHERE c.username = @Username and ci.closed = 0
 END
 

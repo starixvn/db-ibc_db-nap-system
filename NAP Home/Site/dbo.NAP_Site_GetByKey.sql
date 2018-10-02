@@ -1,11 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_GetSiteURLById]    Script Date: 8/1/2014 1:42:32 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_GetByKey]
 	@SiteKey VARCHAR(50)
 AS
@@ -13,9 +6,10 @@ AS
 /*
  * Created: 20160322@Kos
  * Task: Get site information by site key
- * DB: DBNAP.bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  * Revisions:
-
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 
 */
 
@@ -30,11 +24,9 @@ BEGIN
 		TestURL,
 		IsActive,
 		Environment
-	FROM dbo.Sites WITH (NOLOCK)
+	FROM dbo.NAP_Sites WITH (NOLOCK)
 	WHERE SiteKey = @SiteKey
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Site_GetByKey] TO [bodbAdminNet] AS [dbo]
 GO

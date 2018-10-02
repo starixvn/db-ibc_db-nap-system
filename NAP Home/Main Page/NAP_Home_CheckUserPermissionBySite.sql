@@ -1,4 +1,4 @@
-
+/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Home_CheckUserPermissionBySite] 
 	@UserId INT
 	,@SiteId INT
@@ -8,10 +8,10 @@ ALTER PROCEDURE [dbo].[NAP_Home_CheckUserPermissionBySite]
 AS
 /*	Created: 20140808@Sophia
 	Task: Check permission of user can access the menus of site  
-	DB: DBNAP/bodb_NAP
+	DB: DBPOL-NAP_UserControl
 	
 	Revisions:	
-		
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 	
 	Param's Explanation:
 	- @UserId: User ID.
@@ -32,10 +32,10 @@ BEGIN
 	
 	IF NOT EXISTS (			
 					SELECT TOP 1 1
-					FROM dbo.Sites AS SI WITH (NOLOCK)
-						INNER JOIN dbo.UserSite AS US WITH (NOLOCK)
+					FROM dbo.NAP_Sites AS SI WITH (NOLOCK)
+						INNER JOIN dbo.NAP_UserSite AS US WITH (NOLOCK)
 								ON SI.SiteId = US.SiteId
-						INNER JOIN dbo.SiteURL AS SU WITH (NOLOCK)
+						INNER JOIN dbo.NAP_SiteURL AS SU WITH (NOLOCK)
 								ON SI.SiteId = SU.SiteId
 					WHERE US.UserId = @UserId
 						AND US.SiteId = @SiteId
@@ -49,7 +49,7 @@ BEGIN
 				DECLARE @SiteName VARCHAR(50)
 				
 				SELECT @SiteName = SiteName
-				FROM   dbo.Sites WITH (NOLOCK)
+				FROM   dbo.NAP_Sites WITH (NOLOCK)
 				WHERE  SiteId = @SiteId
 
 				SELECT	@ErrMsg = 'You are not authorized to access the site ' + @SiteName,

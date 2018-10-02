@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Group_Insert]    Script Date: 8/1/2014 1:37:49 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Group_Insert]
 	@GroupId			INT								OUTPUT
 	,@GroupName			VARCHAR(50)
@@ -22,13 +16,14 @@ ALTER PROCEDURE [dbo].[NAP_Group_Insert]
 AS
 
 /*  
- * Created	: 20120810@Edward
- * Task		: Add a new group
- * DB		: bodb_NAP
- *  
- * Revisions:     
+	Created	: 20120810@Edward
+	Task	: Add a new group
+	DB		: DBPOL/NAP_UserControl
 
- * Param's Explanation: 
+	Revisions:     
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
+	Param's Explanation: 
 	• @ErrCode	:
 		= 0: super create master successfully.
 		> 0: Specific Error.
@@ -54,7 +49,7 @@ BEGIN
 	SET @startRun = GETDATE()	
 
 	-- Insert new group 
-	INSERT INTO dbo.Groups(
+	INSERT INTO dbo.NAP_Groups(
         GroupName
         ,Description
         ,IsActive
@@ -95,7 +90,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Group_Insert',
 	@ObjectId		= @GroupId,
@@ -109,7 +104,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_Insert] TO [bodbAdminNet] AS [dbo]
 GO

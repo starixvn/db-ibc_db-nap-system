@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_CheckIn]    Script Date: 8/1/2014 1:48:18 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_CheckIn]
 	@UserId				INT
 	,@SiteId			INT
@@ -19,40 +13,40 @@ AS
  * Task : User check in
  * DB: bodb_NAP
  *  
- * Revisions:     
-	20121026@Edward add input param LoginDate
+ * Revisions:  
+	- 20121026@Edward add input param LoginDate
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 
 */
 
 BEGIN
 	SET NOCOUNT ON	
 
-	UPDATE OnUser WITH (ROWLOCK, UPDLOCK)
+	UPDATE dbo.NAP_OnUser WITH (ROWLOCK, UPDLOCK)
 	SET IsKickedOut = 1 
 	WHERE UserId = @UserId 	
 	AND SiteId = @SiteId
 
-	INSERT INTO OnUser(UserId, SiteId, IsKickedOut, IP, NetSessionId)
+	INSERT INTO dbo.NAP_OnUser(UserId, SiteId, IsKickedOut, IP, NetSessionId)
 	VALUES (@UserId, @SiteId, 0, @IP, @NetSessionID)
 	
 	SET  @OnUserId = SCOPE_IDENTITY()
 
 	IF (@SiteId = 0)
 		BEGIN
-			UPDATE Users
+			UPDATE dbo.NAP_Users
 			SET LastLoginDate = @LoginDate
 			WHERE UserId = @UserId
 		END
 	ELSE
 		BEGIN
-			UPDATE UserSite
+			UPDATE dbo.NAP_UserSite
 			SET LastLoginDate = @LoginDate
 			WHERE SiteId = @SiteId	
 			AND UserId = @UserId
 		END
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_CheckIn] TO [bodbAdminNet]
 GO

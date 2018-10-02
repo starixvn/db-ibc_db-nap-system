@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_GetByName]    Script Date: 8/1/2014 1:42:01 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_GetByName]
 	@SiteName VARCHAR(50)
 AS
@@ -13,7 +7,9 @@ AS
  * Task		: Get information of site by name
  * DB		: bodb_NAP
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]     
+	
  * Param's Explanation: 
 */
 BEGIN
@@ -26,7 +22,7 @@ BEGIN
 		,TestURL
         ,IsActive
         ,Environment
-    FROM dbo.Sites WITH (NOLOCK)
+    FROM dbo.NAP_Sites WITH (NOLOCK)
     WHERE SiteName = @SiteName
 END
 

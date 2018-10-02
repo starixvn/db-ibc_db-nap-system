@@ -1,22 +1,18 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Group_SearchExcludeFunction]    Script Date: 8/1/2014 1:38:03 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Group_SearchExcludeFunction]
     @GroupName       NVARCHAR(50)    
     ,@SiteId        INT
     ,@FunctionId    INT	
 AS
 /*  
- * Created: 20120820@Edward
- * Task : Search group
- * DB: bodb_NAP
- *  
- * Revisions:
- * Param's Explanation: 
+	Created	: 20120820@Edward
+	Task	: Search group
+	DB		: DBPOL/NAP_UserControl
+
+	Revisions:
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
+	Param's Explanation: 
 */
 BEGIN
 
@@ -34,17 +30,16 @@ BEGIN
 		,g.ModifiedBy	AS ModifierId
 		,ci1.Username	AS ModifierUsername    
 	FROM 
-		dbo.Groups AS g WITH (NOLOCK)   
-		LEFT JOIN bodb02.dbo.custInfo AS ci WITH (NOLOCK) ON g.CreatedBy = ci.custid
-		LEFT JOIN bodb02.dbo.custInfo AS ci1 WITH (NOLOCK) ON g.ModifiedBy = ci1.custid
+		dbo.NAP_Groups AS g WITH (NOLOCK)   
+		LEFT JOIN CustDB.dbo.custInfo AS ci WITH (NOLOCK) ON g.CreatedBy = ci.custid
+		LEFT JOIN CustDB.dbo.custInfo AS ci1 WITH (NOLOCK) ON g.ModifiedBy = ci1.custid
 	WHERE g.GroupName LIKE '%' + @GroupName + '%'
 		AND g.GroupId NOT IN (
 			SELECT GroupId 
-			FROM GroupFunction WITH (NOLOCK)
+			FROM dbo.NAP_GroupFunction WITH (NOLOCK)
 			WHERE FunctionId = @FunctionId AND SiteId = @SiteId AND Policy > 0
 		)
 END
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Group_SearchExcludeFunction] TO [bodbAdminNet] AS [dbo]
 GO

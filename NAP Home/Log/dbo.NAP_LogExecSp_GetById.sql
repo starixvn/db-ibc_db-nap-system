@@ -1,19 +1,15 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_LogExecSp_GetById]    Script Date: 8/1/2014 1:39:08 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBNAP-bodb_NAPLOG" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LogExecSp_GetById]
 	@LogId INT
 AS
 /*  
  * Created: 20120820@Edward
  * Task : Get execute SP log by log ID
- * DB: bodb_NAP
+ * DB: DBNAP-bodb_NAPLOG
  *  
  * Revisions:     
+	- 20180925@Helen: DB052.bodb_NAP Migration, Move to bodb_NAPLOG - [Redmine:100493]
+	
  * Param's Explanation: 
 */
 BEGIN
@@ -25,8 +21,8 @@ BEGIN
 		ld.OldData,
 		la.Items,
 		la.SubItems
-	FROM bodb_NAPLog.dbo.NAPLOG_RUNSP_Detail AS ld WITH (NOLOCK)
-	INNER JOIN  bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON ld.ActionId=la.ActionId
+	FROM dbo.NAPLOG_RUNSP_Detail AS ld WITH (NOLOCK)
+		INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON ld.ActionId=la.ActionId
 	WHERE ld.ID = @LogId
 END
 

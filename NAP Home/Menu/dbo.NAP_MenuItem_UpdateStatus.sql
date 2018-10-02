@@ -1,4 +1,5 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_MenuItem_UpdateStatus]
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[NAP_MenuItem_UpdateStatus]
     @MenuItemId			INT,	
     @IsActive			BIT,
     @ModifiedBy			INT, 
@@ -14,9 +15,11 @@ AS
 /*  
  * Created	: 20120810@Kos
  * Task		: Update status of menu item
- * DB		: bodb_NAP
+ * DB		: DBPOL-NAP_UserControl
  *  
- * Revisions:     
+ * Revisions: 
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	    
  * Param's Explanation: 
 	• Main	:	
 				<root><xml path="r" />
@@ -42,7 +45,7 @@ BEGIN
 	SET @xml = (
 		SELECT @MenuItemId			AS '@mi'				
 				,m.IsActive			AS '@i'
-		FROM MenuItems AS m WITH (NOLOCK)		
+		FROM dbo.NAP_MenuItems AS m WITH (NOLOCK)		
 		WHERE m.MenuItemId = @MenuItemId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -50,7 +53,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
 
 	-- Update menu item information
-	UPDATE dbo.MenuItems 
+	UPDATE dbo.NAP_MenuItems 
 	SET	
 		IsActive		= @IsActive,
 		ModifiedBy		= @ModifiedBy,
@@ -78,7 +81,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_MenuItem_UpdateStatus',
 	@ObjectId		= @MenuItemId,

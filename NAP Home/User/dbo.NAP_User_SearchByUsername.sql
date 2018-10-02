@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_SearchByUsername]    Script Date: 8/1/2014 1:52:58 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_SearchByUsername]
 	@Username	NVARCHAR(50),
 	@PageIndex	INT,
@@ -18,7 +12,8 @@ AS
 	DB: DBNAP.bodb_NAP
 	Revisions:
 		- 20171124@Kos: Return additional column Closed [Redmine: #87124]
-
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation:
 */
 
@@ -34,10 +29,10 @@ BEGIN
 	-- Gets total rows
 	SET @TotalRows = (
 		SELECT COUNT(1)
-		FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
+		FROM CustDB.dbo.Customer AS c WITH (NOLOCK)
 		WHERE c.roleid > 4
 			AND c.username LIKE '%' + @Username + '%'
-			AND NOT EXISTS (SELECT 1 FROM Users WITH (NOLOCK) WHERE UserId = c.custid)
+			AND NOT EXISTS (SELECT 1 FROM dbo.NAP_Users WITH (NOLOCK) WHERE UserId = c.custid)
 	)
 
 	-- Gets data
@@ -50,11 +45,11 @@ BEGIN
 			c.username,
 			ci.closed,
 			ROW_NUMBER() OVER (ORDER BY c.username) AS num
-		 FROM bodb02.dbo.Customer AS c WITH (NOLOCK)
-			INNER JOIN bodb02.dbo.custInfo AS ci WITH (NOLOCK) ON c.custid = ci.custid
+		 FROM CustDB.dbo.Customer AS c WITH (NOLOCK)
+			INNER JOIN CustDB.dbo.custInfo AS ci WITH (NOLOCK) ON c.custid = ci.custid
 		 WHERE c.roleid > 4
 			AND c.username LIKE '%' + @Username + '%'
-			AND NOT EXISTS (SELECT 1 FROM Users WITH (NOLOCK) WHERE UserId = c.custid)
+			AND NOT EXISTS (SELECT 1 FROM dbo.NAP_Users WITH (NOLOCK) WHERE UserId = c.custid)
 		) AS Temp
 	WHERE Temp.num BETWEEN @FirstRec AND @LastRec
 	ORDER BY Temp.num

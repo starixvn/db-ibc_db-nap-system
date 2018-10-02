@@ -1,24 +1,19 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByUserAndSiteIncludeGroup]    Script Date: 8/1/2014 1:33:48 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_GetByUserAndSiteIncludeGroup]
 	@UserId			INT,				
 	@SiteId			INT,				
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
 AS
 
-/**  
- * Created: 20120810@Kos
- * Task : Get all function permission of a user in a site include its group permission
- * DB: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 
- */
+/*
+	Created: 20120810@Kos
+	Task : Get all function permission of a user in a site include its group permission
+	DB: DBPOL-NAP_UserControl
+
+	Revisions:     
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	Param's Explanation: 
+*/
 BEGIN
 	SET NOCOUNT ON
 
@@ -54,8 +49,8 @@ BEGIN
 				-- Get function permission of @UserId in @SiteId
 				SELECT uf.FunctionId, uf.Policy
 				FROM 
-					UserFunction AS uf WITH (NOLOCK)
-					INNER JOIN Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+					dbo.NAP_UserFunction AS uf WITH (NOLOCK)
+					INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
 				WHERE 
 					uf.UserId = @UserId 
 					AND uf.SiteId = @SiteId
@@ -66,9 +61,9 @@ BEGIN
 				-- Get function permission of group where user belong to
 				SELECT gf.FunctionId, gf.Policy
 				FROM 
-					GroupFunction AS gf WITH (NOLOCK)
-					INNER JOIN Users AS u WITH (NOLOCK) ON u.GroupId = gf.GroupId
-					INNER JOIN Functions AS f WITH (NOLOCK) ON gf.FunctionId = f.FunctionId
+					dbo.NAP_GroupFunction AS gf WITH (NOLOCK)
+					INNER JOIN dbo.NAP_Users AS u WITH (NOLOCK) ON u.GroupId = gf.GroupId
+					INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON gf.FunctionId = f.FunctionId
 				WHERE 
 					u.UserId = @UserId
 					AND gf.SiteId = @SiteId
@@ -76,8 +71,8 @@ BEGIN
 			) AS B
 			ON A.FunctionID = B.FunctionID 	
 		) AS uf
-		LEFT JOIN dbo.Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
-		LEFT JOIN dbo.Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		LEFT JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+		LEFT JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
 	WHERE 
 		(@Environment = 'UAT' OR (@Environment != 'UAT' AND f.Environment = @Environment))
 		AND f.IsActive = 1

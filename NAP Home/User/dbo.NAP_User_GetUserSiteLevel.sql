@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_GetUserSiteLevel]    Script Date: 8/1/2014 1:51:08 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_GetUserSiteLevel]
     @UserId         INT
     ,@SiteId        INT
@@ -14,14 +8,16 @@ AS
  * Task : Get level of user in site
  * DB: bodb_NAP
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 
 */
 BEGIN
     SET NOCOUNT ON    
      
     SELECT us.Level
-    FROM dbo.UserSite AS us WITH (NOLOCK)
+    FROM dbo.NAP_UserSite AS us WITH (NOLOCK)
     WHERE 
 		us.UserId		= @UserId
 		AND us.SiteId	= @SiteId

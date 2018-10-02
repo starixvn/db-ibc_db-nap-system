@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_GetById]    Script Date: 8/1/2014 1:41:45 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_GetById]
 	@SiteId INT
 AS
@@ -15,7 +9,8 @@ AS
 	DB: DBNAP.bodb_NAP
 	Revisions:
 		- 20160322@Kos: Add SiteKey, SecretAccessKey [#Redmine: 50864]
-
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation: 
 */
 
@@ -32,7 +27,7 @@ BEGIN
 		TestURL,
 		IsActive,
 		Environment
-	FROM dbo.Sites WITH (NOLOCK)
+	FROM dbo.NAP_Sites WITH (NOLOCK)
 	WHERE SiteId = @SiteId
 END
 

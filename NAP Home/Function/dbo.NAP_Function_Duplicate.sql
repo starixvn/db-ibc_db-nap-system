@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_Duplicate]    Script Date: 8/1/2014 12:55:17 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_Duplicate]
 	@DuplicateFunctionId	INT,	
     @FunctionId				INT							OUTPUT,	
@@ -32,10 +26,12 @@ AS
 /*  
  * Created: 20121026@Lewis
  * Task : Duplicate a function
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
  * Revisions:
-	10312012@Edward : Comment for script	
+	- 10312012@Edward : Comment for script
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
  * Param's Explanation:
 	@DuplicateFunctionId : FunctionId will be duplicate
 	@CRUD : 
@@ -90,8 +86,8 @@ BEGIN
 				,f.DisplayOrder		AS '@o'
 				,f.IsActive			AS '@i'
 				,f.Environment		AS '@e'				
-		FROM Functions AS f WITH (NOLOCK)
-		INNER JOIN Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		FROM dbo.NAP_Functions AS f WITH (NOLOCK)
+			INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
 		WHERE f.FunctionId =  @DuplicateFunctionId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -99,7 +95,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')
 
 	-- Insert new function
-	INSERT dbo.Functions 
+	INSERT dbo.NAP_Functions 
 	(
 		SiteId,
 		FunctionName,
@@ -139,7 +135,7 @@ BEGIN
 	-- Duplicates privileged groups/users
 	
 	-- Duplicates privileged groups
-	INSERT dbo.GroupFunction
+	INSERT dbo.NAP_GroupFunction
 	(
 		GroupId,
 		FunctionId,
@@ -150,11 +146,11 @@ BEGIN
 		ModifiedDate
 	)
 	SELECT	GroupId, @FunctionId, SiteId, Policy, @CreatedBy, @now, @now
-	FROM	dbo.GroupFunction
+	FROM	dbo.NAP_GroupFunction
 	WHERE	FunctionId = @DuplicateFunctionId
 
 	-- Duplicates privileged users
-	INSERT dbo.UserFunction
+	INSERT dbo.NAP_UserFunction
 	(
 		UserId,
 		FunctionId,
@@ -165,7 +161,7 @@ BEGIN
 		ModifiedDate
 	)
 	SELECT	UserId, @FunctionId, SiteId, Policy, @CreatedBy,@now, @now
-	FROM	dbo.UserFunction
+	FROM	dbo.NAP_UserFunction
 	WHERE	FunctionId = @DuplicateFunctionId
 
 	----------------------------------------
@@ -191,9 +187,9 @@ BEGIN
 				,f.DisplayOrder		AS '@o'
 				,f.IsActive			AS '@i'
 				,f.Environment		AS '@e'				
-		FROM Functions AS f WITH (NOLOCK)
-		INNER JOIN Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
-	WHERE f.FunctionId =  @FunctionId
+		FROM dbo.NAP_Functions AS f WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		WHERE f.FunctionId =  @FunctionId
 		FOR XML PATH('r'), TYPE
 	)	
 
@@ -202,7 +198,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Function_Duplicate',
 	@ObjectId		= @FunctionId,
