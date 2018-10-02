@@ -1,6 +1,6 @@
 /*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
---ALTER PROCEDURE [dbo].[NAP_RunSP_WriteLog]  
-DECLARE	@UserId			INT,	
+ALTER PROCEDURE [dbo].[NAP_RunSP_WriteLog]  
+	@UserId			INT,	
 	@SPName			NVARCHAR(50)	= NULL,		
 	@ObjectId		INT				= NULL,
 	@ObjectTypeId	INT				= NULL,
@@ -11,7 +11,7 @@ DECLARE	@UserId			INT,
 	@Data			NVARCHAR(MAX)	= NULL,
 	@OldData		NVARCHAR(MAX)	= NULL,
 	@Duration		INT				= NULL  
---AS
+AS
 /*
 	Created: 20180925@Helen
 	Task: DB052.bodb_NAP Migration to DBCust
@@ -20,7 +20,7 @@ DECLARE	@UserId			INT,
 	Revisions:
 		 - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 */
---BEGIN
+BEGIN
 	SET NOCOUNT ON
 	
 	BEGIN TRY
@@ -38,11 +38,7 @@ DECLARE	@UserId			INT,
 		@Duration		= @Duration
 	END TRY
 	BEGIN CATCH
-		PRINT ERROR_NUMBER()
-		PRINT ERROR_MESSAGE()
-		RETURN
-	END CATCH;
-
-	
---END	 
-
+		
+	END CATCH
+END	 
+GO
