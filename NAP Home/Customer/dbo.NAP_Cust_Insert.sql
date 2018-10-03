@@ -73,7 +73,7 @@ BEGIN
 	
 	-- Check duplicate username
 	IF EXISTS (	SELECT 1
-				FROM   bodb02.dbo.Customer WITH (NOLOCK)
+				FROM   CustDB.dbo.Customer WITH (NOLOCK)
 				WHERE  username = @Username	)
 		BEGIN
 			SELECT 

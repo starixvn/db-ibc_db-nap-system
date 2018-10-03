@@ -120,7 +120,7 @@ BEGIN
 				,@FirstName		AS '@f'
 				,@LastName		AS '@l'
 				,@Email			AS '@e'
-		FROM [bodb02].[dbo].Customer AS cu WITH(NOLOCK)
+		FROM CUSTDB.dbo.Customer AS cu WITH(NOLOCK)
 			INNER JOIN dbo.NAP_Users AS u WITH(NOLOCK) ON cu.custid = u.UserId
 			LEFT JOIN dbo.NAP_Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE cu.custid = @CustId 
