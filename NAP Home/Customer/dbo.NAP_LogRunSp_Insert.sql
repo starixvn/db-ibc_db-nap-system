@@ -29,6 +29,15 @@ AS
 BEGIN
 	SET NOCOUNT ON
 
+	IF @SPName LIKE '%_xtest'
+		SELECT @SPName = LEFT(@SPName, LEN(@SPName) - 6)
+	ELSE IF @SPName LIKE '%_xpre'
+		OR @SPName LIKE '%_UAT1'
+		OR @SPName LIKE '%_UAT2'
+		OR @SPName LIKE '%_UAT3'
+		OR @SPName LIKE '%_UAT4'
+		SELECT @SPName = LEFT(@SPName, LEN(@SPName) - 5)
+  
 	DECLARE @langid tinyint, @actionid smallint
 	IF @Language is NOT NULL
 		SELECT @langid = [langid] 
