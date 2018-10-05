@@ -95,7 +95,7 @@ BEGIN
 	DECLARE @EnvironmentOld VARCHAR(10), @MenuItemNameOld NVARCHAR(50)
 
 	SELECT	@EnvironmentOld = Environment, @MenuItemNameOld = MenuItemName
-	FROM	MenuItems WITH(NOLOCK) 
+	FROM	dbo.NAP_MenuItems WITH(NOLOCK) 
 	WHERE	MenuItemId = @MenuItemId
 
 	-- Update menu item information
@@ -130,7 +130,7 @@ BEGIN
 
 				INSERT INTO @MenuItemChild (MenuItemId)
 				SELECT  c.MenuItemId 
-				FROM	MenuItems AS c WITH(NOLOCK) 
+				FROM	dbo.NAP_MenuItems AS c WITH(NOLOCK) 
 				WHERE	c.ParentId = @MenuItemId
 
 
@@ -147,7 +147,7 @@ BEGIN
 				IF (@MenuItemNameOld <> @MenuItemName)
 				BEGIN	
 					-- Update ParentName of all menu item child
-					UPDATE	dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
+					UPDATE	dbo.NAP_MenuItems WITH (ROWLOCK, UPDLOCK)
 					SET		ParentName = @MenuItemName
 					WHERE	MenuItemId IN ( SELECT MenuItemId FROM @MenuItemChild)
 				END
