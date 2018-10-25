@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_LogUserLogin_Insert]    Script Date: 8/1/2014 1:40:17 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBNAP-bodb_NAPLOG" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LogUserLogin_Insert]
 	@UserId			INT,
 	@SiteId			INT,
@@ -20,15 +14,17 @@ AS
 /*
 	Created: 20120709@Edward
 	Task :				
-	DB: bodb_NAP
+	DB: DBNAP-bodb_NAPLOG
 	Original:
-	Revisions:	    
+	Revisions:
+		- 20180925@Helen: DB052.bodb_NAP Migration, Move to bodb_NAPLOG - [Redmine:100493]
+			    
 	Param's Explanation:	
 */
 BEGIN
 	SET NOCOUNT ON
 
-	INSERT INTO bodb_NAPLog.dbo.NAPLog_UserLogin(
+	INSERT INTO dbo.NAPLog_UserLogin(
 		UserId,
 		SiteId,
 		IP,

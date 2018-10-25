@@ -1,3 +1,4 @@
+/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Home_CheckUserSiteAccess]
 	@UserId INT
 	,@Environment NVARCHAR(10) = 'UAT'
@@ -9,7 +10,8 @@ AS
 	DB: DBNAP/bodb_NAP
 	
 	Revisions:			
-	
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation:
 	- @UserId: User ID
 	- @Environment:
@@ -31,10 +33,10 @@ BEGIN
 		
 	IF EXISTS (			
 					SELECT TOP 1 1
-					FROM dbo.Sites AS SI WITH (NOLOCK)
-						INNER JOIN dbo.UserSite AS US WITH (NOLOCK)
+					FROM dbo.NAP_Sites AS SI WITH (NOLOCK)
+						INNER JOIN dbo.NAP_UserSite AS US WITH (NOLOCK)
 								ON SI.SiteId = US.SiteId
-						INNER JOIN dbo.SiteURL AS SU WITH (NOLOCK)
+						INNER JOIN dbo.NAP_SiteURL AS SU WITH (NOLOCK)
 								ON SI.SiteId = SU.SiteId
 					WHERE US.UserId = @UserId
 						AND SI.IsActive = 1

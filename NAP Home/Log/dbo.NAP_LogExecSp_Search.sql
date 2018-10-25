@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_LogExecSp_Search]    Script Date: 8/1/2014 1:39:34 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBNAP-bodb_NAPLOG" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LogExecSp_Search]
 	@Username		NVARCHAR(50)	= ''
 	,@Name			NVARCHAR(50)	= ''
@@ -23,7 +17,8 @@ AS
 
 	Revisions:
 		- 20160426@Kos: Support log of revoke permission task
-
+		- 20180925@Helen: DB052.bodb_NAP Migration, Move to bodb_NAPLOG - [Redmine:100493]
+		
 	Param's Explanation: 
 */
 
@@ -43,11 +38,11 @@ BEGIN
 		SET @TotalRows = (
 			SELECT COUNT(1)
 			FROM
-				bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-				INNER JOIN Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
+				dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+				INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
 				INNER JOIN bodb02.dbo.custInfo AS cu WITH (NOLOCK) ON u.UserId = cu.custid
 				INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-				INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+				INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 			WHERE 
 				lg.ObjectTypeId = 1 -- Object type : User
 				AND cu.username LIKE '%' + @Name + '%'
@@ -58,9 +53,9 @@ BEGIN
 		SET @TotalRows += (
 			SELECT COUNT(1)
 			FROM 
-				bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-				INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
-				INNER JOIN Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
+				dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+				INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+				INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
 				INNER JOIN bodb02.dbo.custInfo AS cu WITH (NOLOCK) ON u.UserId = cu.custid
 			WHERE 
 				lg.ObjectTypeId = 1 -- Object type : User
@@ -90,11 +85,11 @@ BEGIN
 						la.ActionId,
 						la.ActionName
 					FROM 
-						bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-						INNER JOIN Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
+						dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+						INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
 						INNER JOIN bodb02.dbo.custInfo AS cu WITH (NOLOCK) ON u.UserId = cu.custid
 						INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-						INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+						INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 					WHERE 
 						lg.ObjectTypeId = 1
 						AND cu.username LIKE '%' + @Name + '%'
@@ -109,9 +104,9 @@ BEGIN
 						la.ActionId,
 						la.ActionName
 					FROM 
-						bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-						INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
-						INNER JOIN Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
+						dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+						INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+						INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Users AS u WITH (NOLOCK) ON lg.ObjectId = u.UserId
 						INNER JOIN bodb02.dbo.custInfo AS cu WITH (NOLOCK) ON u.UserId = cu.custid
 					WHERE 
 						lg.ObjectTypeId = 1
@@ -134,10 +129,10 @@ BEGIN
 		SET @TotalRows = (
 			SELECT COUNT(1)
 			FROM 
-				bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH(NOLOCK)
-				INNER JOIN Groups AS g WITH(NOLOCK) ON lg.ObjectId = g.GroupId
+				dbo.NAPLog_RUNSP AS lg WITH(NOLOCK)
+				INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Groups AS g WITH(NOLOCK) ON lg.ObjectId = g.GroupId
 				INNER JOIN bodb02.dbo.custInfo AS cu1 WITH(NOLOCK) ON lg.UserId = cu1.custid
-				INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH(NOLOCK) ON lg.ActionId = la.ActionId
+				INNER JOIN dbo.NAPLog_Action AS la WITH(NOLOCK) ON lg.ActionId = la.ActionId
 			WHERE 
 				lg.ObjectTypeId = 2
 				AND g.GroupName LIKE '%' + @Name + '%'
@@ -157,10 +152,10 @@ BEGIN
 					la.ActionName,
 					ROW_NUMBER() OVER (ORDER BY lg.LogDate DESC) AS num
 				FROM 
-					bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH(NOLOCK)
-					INNER JOIN Groups AS g WITH(NOLOCK) ON lg.ObjectId = g.GroupId
+					dbo.NAPLog_RUNSP AS lg WITH(NOLOCK)
+					INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Groups AS g WITH(NOLOCK) ON lg.ObjectId = g.GroupId
 					INNER JOIN bodb02.dbo.custInfo AS cu1 WITH(NOLOCK) ON lg.UserId = cu1.custid
-					INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH(NOLOCK) ON lg.ActionId = la.ActionId
+					INNER JOIN dbo.NAPLog_Action AS la WITH(NOLOCK) ON lg.ActionId = la.ActionId
 				WHERE 
 					lg.ObjectTypeId = 2
 					AND g.GroupName LIKE '%' + @Name + '%'
@@ -180,10 +175,10 @@ BEGIN
 		SET @TotalRows = (
 			SELECT COUNT(1)
 			FROM 
-				bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-				INNER JOIN Sites AS s WITH (NOLOCK) ON lg.ObjectId = s.SiteId
+				dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+				INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Sites AS s WITH (NOLOCK) ON lg.ObjectId = s.SiteId
 				INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-				INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+				INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 			WHERE 
 				lg.ObjectTypeId = 3
 				AND s.SiteName LIKE '%' + @Name + '%'
@@ -203,10 +198,10 @@ BEGIN
 					la.ActionName,
 					row_number() OVER (ORDER BY lg.LogDate DESC) AS num
 				FROM 
-					bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-					INNER JOIN Sites AS s WITH (NOLOCK) ON lg.ObjectId = s.SiteId
+					dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+					INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Sites AS s WITH (NOLOCK) ON lg.ObjectId = s.SiteId
 					INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-					INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+					INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 				WHERE 
 					lg.ObjectTypeId = 3
 					AND s.SiteName LIKE '%' + @Name + '%'
@@ -226,10 +221,10 @@ BEGIN
 		SET @TotalRows = (
 			SELECT COUNT(1)
 			FROM 
-				bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-				INNER JOIN Functions AS f WITH (NOLOCK) ON lg.ObjectId = f.FunctionId
+				dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+				INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Functions AS f WITH (NOLOCK) ON lg.ObjectId = f.FunctionId
 				INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-				INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+				INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 			WHERE 
 				lg.ObjectTypeId = 4
 				AND f.FunctionName LIKE '%' + @Name + '%'
@@ -249,10 +244,10 @@ BEGIN
 					la.ActionName,
 					row_number() OVER (ORDER BY lg.LogDate DESC) AS num
 				FROM 
-					bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-					INNER JOIN Functions AS f WITH (NOLOCK) ON lg.ObjectId = f.FunctionId
+					dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+					INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_Functions AS f WITH (NOLOCK) ON lg.ObjectId = f.FunctionId
 					INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-					INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+					INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 				WHERE 
 					lg.ObjectTypeId = 4 -- Object type : Function
 					AND f.FunctionName LIKE '%' + @Name + '%'
@@ -272,10 +267,10 @@ BEGIN
 		SET @TotalRows = (
 			SELECT COUNT(1)
 			FROM 
-				bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-				INNER JOIN MenuItems AS m WITH (NOLOCK) ON lg.ObjectId = m.MenuItemId
+				dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+				INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_MenuItems AS m WITH (NOLOCK) ON lg.ObjectId = m.MenuItemId
 				INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-				INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+				INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 			WHERE 
 				lg.ObjectTypeId = 5
 				AND m.MenuItemName LIKE '%' + @Name + '%'
@@ -295,10 +290,10 @@ BEGIN
 					la.ActionName,
 					row_number() OVER (ORDER BY lg.LogDate DESC) AS num
 				FROM 
-					bodb_NAPLog.dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
-					INNER JOIN MenuItems AS m WITH (NOLOCK) ON lg.ObjectId = m.MenuItemId
+					dbo.NAPLog_RUNSP AS lg WITH (NOLOCK)
+					INNER JOIN DBPOL.NAP_UserControl.dbo.NAP_MenuItems AS m WITH (NOLOCK) ON lg.ObjectId = m.MenuItemId
 					INNER JOIN bodb02.dbo.custInfo AS cu1 WITH (NOLOCK) ON lg.UserId = cu1.custid
-					INNER JOIN bodb_NAPLog.dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
+					INNER JOIN dbo.NAPLog_Action AS la WITH (NOLOCK) ON lg.ActionId = la.ActionId
 				WHERE 
 					lg.ObjectTypeId = 5 -- Object type : menu item
 					AND m.MenuItemName LIKE '%' + @Name + '%'

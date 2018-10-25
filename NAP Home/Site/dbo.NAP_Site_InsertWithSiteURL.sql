@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_InsertWithSiteURL]    Script Date: 8/1/2014 1:43:40 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_InsertWithSiteURL]
 	@SiteId				INT							OUTPUT,
 	@SiteName			VARCHAR(50),
@@ -26,11 +20,12 @@ AS
 /*
 	Created: 20120809@Edward
 	Task: Add a new site
-	DB: bodb_NAP
+	DB: DBPOL-NAP_UserControl
 	Revisions:
 		- 20121009@Lewis: Remove @URL, @TestURL, add @SiteURLs
 		- 20160328@Kos: Add SecretAccessKey, SiteKey
-
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation:
 	+ Urls sample:
 	<ROOT>
@@ -76,7 +71,7 @@ BEGIN
 	SET @startRun = GETDATE()
 
 	-- Create site
-	INSERT INTO dbo.Sites (
+	INSERT INTO dbo.NAP_Sites (
 		SiteName,
 		Description,
 		IsActive,
@@ -98,7 +93,7 @@ BEGIN
 		EXEC NAP_Functions_GenerateNAPFunction @SiteId,@Environment
 
 		-- assign portal admin is site admin in this site
-		INSERT UserSite (
+		INSERT dbo.NAP_UserSite (
 			UserId,
 			SiteId,
 			Level,
@@ -118,13 +113,13 @@ BEGIN
 			@LogDate,
 			@CurrentUserId,
 			@LogDate
-		FROM dbo.UserSite AS us WITH (NOLOCK)
+		FROM dbo.NAP_UserSite AS us WITH (NOLOCK)
 		WHERE 
 			us.Level = 100		-- Portal Admin
 			AND SiteId = 1		-- NAP Admin Site ID
 
 		-- Assign permission for site admin
-		INSERT dbo.UserFunction
+		INSERT dbo.NAP_UserFunction
 		(
 			UserId,
 			FunctionId,
@@ -148,8 +143,8 @@ BEGIN
 			@CurrentUserId,
 			@LogDate
 		FROM
-			dbo.UserSite AS us WITH (NOLOCK)
-			INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON us.SiteId = f.SiteId
+			dbo.NAP_UserSite AS us WITH (NOLOCK)
+			INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON us.SiteId = f.SiteId
 		WHERE
 			us.SiteId = @SiteId AND us.[Level] IN (50, 100) -- Site admin: 50, Portal admin: 100
 	END
@@ -157,7 +152,7 @@ BEGIN
 	-- Insert site URL
 	SET @xml = CONVERT(XML, @SiteURLs)
 
-	INSERT dbo.SiteURL (
+	INSERT dbo.NAP_SiteURL (
 		SiteId,
 		URL,
 		Environment,
@@ -197,7 +192,7 @@ BEGIN
 					su.Environment	AS '@e',
 					su.IsDefault	AS '@id',
 					su.IsActive		AS '@ia'
-				FROM dbo.SiteURL AS su WITH (NOLOCK)
+				FROM dbo.NAP_SiteURL AS su WITH (NOLOCK)
 				WHERE SiteId = @SiteId
 				FOR XML PATH('z'), TYPE
 			)
@@ -209,7 +204,7 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration = DATEDIFF(MILLISECOND, @startRun, @endRun)
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 		@UserId			= @CurrentUserId,
 		@SPName			= 'NAP_Site_InsertWithSiteURL',
 		@ObjectId		= @SiteId,

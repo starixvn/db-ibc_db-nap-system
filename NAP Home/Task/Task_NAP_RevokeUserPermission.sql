@@ -1,11 +1,4 @@
-USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[Task_NAP_RevokeUserPermission]    Script Date: 9/7/2016 9:37:05 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Task_NAP_RevokeUserPermission]
 AS
 
@@ -15,7 +8,8 @@ AS
 	DB: DBNAP.bodb_NAP
 
 	Revisions:
-
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation:
 */
 
@@ -48,9 +42,9 @@ BEGIN
 					us.SiteId AS '@si'
 					,s.SiteName AS '@s'
 				FROM 
-					dbo.UserSite AS us WITH (NOLOCK) 
-					INNER JOIN bodb02.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = us.UserId
-					INNER JOIN dbo.Sites AS s WITH (NOLOCK) ON s.SiteId = us.SiteId
+					dbo.NAP_UserSite AS us WITH (NOLOCK) 
+					INNER JOIN CustDB.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = us.UserId
+					INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON s.SiteId = us.SiteId
 				WHERE 
 					us.ExpiredDate IS NOT NULL 
 					AND us.ExpiredDate < CONVERT(DATE, SWITCHOFFSET(SYSDATETIMEOFFSET(), '+07:00'))
@@ -63,9 +57,9 @@ BEGIN
 		(SELECT DISTINCT
 			us.UserId AS UserId
 		FROM
-			dbo.UserSite AS us WITH (NOLOCK) 
-			INNER JOIN bodb02.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = us.UserId
-			INNER JOIN dbo.Sites AS s WITH (NOLOCK) ON s.SiteId = us.SiteId
+			dbo.NAP_UserSite AS us WITH (NOLOCK) 
+			INNER JOIN CustDB.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = us.UserId
+			INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON s.SiteId = us.SiteId
 		WHERE 
 			us.ExpiredDate IS NOT NULL 
 			AND us.ExpiredDate < CONVERT(DATE, SWITCHOFFSET(SYSDATETIMEOFFSET(), '+07:00'))
@@ -79,11 +73,11 @@ BEGIN
 		,uf.ModifiedBy = 8
 		,uf.ModifiedDate = GETDATE()
 	FROM 
-		dbo.UserFunction AS uf  WITH (ROWLOCK, UPDLOCK)
-		INNER JOIN dbo.UserSite AS us WITH (NOLOCK)
+		dbo.NAP_UserFunction AS uf  WITH (ROWLOCK, UPDLOCK)
+		INNER JOIN dbo.NAP_UserSite AS us WITH (NOLOCK)
 		ON	us.SiteId = uf.SiteId 
 			AND us.UserId = uf.UserId
-		INNER JOIN bodb02.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = uf.UserId
+		INNER JOIN CustDB.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = uf.UserId
 	WHERE
 		us.ExpiredDate IS NOT NULL
 		AND us.ExpiredDate < CONVERT(DATE, SWITCHOFFSET(SYSDATETIMEOFFSET(), '+07:00')) 
@@ -96,8 +90,8 @@ BEGIN
 		us.IsActive = 0
 		,us.IsNeverExpired = 1
 	FROM 
-		dbo.UserSite AS us WITH (ROWLOCK, UPDLOCK)
-		INNER JOIN bodb02.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = us.UserId
+		dbo.NAP_UserSite AS us WITH (ROWLOCK, UPDLOCK)
+		INNER JOIN CustDB.dbo.custInfo AS u WITH (NOLOCK) ON u.custid = us.UserId
 	WHERE 
 		us.ExpiredDate IS NOT NULL 
 		AND us.ExpiredDate < CONVERT(DATE, SWITCHOFFSET(SYSDATETIMEOFFSET(), '+07:00'))
@@ -124,7 +118,7 @@ BEGIN
 		FROM @xmlTableTemp AS Temp
 		WHERE Temp.id = @rowNum
 
-		EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+		EXEC dbo.NAP_RunSP_WriteLog 
 			@UserId			= 0,
 			@SPName			= 'Task_NAP_RevokeUserPermission',
 			@ObjectId		= @logObjectId,

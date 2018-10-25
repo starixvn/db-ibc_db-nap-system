@@ -1,4 +1,5 @@
-﻿ ALTER PROCEDURE [dbo].[NAP_MenuItem_GetByUserAndSiteIncludeGroup]
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[NAP_MenuItem_GetByUserAndSiteIncludeGroup]
 	@UserId			INT,				
 	@SiteId			INT,				
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
@@ -9,12 +10,16 @@ AS
  * Task		: Get all menu items of a user in a site include its group permission
  * DB		: bodb_NAP
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: GET CODES FROM PRO + DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 
  */
-BEGIN
-	SET NOCOUNT ON
 
+BEGIN
+
+	SET NOCOUNT ON
+	
 	SELECT 
 		m.MenuItemId,
 		m.FunctionId,
@@ -25,7 +30,7 @@ BEGIN
 		m.Description,
 		m.ParentId,
 		m.ParentName,
-		m.Policy,
+		uf.Policy,
 		m.URL,
 		m.DisplayOrder,
 		m.IsActive,
@@ -35,7 +40,7 @@ BEGIN
 		m.ModifiedBy	AS ModifierId,
 		mb.username		AS ModifierUsername,
 		m.ModifiedDate,
-		m.Environment	
+		m.Environment
 	FROM 
 		(
 			SELECT
@@ -51,32 +56,32 @@ BEGIN
 			(
 				-- Get function permission of this user in a site
 				SELECT FunctionId, Policy
-				FROM dbo.UserFunction WITH (NOLOCK)
+				FROM dbo.NAP_UserFunction WITH (NOLOCK)
 				WHERE UserId = @UserId AND SiteId = @SiteId
 			) AS A
+
 			FULL OUTER JOIN
+
 			(
 				-- Get all function permissino of this group in a site
 				SELECT FunctionId, Policy
-				FROM dbo.GroupFunction AS gf WITH (NOLOCK)
-					INNER JOIN dbo.Users AS u WITH (NOLOCK) ON u.GroupId = gf.GroupId
+				FROM dbo.NAP_GroupFunction AS gf WITH (NOLOCK)
+					INNER JOIN dbo.NAP_Users AS u WITH (NOLOCK) ON u.GroupId = gf.GroupId
 				WHERE u.UserId = @UserId AND gf.SiteId = @SiteId
 			) AS B
 			ON A.FunctionID = B.FunctionID
 		) AS uf
-		INNER JOIN dbo.MenuItems AS m WITH (NOLOCK) ON uf.FunctionId = m.FunctionId AND uf.Policy >= m.Policy
-		INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
-		INNER JOIN dbo.Sites AS s WITH (NOLOCK) ON m.SiteId = s.SiteId
-		LEFT JOIN bodb02.dbo.custInfo AS cb WITH (NOLOCK) ON m.CreatedBy = cb.custid
-		LEFT JOIN bodb02.dbo.custInfo AS mb WITH (NOLOCK) ON m.ModifiedBy = mb.custid
+		INNER JOIN dbo.NAP_MenuItems AS m WITH (NOLOCK) ON uf.FunctionId = m.FunctionId AND uf.Policy >= m.Policy
+		INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON m.SiteId = s.SiteId
+		LEFT JOIN CustDB.dbo.custInfo AS cb WITH (NOLOCK) ON m.CreatedBy = cb.custid
+		LEFT JOIN CustDB.dbo.custInfo AS mb WITH (NOLOCK) ON m.ModifiedBy = mb.custid
 	WHERE 
 		(@Environment = 'UAT' OR (@Environment != 'UAT' AND m.Environment = @Environment AND f.Environment = @Environment))
 		AND m.IsActive = 1
 		AND f.IsActive = 1
+
 END
-
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_MenuItem_GetByUserAndSiteIncludeGroup] TO [bodbAdminNet] AS [dbo]
 GO

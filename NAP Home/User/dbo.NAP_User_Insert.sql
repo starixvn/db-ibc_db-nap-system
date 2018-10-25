@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_Insert]    Script Date: 8/1/2014 1:51:15 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_Insert]
     @UserId             INT
     ,@username			VARCHAR(30) = null
@@ -21,13 +15,15 @@ ALTER PROCEDURE [dbo].[NAP_User_Insert]
 AS
 
 /*  
- * Created	: 20120820@Edward
- * Task		: Insert user
- * DB		: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 	
-	*** WRITE LOG template:
+	Created	: 20120820@Edward
+	Task	: Insert user
+	DB		: DBPOL/NAP_UserControl
+
+	Revisions:
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		     
+	Param's Explanation: 	
+	WRITE LOG template:
 	Main	:	<root><xml path="r" />
 					<row item="Username" alias="u" />
 					<row item="UserId" alias="ui" />
@@ -50,7 +46,7 @@ BEGIN
 	SET @startRun = GETDATE()	  	
     
 	-- Add new user
-	INSERT INTO Users(UserId, GroupId, CreatedBy, CreatedDate, ModifiedBy, ModifiedDate)
+	INSERT INTO dbo.NAP_Users(UserId, GroupId, CreatedBy, CreatedDate, ModifiedBy, ModifiedDate)
 	VALUES(@UserId, @GroupId, @CreatedBy, @CreatedDate, @CreatedBy, @CreatedDate)
     
 	-- Check error
@@ -68,8 +64,8 @@ BEGIN
 				,@username		AS '@u'
 				,@GroupId		AS '@gi'
 				,g.GroupName	AS '@g'
-		FROM Users AS u WITH(NOLOCK)
-		INNER JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
+		FROM dbo.NAP_Users AS u WITH(NOLOCK)
+			INNER JOIN dbo.NAP_Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE u.userid = @UserId 	
 		FOR XML PATH('r'), TYPE
 	)	
@@ -79,7 +75,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_User_Insert',
 	@ObjectId		= @UserId,

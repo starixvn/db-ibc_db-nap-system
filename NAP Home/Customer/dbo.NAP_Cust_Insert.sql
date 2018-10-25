@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Cust_Insert]    Script Date: 06/06/2015 13:38:14 ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Cust_Insert]
 	@CustId			INT							OUTPUT,	
 	@Username		VARCHAR (30),
@@ -26,11 +20,12 @@ AS
 	Created: 20120709@Edward
 	Task :	Insert new user to custinfo and customer of bodb02 with roleid = 6
 			and add to User of bodb_NAP
-	DB: DB052.bodb_NAP
+	DB: DBPOL/NAP_UserControl
 	Original:
 
 	Revisions:
 		- 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
+	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 	    
 	Param's Explanation:
 	• @CustId :
@@ -73,12 +68,12 @@ BEGIN
 	DECLARE @isAllow TINYINT
 
 	SELECT @isAllow = roleid 
-	FROM bodb02.dbo.Customer WITH (NOLOCK) 
+	FROM CUSTDB.dbo.Customer WITH (NOLOCK) 
 	WHERE custid = @CurrentUserId
 	
 	-- Check duplicate username
 	IF EXISTS (	SELECT 1
-				FROM   bodb02.dbo.Customer WITH (NOLOCK)
+				FROM   CustDB.dbo.Customer WITH (NOLOCK)
 				WHERE  username = @Username	)
 		BEGIN
 			SELECT 
@@ -88,7 +83,7 @@ BEGIN
 		END
 
 	-- create new user in customer/custinfo tables
-	EXEC	[DBCust].[CustDB].[dbo].[NAP_Admin_Ins]
+	EXEC [CustDB].[dbo].[NAP_Admin_Ins]
 			@FirstName		= @FirstName	OUTPUT,
 			@LastName		= @LastName		OUTPUT,
 			@Email			= @Email		OUTPUT,
@@ -134,8 +129,8 @@ BEGIN
 				,@FirstName		AS '@f'
 				,@LastName		AS '@l'
 				,@Email			AS '@e'
-		FROM Users AS u WITH(NOLOCK)
-		INNER JOIN Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
+		FROM dbo.NAP_Users AS u WITH(NOLOCK)
+			INNER JOIN dbo.NAP_Groups AS g WITH(NOLOCK) ON u.GroupId = g.GroupId
 		WHERE u.userid = @CustId 
 		FOR XML PATH('r'), TYPE
 	)	
@@ -145,7 +140,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Cust_Insert',
 	@ObjectId		= @CustId,
@@ -159,7 +154,6 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_Cust_Insert] TO [bodbAdminNet] AS [dbo]

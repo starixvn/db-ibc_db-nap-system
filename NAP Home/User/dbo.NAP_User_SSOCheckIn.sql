@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_SSOCheckIn]    Script Date: 8/1/2014 1:53:50 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_SSOCheckIn]
 	@UserId				INT
 	,@SiteId			INT
@@ -18,9 +12,11 @@ AS
 /*  
  * Created: 20120823@Edward
  * Task : User SSO check in
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 
 */
 
@@ -29,17 +25,17 @@ BEGIN
 		
 	-- check for onuser is kicked out
 	IF EXISTS (	SELECT TOP(1) * 
-				FROM OnUser
+				FROM dbo.NAP_OnUser
 				WHERE Id = @CheckOnUserId AND IsKickedOut = 0 )
 		BEGIN
 			
-			UPDATE OnUser WITH (ROWLOCK, UPDLOCK)
+			UPDATE dbo.NAP_OnUser WITH (ROWLOCK, UPDLOCK)
 			SET IsKickedOut = 1 
 			WHERE UserId = @UserId 	
 			AND SiteId = @SiteId
 
 			-- Insert new onuser
-			INSERT INTO OnUser(UserId, SiteId, IsKickedOut, IP, NetSessionId)
+			INSERT INTO dbo.NAP_OnUser(UserId, SiteId, IsKickedOut, IP, NetSessionId)
 			VALUES (@UserId, @SiteId, 0, @IP, @NetSessionID)
 		
 			SET @OnUserId = SCOPE_IDENTITY()	
@@ -47,13 +43,13 @@ BEGIN
 			-- Update last login date
 			IF (@SiteId = 0)	-- NAP Hub
 				BEGIN
-					UPDATE Users
+					UPDATE dbo.NAP_Users
 					SET LastLoginDate = @LoginDate
 					WHERE UserId = @UserId
 				END
 			ELSE
 				BEGIN
-					UPDATE UserSite
+					UPDATE dbo.NAP_UserSite
 					SET LastLoginDate = @LoginDate
 					WHERE SiteId = @SiteId AND UserId=@UserId
 				END	

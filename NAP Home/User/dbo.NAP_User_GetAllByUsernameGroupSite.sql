@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_GetAllByUsernameGroupSite]    Script Date: 8/1/2014 1:48:56 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_GetAllByUsernameGroupSite]
 	@Username		NVARCHAR(50),
 	@GroupId		INT,
@@ -22,7 +16,8 @@ AS
 	DB: DBNAP.bodb_NAP
 	Revisions:
 		- 20171124@Kos: Add param @Status, @Environment [Redmine: #87124]
-
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
 	Param's Explanation:
 		- @Username: Username search text
 		- @GroupId: User group ID (0: All groups, Others: specific group)
@@ -61,8 +56,8 @@ BEGIN
 		u.UserId,
 		c.username,
 		c.closed
-	FROM dbo.Users AS u WITH (NOLOCK)
-		INNER JOIN bodb02.dbo.custInfo AS c WITH (NOLOCK) ON u.UserId = c.custid
+	FROM dbo.NAP_Users AS u WITH (NOLOCK)
+		INNER JOIN CustDB.dbo.custInfo AS c WITH (NOLOCK) ON u.UserId = c.custid
 	WHERE @GroupId = 0
 		OR (@GroupId <> 0 AND u.GroupId = @GroupId)
 
@@ -84,7 +79,7 @@ BEGIN
 		us.SiteId,
 		us.IsActive,
 		us.Level
-	FROM dbo.UserSite AS us WITH (NOLOCK)
+	FROM dbo.NAP_UserSite AS us WITH (NOLOCK)
 	WHERE EXISTS ( SELECT 1 FROM @TableSite WHERE SiteId = us.SiteId )
 		AND ((@Status = 1 AND us.IsActive = 1)
 			OR (@Status = 2 AND us.IsActive = 0)
@@ -142,7 +137,7 @@ BEGIN
 					ROW_NUMBER() OVER (ORDER BY u.closed ASC, us.IsActive DESC, u.username, s.SiteName, us.[Level] DESC) AS RowNum
 				FROM @Users AS u
 					LEFT JOIN @UserSite AS us ON u.UserId = us.UserId
-					LEFT JOIN dbo.Sites AS s WITH (NOLOCK) ON us.SiteId = s.SiteId
+					LEFT JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON us.SiteId = s.SiteId
 				WHERE @Site <> ''
 					OR (@Site = '' AND NOT EXISTS (SELECT 1 FROM @UserSite WHERE UserId = u.UserId))
 			) AS Temp
@@ -165,7 +160,7 @@ BEGIN
 					ROW_NUMBER() OVER (ORDER BY u.closed ASC, us.IsActive DESC, u.username, s.SiteName, us.[Level] DESC) AS RowNum
 				FROM @Users AS u
 					INNER JOIN @UserSite AS us ON u.UserId = us.UserId
-					INNER JOIN dbo.Sites AS s WITH (NOLOCK) ON us.SiteId = s.SiteId
+					INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON us.SiteId = s.SiteId
 				WHERE @Site <> ''
 					OR (@Site = '' AND NOT EXISTS (SELECT 1 FROM @UserSite WHERE UserId = u.UserId))
 			) AS Temp
@@ -206,15 +201,15 @@ BEGIN
 		us.ModifiedDate AS ModifiedDateUserSite
 	FROM
 		@UserSiteStatus AS tmp
-		INNER JOIN dbo.Users AS u WITH (NOLOCK) ON tmp.UserId = u.UserId
-		INNER JOIN bodb02.dbo.Customer AS c WITH (NOLOCK) ON u.UserId = c.custid
-		LEFT JOIN dbo.Groups AS g WITH (NOLOCK) ON g.GroupId = u.GroupId
-		LEFT JOIN bodb02.dbo.Customer AS c1 WITH (NOLOCK) ON u.CreatedBy = c1.custid
-		LEFT JOIN bodb02.dbo.Customer AS c2 WITH (NOLOCK) ON u.ModifiedBy = c2.custid
-		LEFT JOIN dbo.UserSite AS us WITH (NOLOCK) ON tmp.UserId = us.UserId AND tmp.SiteId = us.SiteId
-		LEFT JOIN bodb02.dbo.Customer AS c3 WITH (NOLOCK) ON us.CreatedBy = c3.custid
-		LEFT JOIN bodb02.dbo.Customer AS c4 WITH (NOLOCK) ON us.ModifiedBy = c4.custid
-		LEFT JOIN dbo.Sites AS s WITH (NOLOCK) ON tmp.SiteId = s.SiteId
+		INNER JOIN dbo.NAP_Users AS u WITH (NOLOCK) ON tmp.UserId = u.UserId
+		INNER JOIN CustDB.dbo.Customer AS c WITH (NOLOCK) ON u.UserId = c.custid
+		LEFT JOIN dbo.NAP_Groups AS g WITH (NOLOCK) ON g.GroupId = u.GroupId
+		LEFT JOIN CustDB.dbo.Customer AS c1 WITH (NOLOCK) ON u.CreatedBy = c1.custid
+		LEFT JOIN CustDB.dbo.Customer AS c2 WITH (NOLOCK) ON u.ModifiedBy = c2.custid
+		LEFT JOIN dbo.NAP_UserSite AS us WITH (NOLOCK) ON tmp.UserId = us.UserId AND tmp.SiteId = us.SiteId
+		LEFT JOIN CustDB.dbo.Customer AS c3 WITH (NOLOCK) ON us.CreatedBy = c3.custid
+		LEFT JOIN CustDB.dbo.Customer AS c4 WITH (NOLOCK) ON us.ModifiedBy = c4.custid
+		LEFT JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON tmp.SiteId = s.SiteId
 	ORDER BY tmp.RowNum
 END
 

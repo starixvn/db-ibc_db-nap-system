@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_GetUserListSiteFunctionKeyPolicy]    Script Date: 8/1/2014 1:50:47 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_GetUserListSiteFunctionKeyPolicy]
     @UserId			INT,
 	@Site			NVARCHAR(MAX)	= '',
@@ -14,9 +8,11 @@ AS
 /*  
  * Created: 20120820@Edward
  * Task : Get policy of user function
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 
 */
 
@@ -56,8 +52,8 @@ BEGIN
 				uf.Policy, 
 				f.SiteId
 			FROM 
-				UserFunction AS uf WITH (NOLOCK)
-				INNER JOIN Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+				dbo.NAP_UserFunction AS uf WITH (NOLOCK)
+				INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
 			WHERE 
 				uf.UserId = @UserId 
 				AND f.SiteId IN (SELECT SiteId FROM @TableSite )
@@ -72,9 +68,9 @@ BEGIN
 				gf.Policy, 
 				f.SiteId
 			FROM 
-				GroupFunction AS gf WITH (NOLOCK)
-				INNER JOIN Users AS u WITH (NOLOCK) ON u.GroupId = gf.GroupId
-				INNER JOIN Functions AS f WITH (NOLOCK) ON gf.FunctionId = f.FunctionId
+				dbo.NAP_GroupFunction AS gf WITH (NOLOCK)
+				INNER JOIN dbo.NAP_Users AS u WITH (NOLOCK) ON u.GroupId = gf.GroupId
+				INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON gf.FunctionId = f.FunctionId
 			WHERE 
 				u.UserId = @UserId
 				AND f.SiteId IN (SELECT SiteId FROM @TableSite )
@@ -83,7 +79,6 @@ BEGIN
 		) AS B
 		ON A.FunctionId = B.FunctionId
 END
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_User_GetUserListSiteFunctionKeyPolicy] TO [bodbAdminNet] AS [dbo]
 GO

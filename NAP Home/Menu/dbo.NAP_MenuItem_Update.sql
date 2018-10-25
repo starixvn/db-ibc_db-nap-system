@@ -1,11 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_MenuItem_Update]    Script Date: 8/1/2014 8:35:02 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_MenuItem_Update]
     @MenuItemId			INT,	
 	@FunctionId			INT,	
@@ -38,6 +31,8 @@ AS
  * Revisions:     
 	- 20120830@Edward : Update Environment of child when parent change
 	- 20140801@Sophia: Update ParentName of child when parent change
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 	
 	• Main	:	
 				<root><xml path="r" />
@@ -87,9 +82,9 @@ BEGIN
 				,m.URL				AS '@u'
 				,m.DisplayOrder		AS '@o'
 				,m.IsActive			AS '@i'
-		FROM MenuItems AS m WITH (NOLOCK)
-		INNER JOIN Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
-		INNER JOIN Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		FROM dbo.NAP_MenuItems AS m WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
 		WHERE m.MenuItemId = @MenuItemId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -100,11 +95,11 @@ BEGIN
 	DECLARE @EnvironmentOld VARCHAR(10), @MenuItemNameOld NVARCHAR(50)
 
 	SELECT	@EnvironmentOld = Environment, @MenuItemNameOld = MenuItemName
-	FROM	MenuItems WITH(NOLOCK) 
+	FROM	dbo.NAP_MenuItems WITH(NOLOCK) 
 	WHERE	MenuItemId = @MenuItemId
 
 	-- Update menu item information
-	UPDATE dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
+	UPDATE dbo.NAP_MenuItems WITH (ROWLOCK, UPDLOCK)
 	SET	
 		FunctionId		= @FunctionId,
 		SiteId			= @SiteId,
@@ -135,7 +130,7 @@ BEGIN
 
 				INSERT INTO @MenuItemChild (MenuItemId)
 				SELECT  c.MenuItemId 
-				FROM	MenuItems AS c WITH(NOLOCK) 
+				FROM	dbo.NAP_MenuItems AS c WITH(NOLOCK) 
 				WHERE	c.ParentId = @MenuItemId
 
 
@@ -143,7 +138,7 @@ BEGIN
 				IF (@EnvironmentOld <> @Environment)
 				BEGIN	
 					-- Update Environment of all menu item child
-					UPDATE dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
+					UPDATE dbo.NAP_MenuItems WITH (ROWLOCK, UPDLOCK)
 					SET	Environment = @Environment
 					WHERE MenuItemId IN ( SELECT MenuItemId FROM @MenuItemChild)
 				END
@@ -152,7 +147,7 @@ BEGIN
 				IF (@MenuItemNameOld <> @MenuItemName)
 				BEGIN	
 					-- Update ParentName of all menu item child
-					UPDATE	dbo.MenuItems WITH (ROWLOCK, UPDLOCK)
+					UPDATE	dbo.NAP_MenuItems WITH (ROWLOCK, UPDLOCK)
 					SET		ParentName = @MenuItemName
 					WHERE	MenuItemId IN ( SELECT MenuItemId FROM @MenuItemChild)
 				END
@@ -173,9 +168,9 @@ BEGIN
 				,@URL				AS '@u'
 				,@DisplayOrder		AS '@o'
 				,@IsActive			AS '@i'
-		FROM MenuItems AS m WITH (NOLOCK)
-		INNER JOIN Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
-		INNER JOIN Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		FROM NAP_MenuItems AS m WITH (NOLOCK)
+		INNER JOIN NAP_Functions AS f WITH (NOLOCK) ON m.FunctionId = f.FunctionId
+		INNER JOIN NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
 		WHERE m.MenuItemId = @MenuItemId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -185,7 +180,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_MenuItem_Update',
 	@ObjectId		= @MenuItemId,

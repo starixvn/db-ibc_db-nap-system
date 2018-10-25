@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_Update]    Script Date: 8/1/2014 1:34:42 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_Update]
     @FunctionId			INT,	
 	@SiteId				INT,									
@@ -31,11 +25,13 @@ AS
 /*  
  * Created: 20120810@Kos
  * Task : Update function information
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
  * Revisions:     
 	-20120821@Edward Add function update all table contains FunctionId when SiteId change
 	-29112012@Edward update write log	
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 
 	• Main	:	<root><xml path="r" />
 					<row item="FunctionId" alias="fi" />
@@ -83,8 +79,8 @@ BEGIN
 				,f.DisplayOrder		AS '@o'
 				,f.IsActive			AS '@i'
 				,f.Environment		AS '@e'				
-		FROM Functions AS f WITH (NOLOCK)
-		INNER JOIN Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		FROM dbo.NAP_Functions AS f WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
 		WHERE f.FunctionId =  @FunctionId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -100,11 +96,11 @@ BEGIN
 		@OldSiteId		= SiteId,
 		@OldEnvironment = Environment,
 		@OldCRUD		= CRUD
-	FROM dbo.Functions 
+	FROM dbo.NAP_Functions WITH (NOLOCK)
 	WHERE FunctionId = @FunctionId
 
 	-- Update function information
-	UPDATE dbo.Functions 
+	UPDATE dbo.NAP_Functions 
 	SET	
 		SiteId			= @SiteId,
 		FunctionName	= @FunctionName,
@@ -124,15 +120,15 @@ BEGIN
 	-- and SiteId change
 	IF (@OldSiteId != @SiteId)
 		BEGIN
-			UPDATE dbo.MenuItems
+			UPDATE dbo.NAP_MenuItems
 			SET SiteId = @SiteId
 			WHERE FunctionId = @FunctionId
 
-			UPDATE dbo.GroupFunction
+			UPDATE dbo.NAP_GroupFunction
 			SET SiteId = @SiteId
 			WHERE FunctionId = @FunctionId
 
-			UPDATE dbo.UserFunction
+			UPDATE dbo.NAP_UserFunction
 			SET SiteId = @SiteId
 			WHERE FunctionId = @FunctionId
 		END
@@ -140,11 +136,11 @@ BEGIN
 	-- update permission (from readonly to non readonly) for site admin and portal admin
 	IF (@CRUD > @OldCRUD)
 		BEGIN
-			UPDATE UserFunction 
+			UPDATE dbo.NAP_UserFunction 
 			SET Policy = 2
 			WHERE UserId IN (
 				SELECT DISTINCT us.UserId 
-				FROM UserSite AS us WITH(NOLOCK) 
+				FROM dbo.NAP_UserSite AS us WITH(NOLOCK) 
 				WHERE us.Level IN(50,100) 
 			)			
 			AND FunctionId = @FunctionId		
@@ -152,11 +148,11 @@ BEGIN
 	--update permission (from non read only to readonly) for all user has permission in this function
 	IF (@CRUD < @OldCRUD)
 		BEGIN
-			UPDATE UserFunction 
+			UPDATE dbo.NAP_UserFunction 
 			SET Policy = 1
 			WHERE UserId IN (
 				SELECT DISTINCT uf.UserId
-				FROM UserFunction AS uf WITH (NOLOCK)
+				FROM dbo.NAP_UserFunction AS uf WITH (NOLOCK)
 				WHERE uf.FunctionId = @FunctionId
 				AND uf.Policy = 2
 			)
@@ -178,19 +174,19 @@ BEGIN
 					-- Get list function child of FunctionId
 					;WITH FunctionChild AS (
 						SELECT  FunctionId 
-						FROM    Functions WITH (NOLOCK)
+						FROM    dbo.NAP_Functions WITH (NOLOCK)
 						WHERE   FunctionId = @FunctionId
 
 						UNION ALL
 
 						SELECT  f.FunctionId 
 						FROM    
-							Functions AS f WITH(NOLOCK) 
+							dbo.NAP_Functions AS f WITH(NOLOCK) 
 							INNER JOIN FunctionChild r ON f.ParentId = r.FunctionId
 					)
 					
 					-- Update Environment for all function child
-					UPDATE dbo.Functions 
+					UPDATE dbo.NAP_Functions 
 					SET	Environment = @Environment
 					WHERE FunctionId IN ( SELECT  FunctionId FROM FunctionChild)
 				END
@@ -210,7 +206,7 @@ BEGIN
 				,@DisplayOrder		AS '@o'
 				,@IsActive			AS '@i'
 				,@Environment		AS '@e'				
-		FROM Sites AS s WITH (NOLOCK)
+		FROM dbo.NAP_Sites AS s WITH (NOLOCK)
 		WHERE s.SiteId = @SiteId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -220,7 +216,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Function_Update',
 	@ObjectId		= @FunctionId,
@@ -233,7 +229,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_Update] TO [bodbAdminNet] AS [dbo]
 GO

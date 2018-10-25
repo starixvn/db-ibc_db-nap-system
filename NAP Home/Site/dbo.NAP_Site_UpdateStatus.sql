@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_UpdateStatus]    Script Date: 8/1/2014 1:44:58 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_UpdateStatus]
     @SiteId			INT	
     ,@IsActive		BIT
@@ -21,7 +15,9 @@ AS
  * Task		: Update status of site
  * DB		: bodb_NAP
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation: 
 		Main: 
 		<root><xml path="r" /><row item="SiteId" alias="s" /><row item="IsActive" alias="i" /></root>
@@ -42,7 +38,7 @@ BEGIN
 	SET @xml = (
 		SELECT @SiteId			AS '@s'
 				,s.IsActive 	AS '@i'			
-		FROM Sites AS s WITH(NOLOCK)
+		FROM dbo.NAP_Sites AS s WITH(NOLOCK)
 		WHERE s.SiteId = @SiteId				
 		FOR XML PATH('r'), TYPE
 	)	
@@ -50,7 +46,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
 
 	-- Update site information
-	UPDATE dbo.Sites 
+	UPDATE dbo.NAP_Sites 
 	SET IsActive = @IsActive        
     WHERE SiteId = @SiteId
 	
@@ -75,7 +71,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Site_UpdateStatus',
 	@ObjectId		= @SiteId,

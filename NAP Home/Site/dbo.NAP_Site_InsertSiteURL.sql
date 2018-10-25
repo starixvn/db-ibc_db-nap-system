@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_InsertSiteURL]    Script Date: 8/1/2014 1:43:27 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_InsertSiteURL]
 	@SiteUrlId		INT								OUTPUT
 	,@SiteId		INT
@@ -23,9 +17,11 @@ AS
 /*  
  * Created: 20121011@Lewis
  * Task: Add a new site url
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	     
  * Param's Explanation:
 	*** WRITE LOG template:
 	Main: 
@@ -61,7 +57,7 @@ BEGIN
 							,su.Environment	AS '@e'
 							,su.IsDefault	AS '@id'
 							,su.IsActive	AS '@ia'
-					FROM SiteURL AS su WITH (NOLOCK)
+					FROM dbo.NAP_SiteURL AS su WITH (NOLOCK)
 					WHERE SiteId = @SiteId
 					FOR XML PATH('z'), TYPE	
 				)
@@ -71,7 +67,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')
 
 	-- Add new site url
-	INSERT dbo.SiteURL (
+	INSERT dbo.NAP_SiteURL (
 		SiteId, 
 		URL, 
 		Environment, 
@@ -100,7 +96,7 @@ BEGIN
 							,su.Environment	AS '@e'
 							,su.IsDefault	AS '@id'
 							,su.IsActive	AS '@ia'
-					FROM SiteURL AS su WITH (NOLOCK)
+					FROM dbo.NAP_SiteURL AS su WITH (NOLOCK)
 					WHERE SiteId = @SiteId
 					FOR XML PATH('z'), TYPE	
 				)
@@ -112,7 +108,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Site_InsertSiteURL',
 	@ObjectId		= @SiteId,

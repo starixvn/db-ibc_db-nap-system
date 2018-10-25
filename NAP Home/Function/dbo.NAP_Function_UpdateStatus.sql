@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_UpdateStatus]    Script Date: 8/1/2014 1:34:58 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_UpdateStatus]
     @FunctionId			INT,	
     @IsActive			BIT,
@@ -19,12 +13,13 @@ ALTER PROCEDURE [dbo].[NAP_Function_UpdateStatus]
 	@ErrMsg				NVARCHAR(1000)	=	''			OUTPUT 
 AS
 /*  
- * Created	: 20120810@Kos
- * Task		: Update status of function
- * DB		: bodb_NAP
- *  
- * Revisions:     
- * Param's Explanation: 
+	Created	: 20120810@Kos
+	Task	: Update status of function
+	DB		: DBPOL-NAP_UserControl
+
+	Revisions: 
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]    
+	Param's Explanation: 
 	• Main	:	<root><xml path="r" />
 					<row item="FunctionId" alias="fi" />					
 					<row item="IsActive" alias="i" />					
@@ -48,7 +43,7 @@ BEGIN
 	SET @xml = (
 		SELECT @FunctionId			AS '@fi'				
 				,f.IsActive			AS '@i'							
-		FROM Functions AS f WITH (NOLOCK)		
+		FROM dbo.NAP_Functions AS f WITH (NOLOCK)		
 		WHERE f.FunctionId =  @FunctionId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -56,7 +51,7 @@ BEGIN
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')
 
 	-- Update status of function
-	UPDATE dbo.Functions 
+	UPDATE dbo.NAP_Functions 
 	SET	IsActive		= @IsActive,
 		ModifiedBy		= @ModifiedBy,
 		ModifiedDate	= @ModifiedDate
@@ -82,7 +77,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Function_UpdateStatus',
 	@ObjectId		= @FunctionId,
@@ -95,8 +90,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_UpdateStatus] TO [bodbAdminNet] AS [dbo]
 GO

@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_Insert]    Script Date: 8/1/2014 1:34:19 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_Insert]
     @FunctionId			INT							OUTPUT,	
 	@SiteId				INT,	
@@ -29,12 +23,14 @@ ALTER PROCEDURE [dbo].[NAP_Function_Insert]
 AS
 
 /*  
- * Created	: 20120810@Kos
- * Task		: Add a new function
- * DB		: bodb_NAP
- *  
- * Revisions:
- * Param's Explanation:	
+	Created	: 20120810@Kos
+	Task	: Add a new function
+	DB		: DBPOL-NAP_UserControl
+
+	Revisions:
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
+	Param's Explanation:	
 	@CRUD :
 		= 0 : Is read only permission
 		= 1 : Host permission
@@ -71,7 +67,7 @@ BEGIN
 	SET @startRun = GETDATE()	
 
 	-- Inserts function
-	INSERT dbo.Functions 
+	INSERT dbo.NAP_Functions 
 	(
 		SiteId,
 		FunctionName,
@@ -117,7 +113,7 @@ BEGIN
 		SET @policy = 2 -- host policy
 
 	-- assigns the new function to all site admins of @SiteId and all portal admins
-	INSERT dbo.UserFunction
+	INSERT dbo.NAP_UserFunction
 	(
 		UserId,
 		FunctionId,
@@ -134,7 +130,7 @@ BEGIN
 		@startRun,
 		@startRun
 	FROM
-		dbo.UserSite us
+		dbo.NAP_UserSite us WITH (NOLOCK)
 	WHERE
 		us.SiteId = @SiteId 
 	AND us.[Level] IN (50, 100) -- Site admin: 50, Portal admin: 100
@@ -161,7 +157,7 @@ BEGIN
 				,@DisplayOrder		AS '@o'
 				,@IsActive			AS '@i'
 				,@Environment		AS '@e'				
-		FROM Sites AS s WITH (NOLOCK)
+		FROM dbo.NAP_Sites AS s WITH (NOLOCK)
 		WHERE s.SiteId = @SiteId
 		FOR XML PATH('r'), TYPE
 	)	
@@ -171,7 +167,7 @@ BEGIN
 	SET @endRun		= GETDATE()  
 	SET @duration	= DATEDIFF(millisecond, @startRun, @endRun)   
 
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog 
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Function_Insert',
 	@ObjectId		= @FunctionId,
@@ -184,8 +180,6 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_Insert] TO [bodbAdminNet] AS [dbo]
 GO

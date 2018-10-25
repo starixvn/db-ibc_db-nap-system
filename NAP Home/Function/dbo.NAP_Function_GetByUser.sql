@@ -1,24 +1,19 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_GetByUser]    Script Date: 8/1/2014 12:57:28 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_GetByUser]
 	@UserId			INT,				
 	@Environment	VARCHAR(10)	= 'UAT'	-- 'UAT', 'LIVE'
 AS
 
-/**  
- * Created	: 20120810@Kos
- * Task		: Get all function permission of a user
- * DB		: bodb_NAP
- *  
- * Revisions:     
+/*
+	Created	: 20120810@Kos
+	Task	: Get all function permission of a user
+	DB		: DBPOL-NAP_UserControl
 
- * Param's Explanation: 
- */
+	Revisions:     
+		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		
+	Param's Explanation: 
+*/
 BEGIN
 	SET NOCOUNT ON
 
@@ -43,17 +38,16 @@ BEGIN
 		uf.ModifiedBy	AS ModifierId,	--modifier
 		mb.username		AS ModifierUsername	
 	FROM 
-		dbo.UserFunction AS uf WITH (NOLOCK)
-		INNER JOIN dbo.Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
-		INNER JOIN dbo.Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
-		LEFT JOIN bodb02.dbo.custInfo AS cb WITH (NOLOCK) ON uf.CreatedBy = cb.custid
-		LEFT JOIN bodb02.dbo.custInfo AS mb WITH (NOLOCK) ON uf.ModifiedBy = mb.custid
+		dbo.NAP_UserFunction AS uf WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Functions AS f WITH (NOLOCK) ON uf.FunctionId = f.FunctionId
+		INNER JOIN dbo.NAP_Sites AS s WITH (NOLOCK) ON f.SiteId = s.SiteId
+		LEFT JOIN CUSTDB.dbo.custInfo AS cb WITH (NOLOCK) ON uf.CreatedBy = cb.custid
+		LEFT JOIN CUSTDB.dbo.custInfo AS mb WITH (NOLOCK) ON uf.ModifiedBy = mb.custid
 	WHERE 
 		uf.UserId = @UserId
 		AND f.IsActive = 1 AND s.IsActive = 1
 		AND (@Environment = 'UAT' OR (@Environment != 'UAT' AND f.Environment = @Environment))
 END
-
 GO
 GRANT EXECUTE ON [dbo].[NAP_Function_GetByUser] TO [bodbAdminNet] AS [dbo]
 GO

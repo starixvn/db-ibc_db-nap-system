@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Function_AssignFunctionToUsers]    Script Date: 8/1/2014 12:44:13 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Function_AssignFunctionToUsers]
      @FunctionId		INT
 	,@SiteId			INT
@@ -22,9 +16,11 @@ AS
 /*  
  * Created: 20121101@Lewis
  * Task : Assign function to users
- * DB: bodb_NAP
+ * DB: DBPOL/NAP_UserControl
  *  
  * Revisions:     
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 
 		- Value : '<ROOT><FunctionPolicy UserId='{0}' Policy='{1}'></FunctionPolicy></ROOT>'
 */
@@ -45,8 +41,8 @@ BEGIN
 	--Write log before update
 	SELECT uf.FunctionId, uf.Policy,uf.UserId,cu.username 
 	INTO #TempData
-	FROM UserFunction AS uf WITH(NOLOCK)
-	INNER JOIN bodb02.dbo.Customer AS cu WITH(NOLOCK) ON uf.UserId = cu.custid
+	FROM dbo.NAP_UserFunction AS uf WITH(NOLOCK)
+	INNER JOIN CustDB.dbo.Customer AS cu WITH(NOLOCK) ON uf.UserId = cu.custid
 	WHERE uf.FunctionId = @FunctionId
 
 	SET @xml = (
@@ -79,7 +75,7 @@ BEGIN
 	EXEC sp_xml_removedocument @DocHandler
 
 	--Update policy for users assigned the function already
-	UPDATE dbo.UserFunction
+	UPDATE dbo.NAP_UserFunction
 	SET	
 		Policy			= 1
 		,ModifiedBy		= @ModifiedBy
@@ -89,7 +85,7 @@ BEGIN
 		AND SiteId = @SiteId
 		AND UserId IN (SELECT UserId FROM @TblFuncPolicy WHERE Policy = 1)
 
-	UPDATE dbo.UserFunction
+	UPDATE dbo.NAP_UserFunction
 	SET	
 		Policy			= 2
 		,ModifiedBy		= @ModifiedBy
@@ -100,7 +96,7 @@ BEGIN
 		AND UserId IN (SELECT UserId FROM @TblFuncPolicy WHERE Policy = 2)
 
 	--Assigns the fucntion to new users
-    INSERT INTO dbo.UserFunction (
+    INSERT INTO dbo.NAP_UserFunction (
 		UserId
         ,FunctionId
         ,SiteId
@@ -123,7 +119,7 @@ BEGIN
     WHERE NOT EXISTS          
 	(               
 		SELECT TOP(1) *
-		FROM dbo.UserFunction AS uf WITH (NOLOCK)
+		FROM dbo.NAP_UserFunction AS uf WITH (NOLOCK)
 		WHERE uf.UserId = Temp.UserId
 		AND uf.FunctionId = @FunctionId
 	)    
@@ -143,9 +139,9 @@ BEGIN
 					SELECT uf.UserId		AS '@ui'
 							,uf.Policy		AS '@p'
 							,cu.username		AS '@u'
-					FROM UserFunction AS uf WITH (NOLOCK)
-					LEFT JOIN #TempData AS t ON uf.UserId = t.UserId AND uf.Policy = t.Policy
-					INNER JOIN bodb02.dbo.Customer AS cu WITH(NOLOCK) ON uf.UserId = cu.custid
+					FROM dbo.NAP_UserFunction AS uf WITH (NOLOCK)
+						LEFT JOIN #TempData AS t ON uf.UserId = t.UserId AND uf.Policy = t.Policy
+						INNER JOIN CUSTDB.dbo.Customer AS cu WITH(NOLOCK) ON uf.UserId = cu.custid
 					WHERE uf.FunctionId = @FunctionId			
 					AND t.UserId IS NULL
 					FOR XML PATH('z'), TYPE	
@@ -158,7 +154,7 @@ BEGIN
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
 			
-	EXEC bodb_NAPLOG.dbo.NAP_LogRunSp_Insert 
+	EXEC dbo.NAP_RunSP_WriteLog
 	@UserId			= @CurrentUserId,
 	@SPName			= 'NAP_Function_AssignFunctionToUsers',
 	@ObjectId		= @FunctionId,

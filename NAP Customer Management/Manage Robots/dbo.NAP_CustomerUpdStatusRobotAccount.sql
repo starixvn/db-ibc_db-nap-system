@@ -1,7 +1,4 @@
 ﻿/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE CustDB
-GO
-
 ALTER PROCEDURE [dbo].[NAP_CustomerUpdStatusRobotAccount]
 	@custids VARCHAR(4000),
 	@status BIT,
@@ -18,6 +15,8 @@ AS
 		
 		Revision:
 				- 20171115@Vicky: change location check permission [RedmineID: #86455]
+				- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+				
 
 	*/
 BEGIN
@@ -28,7 +27,7 @@ BEGIN
 	SET	@startRun = GETDATE()
 	
 		--Check permission
-	EXEC DBNAP.bodb_NAP.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageRobots',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
+	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageRobots',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
 	IF @ErrCode <> 0
 		RETURN
 		

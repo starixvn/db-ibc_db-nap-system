@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_User_SearchExcludeFunction]    Script Date: 8/1/2014 1:53:33 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_SearchExcludeFunction]
     @Username       NVARCHAR(50)
     ,@GroupId       INT
@@ -17,9 +11,11 @@ AS
 /*  
  * Created: 20120820@Edward
  * Task : Search user
- * DB: bodb_NAP
+ * DB: DBPOL-NAP_UserControl
  *  
  * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	
  * Param's Explanation: 
 */
 BEGIN
@@ -35,16 +31,16 @@ BEGIN
 
 	SELECT DISTINCT count(1)
 	FROM
-		dbo.Users AS u WITH (NOLOCK)
-		INNER JOIN bodb02.dbo.Customer AS C WITH (NOLOCK) ON u.UserId = c.custid
-		LEFT JOIN dbo.UserSite AS us WITH (NOLOCK) ON u.UserId = us.UserId
+		dbo.NAP_Users AS u WITH (NOLOCK)
+		INNER JOIN CustDB.dbo.Customer AS C WITH (NOLOCK) ON u.UserId = c.custid
+		LEFT JOIN dbo.NAP_UserSite AS us WITH (NOLOCK) ON u.UserId = us.UserId
 	WHERE
-		((@SiteId = 0 AND u.UserId NOT IN (SELECT DISTINCT UserId FROM UserSite WITH (NOLOCK))) OR (@SiteId != 0 AND us.SiteId = @SiteId))
+		((@SiteId = 0 AND u.UserId NOT IN (SELECT DISTINCT UserId FROM dbo.NAP_UserSite WITH (NOLOCK))) OR (@SiteId != 0 AND us.SiteId = @SiteId))
 		AND (@GroupId = 0 OR (@GroupId != 0 AND u.GroupId = @GroupId))
 		AND c.username LIKE '%' + @Username + '%'
 		AND u.UserId NOT IN (
 			SELECT UserId 
-			FROM UserFunction WITH (NOLOCK) 
+			FROM dbo.NAP_UserFunction WITH (NOLOCK) 
 			WHERE FunctionId = @FunctionId AND us.SiteId = @SiteId AND Policy > 0
 		)
 	)
@@ -80,29 +76,29 @@ BEGIN
 						  , s.SiteName
 						  , row_number() OVER (ORDER BY us.IsActive DESC, us.[Level] DESC) AS num
 			FROM
-				dbo.Users AS u WITH (NOLOCK)
-				INNER JOIN bodb02.dbo.Customer AS C WITH (NOLOCK)
+				dbo.NAP_Users AS u WITH (NOLOCK)
+				INNER JOIN CustDB.dbo.Customer AS C WITH (NOLOCK)
 					ON u.UserId = c.custid
-				LEFT JOIN dbo.Groups AS g WITH (NOLOCK)
+				LEFT JOIN dbo.NAP_Groups AS g WITH (NOLOCK)
 					ON g.GroupId = u.GroupId
-				LEFT JOIN bodb02.dbo.Customer AS c1 WITH (NOLOCK)
+				LEFT JOIN CustDB.dbo.Customer AS c1 WITH (NOLOCK)
 					ON u.CreatedBy = c1.custid
-				LEFT JOIN bodb02.dbo.Customer AS c2 WITH (NOLOCK)
+				LEFT JOIN CustDB.dbo.Customer AS c2 WITH (NOLOCK)
 					ON u.ModifiedBy = c2.custid
-				LEFT JOIN dbo.UserSite AS us WITH (NOLOCK)
+				LEFT JOIN dbo.NAP_UserSite AS us WITH (NOLOCK)
 					ON u.UserId = us.UserId
-				LEFT JOIN bodb02.dbo.Customer AS c3 WITH (NOLOCK)
+				LEFT JOIN CustDB.dbo.Customer AS c3 WITH (NOLOCK)
 					ON us.CreatedBy = c3.custid
-				LEFT JOIN bodb02.dbo.Customer AS c4 WITH (NOLOCK)
+				LEFT JOIN CustDB.dbo.Customer AS c4 WITH (NOLOCK)
 					ON us.ModifiedBy = c4.custid
-				LEFT JOIN Sites AS s WITH (NOLOCK)
+				LEFT JOIN dbo.NAP_Sites AS s WITH (NOLOCK)
 					ON us.SiteId = s.SiteId
 			WHERE
-				((@SiteId = 0 AND u.UserId NOT IN (SELECT DISTINCT UserId FROM UserSite WITH (NOLOCK))) OR (@SiteId != 0 AND us.SiteId = @SiteId))
+				((@SiteId = 0 AND u.UserId NOT IN (SELECT DISTINCT UserId FROM dbo.NAP_UserSite WITH (NOLOCK))) OR (@SiteId != 0 AND us.SiteId = @SiteId))
 				AND (@GroupId = 0 OR (@GroupId != 0 AND u.GroupId = @GroupId))
 				AND c.username LIKE '%' + @Username + '%'
 				AND u.UserId NOT IN (
-					SELECT UserId FROM UserFunction WITH (NOLOCK) 
+					SELECT UserId FROM dbo.NAP_UserFunction WITH (NOLOCK) 
 					WHERE FunctionId = @FunctionId AND us.SiteId = @SiteId AND Policy > 0)
 		) AS Temp
 	WHERE

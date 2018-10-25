@@ -1,10 +1,4 @@
-﻿USE [bodb_NAP]
-GO
-/****** Object:  StoredProcedure [dbo].[NAP_Site_GetAllSiteUrl]    Script Date: 8/1/2014 1:40:50 PM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_GetAllSiteUrl]
     @Environment	VARCHAR(10)		-- UAT, LIVE
 AS
@@ -12,9 +6,11 @@ AS
 /*  
  * Created	: 20121012@Lewis
  * Task		: Get all site URLs
- * DB		: bodb_NAP
+ * DB		: DBPOL/NAP_UserControl
  *  
- * Revisions:     
+ * Revisions:
+	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]     
+	
  * Param's Explanation: 
 */
 
@@ -33,8 +29,8 @@ BEGIN
 		s.IsActive		AS SiteIsActive, 
 		s.Environment	AS SiteEnvironment
 	FROM
-		dbo.SiteURL su WITH (NOLOCK)
-		INNER JOIN dbo.Sites s WITH (NOLOCK) ON su.SiteId = s.SiteId
+		dbo.NAP_SiteURL su WITH (NOLOCK)
+		INNER JOIN dbo.NAP_Sites s WITH (NOLOCK) ON su.SiteId = s.SiteId
 	WHERE su.Environment = @Environment
 END
 
