@@ -1,4 +1,5 @@
-﻿USE [bodb_AGE]
+﻿/*<info serverAlias="DBAGE-bodb_age" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+USE [bodb_AGE]
 GO
 
 ALTER PROCEDURE [dbo].[Task_LimitLoss_Setting_TotalBalanceUpd_Job]
@@ -12,6 +13,7 @@ AS
 	Revisions:
 		- 20140620@Dom: Support Yesterday balance [Redmine: #17906]
 		- 20170915@Elodie: Support Group Headline Setting [Redmine: #82892]
+		- 20181114@Patrick: Indexes Revolution [RedmineId: #104777]
 
 	Parameter's explaination: 
 		
@@ -357,11 +359,8 @@ BEGIN
 			SUM((CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.srecommend <> b.custid AND b.mrecommend <> b.custid AND b.recommend <> b.custid THEN b.winlost-b.actual_stake+b.playercomm ELSE 0 END ELSE 0 END)*b.actualrate) AS yesterdayMemberCashRMB
 		FROM bodb02.dbo.bettrans b WITH (NOLOCK)
 			INNER JOIN (
-				SELECT ci.custid
-				FROM #Cust_LimitLoss_Setting c
-					INNER JOIN bodb02.dbo.custInfo ci WITH (NOLOCK) ON c.custid = ci.mrecommend
-				WHERE c.roleId = 3 AND ci.roleid = 2
-			) s ON b.recommend = s.custid -- get index on recommend
+				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 3
+			) s ON b.mrecommend = s.custid -- get index on mrecommend
 		WHERE b.statusID NOT IN (0, 1)
 			AND (
 				b.winlostdate < @yesterday
