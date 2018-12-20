@@ -15,6 +15,7 @@ AS
 		- 20180315@Helen: Integrate Super Live product - [Redmine:89986]
 		- 20180622@Don: Tuning trigger - [Redmine:97313]
 		- 20180626@Helen: Tuning trigger - [Redmine:97442]
+		- 20181219@Kan: TO Control - Change condition of bettype - [Redmine: 106656]
 	
 */
 BEGIN
@@ -26,7 +27,14 @@ BEGIN
 	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid
 	FROM inserted 
 
-	IF @bettype >= 2000 RETURN -- Process for sportbook bettype for TO Control only
+	-- Process for sportbook bettype for TO Control only
+	IF NOT (
+		@bettype < 31
+		OR @bettype BETWEEN 121 AND 999
+		OR @bettype BETWEEN 1301 AND 1399
+		OR @bettype BETWEEN 9001 AND 9399
+	)
+		RETURN
 
 	IF @srecommend in ( 
 		836203,--12BETSuperTB
