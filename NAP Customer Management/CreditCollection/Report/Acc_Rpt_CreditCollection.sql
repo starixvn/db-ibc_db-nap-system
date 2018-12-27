@@ -11,11 +11,21 @@ ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection]
 	@pageSize	INT = 100,
 	@totalItems INT = 0 OUTPUT
 AS
-/*
+ 
+/*  Created: Sophia  
+	Date:	20181206
+	DB:		DBACC.bodb02 
+	Task :  Report Credit Collection
+	
+	Param's Explanation:  
 
-@Code:	GroupName (username) search exactly ,  '' is all
-@Status: String , multiple choice
-		(0: Normal, 1: Alert, 2: Unused)
+		@Code:	GroupName (username) search exactly ,  '' is all
+		@Status: String , multiple choice
+			(0: Normal, 1: Alert, 2: Unused)						 
+
+	Revisions:  
+	- 20181206@Sophia: initial SP
+ 
 */
 
 BEGIN 
@@ -499,15 +509,3 @@ BEGIN
 	
 	END 
 	GO
-
-	/*
-	 [Acc_Rpt_CreditCollection] 
-	@Code			 = '',
-	@Status			 = '0,1', 
-	@ExcludeTest	 = 0,
-	@FromDate		='2018-12-09',
-	@ToDate			='2018-12-20',
-	@MoveBetsDay	='2018-12-08', 
-	@BalanceUpDay	='2018-11-30'
-
-	*/
