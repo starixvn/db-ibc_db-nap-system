@@ -6,31 +6,29 @@ ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection]
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME, 
-	@BalanceUpDay	SMALLDATETIME
+	@BalanceUpDay	SMALLDATETIME,
+	@pageIndex	INT = 1,
+	@pageSize	INT = 100,
+	@totalItems INT = 0 OUTPUT
 AS
+/*
 
-/*  Created: Sophia  
-	Date:	20181206
-	DB:		DBACC.bodb02 
-	Task :  Report Credit Collection
-	
-	Param's Explanation:  
-
-		@Code:	GroupName (username) search exactly ,  '' is all
-		@Status: String , multiple choice
-			(0: Normal, 1: Alert, 2: Unused)						 
-
-	Revisions:  
-	- 20181206@Sophia: initial SP
-
-*/  
-
-
+@Code:	GroupName (username) search exactly ,  '' is all
+@Status: String , multiple choice
+		(0: Normal, 1: Alert, 2: Unused)
 */
 
 BEGIN 
 	SET NOCOUNT ON 
 	
+	DECLARE @RowStart int, @RowEnd int	
+		
+	SELECT	@PageIndex = @PageIndex - 1, 
+			@RowStart = @PageSize * @PageIndex + 1, 
+			@RowEnd = @RowStart + @PageSize - 1 
+
+			
+
 	DECLARE @HasBT_BK BIT = 0, 
 			@HasBT_14 BIT = 0, 
 			@HasBT BIT = 0
@@ -126,6 +124,19 @@ BEGIN
 	
 	 
 	/* 2. Member of group headline and direct account table*/	
+	CREATE TABLE #GroupDetailAll
+	(
+		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
+		CustId			INT,
+		GroupID			INT,
+		IsGroup			BIT,
+		Username		VARCHAR(30),
+		RoleId			TINYINT,
+		IsOLD			BIT DEFAULT (0),
+		IsCal			BIT DEFAULT (0) 
+		
+	)	
+
 	CREATE TABLE #GroupDetail
 	(
 		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
@@ -139,7 +150,7 @@ BEGIN
 		
 	)	
 	
-	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
+	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	M.CustID, M.GroupID, 1 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
 	FROM	#GroupHeadLine H
 		INNER JOIN dbo.custAccount M WITH (NOLOCK) ON M.GroupID = H.GroupID
@@ -147,20 +158,32 @@ BEGIN
 	WHERE   H.IsGroupHeadLine = 1  --- insert member of Group  
 			AND M.GroupID <> 0
 
-	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
+	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	H.CustId, H.GroupID, 0 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
 	FROM	#GroupHeadLine H
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 	
-	 	   
+	 	 
+		 
+	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)  
+	SELECT CustId, GroupID, IsGroup, Username, RoleId, IsOLD
+	FROM (
+			SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsOLD DESC) rn, *
+			FROM #GroupDetailAll
+			) t
+	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1 AND @pageIndex = -2)
 
+	SELECT @totalItems = COUNT (*) 
+	FROM #GroupDetailAll
+		  
+		   
 	/* 3.Get Balance */	
 	DECLARE @strCustIds VARCHAR(MAX) = '', @RowCount INT
 	
 	CREATE TABLE #CustBalance (CustId INT, WinlostDate SMALLDATETIME, Balance MONEY)
 	DECLARE @CustTmp AS TABLE (CustId INT)
 	
-	DECLARE @i INT = 1000 
+	DECLARE @i INT = 100 
 
 
 	------ LOOP
@@ -444,7 +467,7 @@ BEGIN
 	----- Main 
 	SELECT H.CustID, H.GroupId, H.Username, H.Coll_Status, H.IsGroupHeadLine
 	FROM  #GroupHeadLine H
-	ORDER BY IsGroupHeadLine DESC, GroupId 
+	ORDER BY GroupId 
 
 	---- Detail
 	SELECT  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END AS Username,   
@@ -453,8 +476,8 @@ BEGIN
 	LEFT JOIN #CustBalance B
 		ON B.CustId = D.CustId AND B.WinlostDate IN (@FromDate, @ToDate)
 ---	WHERE B.WinlostDate IN (@FromDate, @ToDate)
-	GROUP BY  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END, B.WinlostDate 
-	ORDER BY  GroupId, WinlostDate
+	GROUP BY  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END, B.WinlostDate , IsOLD
+	ORDER BY  GroupId, IsOLD DESC, WinlostDate
 	 
 
 	--- Collection Breakdown
@@ -463,8 +486,8 @@ BEGIN
 	FROM		#Transfer T
 	INNER JOIN   #GroupDetail D
 			ON D.CustID = T.CustID
-	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END 
-	ORDER BY  D.GroupId, Username 
+	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END , IsOLD
+	ORDER BY  D.GroupId, IsOLD DESC 
 	
 	 
 
