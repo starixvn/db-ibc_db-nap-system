@@ -111,6 +111,16 @@ BEGIN
 
 
 	/* 1. Group Headline and Direct Account Table*/
+	CREATE TABLE #GroupHeadLineAll 
+	(
+		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
+		CustId			INT,
+		Username		VARCHAR(30),
+		Coll_Status		TINYINT,
+		IsGroupHeadLine BIT,
+		GroupID			INT
+	)	
+
 	CREATE TABLE #GroupHeadLine 
 	(
 		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
@@ -120,7 +130,8 @@ BEGIN
 		IsGroupHeadLine BIT,
 		GroupID			INT
 	)	
-	INSERT INTO #GroupHeadLine  (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
+	
+	INSERT INTO #GroupHeadLineAll   (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
 	SELECT	D.CustId AS CustId, C.Username , D.Coll_Status AS Coll_Status, 
 			CASE WHEN ISNULL(G.GroupID,0) = 0 THEN 0 ELSE 1 END AS IsGroupHeadLine, 
 			CASE WHEN ISNULL(G.GroupID,0) = 0 THEN D.CustId ELSE G.GroupID END AS GroupID				
@@ -132,20 +143,31 @@ BEGIN
 		  AND (C.currency <> 20 OR @ExcludeTest = 0)
 		  AND NOT EXISTS (SELECT 1 FROM custAccount m WITH (NOLOCK) WHERE m.GroupID <> 0 AND m.IsGroupHeadLine = 0 AND m.CustID = D.CustID)
 	
+
+	INSERT INTO #GroupHeadLine (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
+	SELECT CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
+	FROM (
+			SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsGroupHeadLine DESC) rn, CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
+			FROM #GroupHeadLineAll
+			) t
+	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
+
+	SELECT @totalItems = COUNT (*) 
+	FROM #GroupHeadLineAll
 	 
 	/* 2. Member of group headline and direct account table*/	
-	CREATE TABLE #GroupDetailAll
-	(
-		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
-		CustId			INT,
-		GroupID			INT,
-		IsGroup			BIT,
-		Username		VARCHAR(30),
-		RoleId			TINYINT,
-		IsOLD			BIT DEFAULT (0),
-		IsCal			BIT DEFAULT (0) 
+	--CREATE TABLE #GroupDetailAll
+	--(
+	--	--RowId			INT IDENTITY(1,1) PRIMARY KEY,
+	--	CustId			INT,
+	--	GroupID			INT,
+	--	IsGroup			BIT,
+	--	Username		VARCHAR(30),
+	--	RoleId			TINYINT,
+	--	IsOLD			BIT DEFAULT (0),
+	--	IsCal			BIT DEFAULT (0) 
 		
-	)	
+	--)	
 
 	CREATE TABLE #GroupDetail
 	(
@@ -160,7 +182,7 @@ BEGIN
 		
 	)	
 	
-	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
+	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	M.CustID, M.GroupID, 1 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
 	FROM	#GroupHeadLine H
 		INNER JOIN dbo.custAccount M WITH (NOLOCK) ON M.GroupID = H.GroupID
@@ -168,23 +190,23 @@ BEGIN
 	WHERE   H.IsGroupHeadLine = 1  --- insert member of Group  
 			AND M.GroupID <> 0
 
-	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
+	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	H.CustId, H.GroupID, 0 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
 	FROM	#GroupHeadLine H
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 	
 	 	 
 		 
-	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)  
-	SELECT CustId, GroupID, IsGroup, Username, RoleId, IsOLD
-	FROM (
-			SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsOLD DESC) rn, *
-			FROM #GroupDetailAll
-			) t
-	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
+	--INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)  
+	--SELECT CustId, GroupID, IsGroup, Username, RoleId, IsOLD
+	--FROM (
+	--		SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsOLD DESC) rn, *
+	--		FROM #GroupDetailAll
+	--		) t
+	--WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
 
-	SELECT @totalItems = COUNT (*) 
-	FROM #GroupDetailAll
+	--SELECT @totalItems = COUNT (*) 
+	--FROM #GroupDetailAll
 		  
 		   
 	/* 3.Get Balance */	
@@ -477,8 +499,9 @@ BEGIN
 	----- Main 
 	SELECT H.CustID, H.GroupId, H.Username, H.Coll_Status, H.IsGroupHeadLine
 	FROM  #GroupHeadLine H
-		INNER JOIN #GroupDetail D on D.GroupID = H.GroupID
+	--WHERE EXISTS (SELECT 1 FROM  #GroupDetail D WHERE D.GroupID = H.GroupID)
 	ORDER BY GroupId 
+	 
 
 	---- Detail
 	SELECT  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END AS Username,   
@@ -500,7 +523,6 @@ BEGIN
 	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END , IsOLD
 	ORDER BY  D.GroupId, IsOLD DESC 
 	
-	 
 
 	DROP TABLE #GroupHeadLine 
 	DROP TABLE #GroupDetail
