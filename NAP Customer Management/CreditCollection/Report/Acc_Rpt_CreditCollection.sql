@@ -181,7 +181,7 @@ BEGIN
 			SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsOLD DESC) rn, *
 			FROM #GroupDetailAll
 			) t
-	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1 AND @pageIndex = -2)
+	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
 
 	SELECT @totalItems = COUNT (*) 
 	FROM #GroupDetailAll
@@ -477,6 +477,7 @@ BEGIN
 	----- Main 
 	SELECT H.CustID, H.GroupId, H.Username, H.Coll_Status, H.IsGroupHeadLine
 	FROM  #GroupHeadLine H
+		INNER JOIN #GroupDetail D on D.GroupID = H.GroupID
 	ORDER BY GroupId 
 
 	---- Detail
