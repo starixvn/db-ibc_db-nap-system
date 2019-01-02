@@ -499,7 +499,7 @@ BEGIN
 	----- Main 
 	SELECT H.CustID, H.GroupId, H.Username, H.Coll_Status, H.IsGroupHeadLine
 	FROM  #GroupHeadLine H
-	--WHERE EXISTS (SELECT 1 FROM  #GroupDetail D WHERE D.GroupID = H.GroupID)
+	WHERE EXISTS (SELECT 1 FROM  #GroupDetail D WHERE D.GroupID = H.GroupID)
 	ORDER BY GroupId 
 	 
 
@@ -509,7 +509,6 @@ BEGIN
 	FROM  #GroupDetail D
 	LEFT JOIN #CustBalance B
 		ON B.CustId = D.CustId AND B.WinlostDate IN (@FromDate, @ToDate)
----	WHERE B.WinlostDate IN (@FromDate, @ToDate)
 	GROUP BY  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END, B.WinlostDate , IsOLD
 	ORDER BY  GroupId, IsOLD DESC, WinlostDate
 	 

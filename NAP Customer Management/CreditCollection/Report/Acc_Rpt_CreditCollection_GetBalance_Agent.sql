@@ -126,9 +126,9 @@ BEGIN
 	--- IF @roleid = 2
 	BEGIN 
 		-- I.2.1. Bettrans (downline and itself): Exclude ticket running, waiting, Void, reject
-		INSERT INTO #Data (winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
 		SELECT
-			winlostdate, bettype, StatusID, IsOwner
+			r.OwnerID, winlostdate, bettype, StatusID, IsOwner
 			,SUM( ABS(stake) ) AS Turnover
 			,SUM(winlost - actual_stake) AS OwnerWinloss
 			,SUM(awinlost) AS winlost
@@ -143,15 +143,15 @@ BEGIN
 						AND winlostdate <= @todate			
 						AND StatusID NOT IN (0,1)
 					) b
-		GROUP BY winlostdate, bettype, StatusID, IsOwner 
+		GROUP BY r.OwnerID, winlostdate, bettype, StatusID, IsOwner 
 		OPTION (OPTIMIZE FOR (@i = 1), HASH GROUP)
 
 
 		 
 		-- I.2.2. BettransLC:  Exclude ticket running, waiting 
-		INSERT INTO #Data (winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
 			SELECT
-			winlostdate 
+			r.OwnerID, winlostdate 
 			,-1 as bettype  --- Get a general bettype for BettransLC/BettransRNG
 			,StatusID
 			,0 as IsOwner
@@ -169,14 +169,14 @@ BEGIN
 						AND winlostdate >= @yesterday				
 						AND StatusID NOT IN (0,1)
 					) b
-		GROUP BY winlostdate, StatusID
+		GROUP BY r.OwnerID, winlostdate, StatusID
 		OPTION (OPTIMIZE FOR (@i = 1))
 		
 
 		-- I.2.3. BettransRNG: Exclude ticket running, waiting 
-		INSERT INTO #Data (winlostdate, Bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)	
+		INSERT INTO #Data (OwnerID, winlostdate, Bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)	
 		SELECT
-			winlostdate 
+			r.OwnerID, winlostdate 
 			,-1 as bettype  --- Get a general bettype for BettransLC/BettransRNG
 			,StatusID
 			,0 as IsOwner
@@ -194,7 +194,7 @@ BEGIN
 						AND winlostdate >= @yesterday				
 						AND StatusID NOT IN (0,1)
 					) b
-		GROUP BY winlostdate, StatusID
+		GROUP BY r.OwnerID, winlostdate, StatusID
 		OPTION (OPTIMIZE FOR (@i = 1))
 
 	END

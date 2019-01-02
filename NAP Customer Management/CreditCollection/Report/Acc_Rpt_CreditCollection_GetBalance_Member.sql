@@ -98,13 +98,13 @@ BEGIN
 	---#3: Begin: Get Data from Bettrans table. Because of the suitable index is IX_recommend, then we will use index on recommend level. 
 	 
 	
-	DECLARE @recommend TABLE (ownerID INT, recommend INT, PRIMARY KEY (ownerID, recommend)) -- to using index on recommend level master and super
+	DECLARE @recommend TABLE (OwnerID INT, recommend INT, PRIMARY KEY (ownerID, recommend)) -- to using index on recommend level master and super
 	 
 	SELECT @ToDate = DATEADD (dd, 1, @ToDate)  --- plus one day to calculate the openning BL of the day after (@ToDate + 1)  = the closing BL of the day before (@ToDate)
  
 	
 	----IF @roleid = 3 -- master
-	INSERT INTO @recommend (ownerID, recommend)
+	INSERT INTO @recommend (OwnerID, recommend)
 	SELECT l.CustID, c.recommend 
 	FROM dbo.Customer c WITH(NOLOCK) 
 		INNER JOIN #CustIds l ON l.CustID = c.CustId
@@ -137,9 +137,9 @@ BEGIN
 	--IF @roleid = 1
 	BEGIN
 		-- I.1.1. Bettrans
-		INSERT INTO #Data (winlostdate, bettype, StatusID, IsOwner, Outstanding, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Outstanding, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
 		SELECT
-			winlostdate, bettype, StatusID, CASE WHEN bettype > 20000 THEN 1 ELSE 0 END AS IsOwner  
+			r.OwnerID, winlostdate, bettype, StatusID, CASE WHEN bettype > 20000 THEN 1 ELSE 0 END AS IsOwner  
 			,SUM(ABS(actual_stake)) as Outstanding
 			,SUM( ABS(stake) ) AS Turnover
 			,SUM(winlost - actual_stake) AS OwnerWinloss
@@ -153,15 +153,15 @@ BEGIN
 					WHERE r.recommend = bt.custID
 						AND winlostdate <= @todate					
 					) b
-		GROUP BY winlostdate, bettype, StatusID, CASE WHEN bettype > 20000 THEN 1 ELSE 0 END 
+		GROUP BY r.OwnerID, winlostdate, bettype, StatusID, CASE WHEN bettype > 20000 THEN 1 ELSE 0 END 
 		OPTION (OPTIMIZE FOR (@i = 1))
 
 
 
 		-- I.1.2. BettransLC
-		INSERT INTO #Data (winlostdate ,bettype, StatusID, IsOwner, Outstanding, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate ,bettype, StatusID, IsOwner, Outstanding, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
 		SELECT
-			winlostdate
+			r.OwnerID, winlostdate
 			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
 			,StatusID, 0 as IsOwner
 			,SUM(ABS(actual_stake)) as Outstanding
@@ -178,15 +178,15 @@ BEGIN
 						AND winlostdate <= @todate	
 						AND winlostdate >= @yesterday				
 					) b
-		GROUP BY winlostdate, StatusID
+		GROUP BY r.OwnerID, winlostdate, StatusID
 		OPTION (OPTIMIZE FOR (@i = 1))
 
  
 		
 		-- I.1.3. BettransRNG
-		INSERT INTO #Data (winlostdate, bettype, StatusID, IsOwner, Outstanding, Turnover,OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Outstanding, Turnover,OwnerWinloss, Winlost, Comm, BetCount)
 		SELECT
-			winlostdate
+			r.OwnerID, winlostdate
 			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
 			, StatusID, 0 as IsOwner
 			,SUM(ABS(actual_stake)) as Outstanding
@@ -203,7 +203,7 @@ BEGIN
 						AND winlostdate <= @todate	
 						AND winlostdate >= @yesterday				
 					) b
-		GROUP BY winlostdate, StatusID
+		GROUP BY r.OwnerID, winlostdate, StatusID
 		OPTION (OPTIMIZE FOR (@i = 1))
 	
 	END
