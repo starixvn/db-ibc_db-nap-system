@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection]
 	@Code			VARCHAR(30) = '',
 	@Status			VARCHAR(20) = '0,1', 
+	@Type			SMALLINT = 2,
 	@ExcludeTest	BIT = 0,
 	@FromDate		SMALLDATETIME,
 	@ToDate			SMALLDATETIME,
@@ -22,6 +23,9 @@ AS
 		@Code:	GroupName (username) search exactly ,  '' is all
 		@Status: String , multiple choice
 			(0: Normal, 1: Alert, 2: Unused)						 
+		@Type: All = 2
+			   OLD Codes = 1
+			   Others Codes = 0
 
 	Revisions:  
 	- 20181206@Sophia: initial SP
@@ -111,7 +115,7 @@ BEGIN
 
 
 	/* 1. Group Headline and Direct Account Table*/
-	CREATE TABLE #GroupHeadLineAll 
+	CREATE TABLE #GroupHeadLineAll
 	(
 		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
 		CustId			INT,
@@ -144,30 +148,30 @@ BEGIN
 		  AND NOT EXISTS (SELECT 1 FROM custAccount m WITH (NOLOCK) WHERE m.GroupID <> 0 AND m.IsGroupHeadLine = 0 AND m.CustID = D.CustID)
 	
 
-	INSERT INTO #GroupHeadLine (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
-	SELECT CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
-	FROM (
-			SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsGroupHeadLine DESC) rn, CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
-			FROM #GroupHeadLineAll
-			) t
-	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
+	--INSERT INTO #GroupHeadLine (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
+	--SELECT CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
+	--FROM (
+	--		SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsGroupHeadLine DESC) rn, CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
+	--		FROM #GroupHeadLineAll
+	--		) t
+	--WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
 
-	SELECT @totalItems = COUNT (*) 
-	FROM #GroupHeadLineAll
+	--SELECT @totalItems = COUNT (*) 
+	--FROM #GroupHeadLineAll
 	 
 	/* 2. Member of group headline and direct account table*/	
-	--CREATE TABLE #GroupDetailAll
-	--(
-	--	--RowId			INT IDENTITY(1,1) PRIMARY KEY,
-	--	CustId			INT,
-	--	GroupID			INT,
-	--	IsGroup			BIT,
-	--	Username		VARCHAR(30),
-	--	RoleId			TINYINT,
-	--	IsOLD			BIT DEFAULT (0),
-	--	IsCal			BIT DEFAULT (0) 
+	CREATE TABLE #GroupDetailAll
+	(
+		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
+		CustId			INT,
+		GroupID			INT,
+		IsGroup			BIT,
+		Username		VARCHAR(30),
+		RoleId			TINYINT,
+		IsOLD			BIT DEFAULT (0),
+		IsCal			BIT DEFAULT (0) 
 		
-	--)	
+	)	
 
 	CREATE TABLE #GroupDetail
 	(
@@ -182,32 +186,52 @@ BEGIN
 		
 	)	
 	
-	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
+	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	M.CustID, M.GroupID, 1 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
-	FROM	#GroupHeadLine H
+	FROM	#GroupHeadLineAll H
 		INNER JOIN dbo.custAccount M WITH (NOLOCK) ON M.GroupID = H.GroupID
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON M.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 1  --- insert member of Group  
 			AND M.GroupID <> 0
 
-	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
+	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	H.CustId, H.GroupID, 0 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
-	FROM	#GroupHeadLine H
+	FROM	#GroupHeadLineAll H
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 	
-	 	 
-		 
-	--INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)  
-	--SELECT CustId, GroupID, IsGroup, Username, RoleId, IsOLD
-	--FROM (
-	--		SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsOLD DESC) rn, *
-	--		FROM #GroupDetailAll
-	--		) t
-	--WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
+	
+	 
+	------Paging
 
-	--SELECT @totalItems = COUNT (*) 
-	--FROM #GroupDetailAll
-		  
+
+	DECLARE @GroupID AS TABLE (GroupID INT) 
+	
+	INSERT INTO @GroupID (GroupID)
+	SELECT GroupID
+	FROM (
+			SELECT ROW_NUMBER() OVER (ORDER BY h.GroupID) rn, h.GroupID
+			FROM  #GroupHeadLineAll h					
+			WHERE EXISTS (SELECT 1 FROM #GroupDetailAll d WHERE d.GroupID = h.GroupID AND (d.IsOLD = @Type OR @Type = 2 ))
+			) t
+	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
+
+	SELECT @totalItems = @@ROWCOUNT
+ 
+
+	 
+	INSERT INTO #GroupHeadLine (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
+	SELECT CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
+	FROM  #GroupHeadLineAll t
+	WHERE EXISTS (SELECT 1 FROM @GroupID g WHERE g.GroupID = t.GroupID)
+
+	 
+	INSERT INTO #GroupDetail (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)  
+	SELECT CustId, GroupID, IsGroup, Username, RoleId, IsOLD
+	FROM  #GroupDetailAll t
+	WHERE EXISTS (SELECT 1 FROM @GroupID g WHERE g.GroupID = t.GroupID)
+
+   
+ 
 		   
 	/* 3.Get Balance */	
 	DECLARE @strCustIds VARCHAR(MAX) = '', @RowCount INT
@@ -309,7 +333,7 @@ BEGIN
 						@CustIDList =@strCustIds 
 			END
 
-			IF @HasBT_14 = 1 AND @HasBT_BK <> 1 AND @HasBT <> 1
+			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
 			BEGIN 
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
@@ -364,7 +388,7 @@ BEGIN
 						@CustIDList =@strCustIds 
 			END
 
-			IF @HasBT_14 = 1 AND @HasBT_BK <> 1 AND @HasBT <> 1
+			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
 			BEGIN 
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
@@ -385,7 +409,8 @@ BEGIN
 	 END 
 
 	----* Member level *----
-	SELECT @RowCount = 1 
+	 
+	 	SELECT @RowCount = 1 
 
 	WHILE @RowCount <> 0 
 	BEGIN
@@ -401,13 +426,14 @@ BEGIN
 
 		SELECT @RowCount = @@ROWCOUNT
 
+		 
 		IF @RowCount <> 0 
 		BEGIN 
 
 			SET @strCustIds = ''
 			SET @strCustIds = ( SELECT CustId  AS '@CustId' 
 								FROM @CustTmp			 
-								FOR XML PATH('r'), ROOT( 'ROOT' ))
+								FOR XML PATH('r'), ROOT( 'ROOT' ))								 
 
 			IF @HasBT_BK = 1 
 			BEGIN 
@@ -418,14 +444,15 @@ BEGIN
 						@CustIDList =@strCustIds 
 			END
 
-			IF @HasBT_14 = 1 AND @HasBT_BK <> 1 AND @HasBT <> 1
+			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
 			BEGIN 
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
 						@FromDate = @FromDateBT_14,
 						@ToDate = @ToDateBT_14,
 						@CustIDList =@strCustIds 
-			END
+						 
+			END				 
 
 			IF @HasBT = 1 
 			BEGIN  
@@ -437,8 +464,7 @@ BEGIN
 			END
 		END
 	 END 
-
-
+	   
 	---------------------------------------------------------------------------------------
 
 	/* Breakdown */	 
@@ -457,6 +483,9 @@ BEGIN
 		WHEN @WeekDay <=6 THEN DATEADD(DAY, 6 - @WeekDay, @FromDate)
 		ELSE DATEADD(DAY, 6, @FromDate)
 	END
+	
+	IF @NextFriday >= @ToDate
+		SELECT @NextFriday = @ToDate
 
 	INSERT INTO #BreakDowns(StartDate, EndDate) VALUES (@FromDate, @NextFriday) 
 	
@@ -498,8 +527,7 @@ BEGIN
 
 	----- Main 
 	SELECT H.CustID, H.GroupId, H.Username, H.Coll_Status, H.IsGroupHeadLine
-	FROM  #GroupHeadLine H
-	WHERE EXISTS (SELECT 1 FROM  #GroupDetail D WHERE D.GroupID = H.GroupID)
+	FROM  #GroupHeadLine H 
 	ORDER BY GroupId 
 	 
 
@@ -516,13 +544,15 @@ BEGIN
 	--- Collection Breakdown
 	SELECT	D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END AS Username,  
 			MIN(T.StartDate) AS StartDate , MIN(T.EndDate) AS EndDate , SUM (T.Amount) AS Amount
-	FROM		#Transfer T
+	FROM	#Transfer T
 	INNER JOIN   #GroupDetail D
 			ON D.CustID = T.CustID
 	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END , IsOLD
 	ORDER BY  D.GroupId, IsOLD DESC 
 	
 
+	DROP TABLE #GroupHeadLineAll 
+	DROP TABLE #GroupDetailAll
 	DROP TABLE #GroupHeadLine 
 	DROP TABLE #GroupDetail
 	DROP TABLE #CustBalance 

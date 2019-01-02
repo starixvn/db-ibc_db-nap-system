@@ -313,10 +313,6 @@ BEGIN
 		/*Calculate Opening Balance*/
 		DECLARE @OwnerID INT = 0		
 
-		--SELECT TOP (1) @OwnerID =  CustId 
-		--FROM #CustIds
-		--WHERE IsCal = 0 
-
 		UPDATE TOP (1) c
 		SET		@OwnerID = CustId , IsCal = 1
 		FROM	#CustIds c
@@ -348,31 +344,6 @@ BEGIN
 	DELETE #rptStatementTable
 	WHERE Winlostdate < @FromDate
 		OR IsOpeningBalance = 0			
-	
-	
-	--;WITH CTE_Balance (OwnerID, MaxDate) AS 
-	--(	SELECT	OwnerID, MAX(WinlostDate) MaxDate
-	--	FROM	#rptStatementTable 
-	--	GROUP BY OwnerID 
-	--)
-	--SELECT r.OwnerID  
-	--	,CASE WHEN r.WinlostDate = @FromDate THEN r.WinlostDate  
-	--		ELSE CASE WHEN r.winlostdate <= @ToDate THEN DATEADD(DD,-1,@ToDate) ELSE r.WinlostDate END  END AS WinlostDate 
-	--	,SUM(ISNULL(r.OpeningBalance, 0)) AS OpeningBalance
-	--FROM #rptStatementTable r
-	--	LEFT JOIN CTE_Balance m 
-	--		ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MaxDate
-	--WHERE r.WinlostDate = @FromDate	OR m.MaxDate IS NOT NULL
-	--GROUP BY r.WinlostDate, r.OwnerID  
-	--UNION ALL
-	--SELECT r.OwnerID  
-	--	,DATEADD(DD,-1,@ToDate) AS WinlostDate 
-	--	,SUM(ISNULL(r.OpeningBalance, 0)) AS OpeningBalance
-	--FROM #rptStatementTable r
-	--INNER JOIN CTE_Balance m 
-	--		ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MaxDate
-	--WHERE r.WinlostDate = @FromDate
-	--GROUP BY r.WinlostDate, r.OwnerID  
 
 	
 	;WITH CTE_Balance (OwnerID, MaxDate, MinDate ) AS 
@@ -389,7 +360,7 @@ BEGIN
 	GROUP BY r.WinlostDate, r.OwnerID  , m.MinDate
 	UNION ALL
 	SELECT r.OwnerID  
-		,DATEADD(DD,-1,@ToDate) AS WinlostDate 
+		, @ToDate AS WinlostDate 
 		,SUM(ISNULL(r.OpeningBalance, 0)) AS OpeningBalance
 	FROM #rptStatementTable r
 		INNER JOIN CTE_Balance m 

@@ -353,7 +353,7 @@ BEGIN
 	GROUP BY r.WinlostDate, r.OwnerID ,m.MinDate
 	UNION ALL
 	SELECT r.OwnerID  
-		,DATEADD(DD,-1,@ToDate) AS WinlostDate 
+		, @ToDate AS WinlostDate 
 		,SUM(ISNULL(r.OpeningBalance, 0)) AS OpeningBalance
 	FROM #rptStatementTable r
 		INNER JOIN CTE_Balance m 
@@ -371,29 +371,4 @@ END
 GO 
 
 
- 
-
-/*			
-DECLARE @strcustids VARCHAR(MAX)
-
-SET @strcustids = (SELECT top 1000 CustId  AS '@CustId',   roleid AS '@RoleID'
-        FROM customer (nolock)
-		where roleID = 4
-        FOR XML PATH('r'), ROOT( 'ROOT' ))
-select @strcustids 
-
- 
-DECLARE @tempTrans TABLE (custid BIGINT)
-DECLARE @handle INT
----parse XML
-EXEC sp_xml_preparedocument @handle OUTPUT, @strcustids
-INSERT INTO @tempTrans(custid)
-SELECT custID
-FROM OPENXML(@handle,'ROOT/r',1) WITH(CustId BIGINT) tbl
-
-EXEC sp_xml_removedocument @handle  
-
-SELECT * FROM @tempTrans 
-
-EXEC [Acc_Rpt_GetBalance_Super] '2018-12-08', '2018-12-19', @strcustids
-*/
+  

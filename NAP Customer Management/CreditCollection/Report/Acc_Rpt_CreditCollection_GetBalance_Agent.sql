@@ -99,8 +99,6 @@ BEGIN
 	 
 	SELECT @ToDate = DATEADD (dd, 1, @ToDate)  --- plus one day to calculate the openning BL of the day after (@ToDate + 1)  = the closing BL of the day before (@ToDate)
  
-	
-
 	DECLARE @i BIGINT = 10000000  -- use optimize for
 	DECLARE @total MONEY = 0 -- to calculate OpeningBalance
 	
@@ -326,7 +324,7 @@ BEGIN
 	GROUP BY r.WinlostDate, r.OwnerID ,m.MinDate
 	UNION ALL
 	SELECT r.OwnerID  
-		,DATEADD(DD,-1,@ToDate) AS WinlostDate 
+		, @ToDate AS WinlostDate 
 		,SUM(ISNULL(r.OpeningBalance, 0)) AS OpeningBalance
 	FROM #rptStatementTable r
 		INNER JOIN CTE_Balance m 
