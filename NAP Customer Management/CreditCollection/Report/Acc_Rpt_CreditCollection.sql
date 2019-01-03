@@ -536,7 +536,7 @@ BEGIN
 			SUM (B.Balance) as Balance, B.WinlostDate
 	FROM  #GroupDetail D
 	LEFT JOIN #CustBalance B
-		ON B.CustId = D.CustId AND B.WinlostDate IN (@FromDate, @ToDate)
+		ON B.CustId = D.CustId AND B.WinlostDate IN (@FromDate, @ToDate + 1)
 	GROUP BY  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END, B.WinlostDate , IsOLD
 	ORDER BY  GroupId, IsOLD DESC, WinlostDate
 	 
