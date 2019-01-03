@@ -98,8 +98,8 @@ BEGIN
 	---#3: Begin: Get Data from Bettrans table. Because of the suitable index is IX_recommend, then we will use index on recommend level.
 	
 	
-	DECLARE @recommend TABLE (ownerID INT, recommend INT, PRIMARY KEY (ownerID, recommend)) -- to using index on recommend level master and super
-	DECLARE @mrecommend TABLE (ownerID INT, mrecommend INT, PRIMARY KEY (ownerID, mrecommend)) -- to using index on custID level super
+	DECLARE @recommend TABLE (ownerID INT, recommend INT, PRIMARY KEY ( recommend, ownerID)) -- to using index on recommend level master and super
+	DECLARE @mrecommend TABLE (ownerID INT, mrecommend INT, PRIMARY KEY (mrecommend, ownerID)) -- to using index on custID level super
 
 	SELECT @ToDate = DATEADD (dd, 1, @ToDate)  --- plus one day to calculate the openning BL of the day after (@ToDate + 1)  = the closing BL of the day before (@ToDate)
 

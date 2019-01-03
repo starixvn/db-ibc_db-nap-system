@@ -162,7 +162,6 @@ BEGIN
 	/* 2. Member of group headline and direct account table*/	
 	CREATE TABLE #GroupDetailAll
 	(
-		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
 		CustId			INT,
 		GroupID			INT,
 		IsGroup			BIT,
@@ -175,7 +174,6 @@ BEGIN
 
 	CREATE TABLE #GroupDetail
 	(
-		--RowId			INT IDENTITY(1,1) PRIMARY KEY,
 		CustId			INT,
 		GroupID			INT,
 		IsGroup			BIT,
@@ -200,23 +198,27 @@ BEGIN
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 	
 	
-	 
-	------Paging
-
-
-	DECLARE @GroupID AS TABLE (GroupID INT) 
+		------Paging
 	
-	INSERT INTO @GroupID (GroupID)
-	SELECT GroupID
-	FROM (
+	DECLARE @GroupID AS TABLE (GroupID INT) 
+
+	SELECT @totalItems = COUNT(*)
+	FROM  (
 			SELECT ROW_NUMBER() OVER (ORDER BY h.GroupID) rn, h.GroupID
 			FROM  #GroupHeadLineAll h					
 			WHERE EXISTS (SELECT 1 FROM #GroupDetailAll d WHERE d.GroupID = h.GroupID AND (d.IsOLD = @Type OR @Type = 2 ))
-			) t
-	WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
+			) t 
 
-	SELECT @totalItems = @@ROWCOUNT
- 
+	 
+	INSERT INTO @GroupID (GroupId) 
+	SELECT t.GroupID
+	FROM (
+		SELECT ROW_NUMBER() OVER (ORDER BY h.GroupID) rn, h.GroupID
+		FROM  #GroupHeadLineAll h					
+		WHERE EXISTS (SELECT 1 FROM #GroupDetailAll d WHERE d.GroupID = h.GroupID AND (d.IsOLD = @Type OR @Type = 2 ))
+		) t
+	WHERE	(t.rn BETWEEN @RowStart and @RowEnd)
+			OR (@pageSize = -1) ---- all page
 
 	 
 	INSERT INTO #GroupHeadLine (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
@@ -501,7 +503,7 @@ BEGIN
 	IF @HasBT = 1 OR @HasBT_14 = 1
 	BEGIN 
 		INSERT INTO #Transfer (CustId, StartDate, EndDate, Amount)	 
-		SELECT	t.CustId, b.StartDate, b.EndDate, SUM((t.Debit - t.Credit) * t.ActualRate) As Amount
+		SELECT	t.CustId, b.StartDate, b.EndDate, SUM((t.Credit - t.Debit) * t.ActualRate) As Amount
 		FROM	dbo.Transfer_Coll t WITH (NOLOCK)  
 			INNER JOIN #BreakDowns b 
 				ON t.WinlostDate BETWEEN b.StartDate AND b.EndDate	
@@ -512,13 +514,14 @@ BEGIN
 	IF @HasBT_BK = 1 
 	BEGIN 
 		INSERT INTO #Transfer (CustId, StartDate, EndDate, Amount)	 
-		SELECT	t.CustId, b.StartDate, b.EndDate, SUM((t.Debit - t.Credit)* t.ActualRate) As Amount
+		SELECT	t.CustId, b.StartDate, b.EndDate, SUM((t.Credit - t.Debit)* t.ActualRate) As Amount
 		FROM	bodb_archive.dbo.Transfer_Coll_BK t WITH (NOLOCK)  
 			INNER JOIN #BreakDowns b 
 				ON t.WinlostDate BETWEEN b.StartDate AND b.EndDate	
 		WHERE EXISTS (SELECT 1 FROM #GroupDetail d WHERE d.CustId = t.CustId) 
 		GROUP BY t.CustId, b.StartDate, b.EndDate 
 	END  
+	 
 
 
 	----------------Get Info 
@@ -533,20 +536,21 @@ BEGIN
 
 	---- Detail
 	SELECT  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END AS Username,   
-			SUM (B.Balance) as Balance, B.WinlostDate
+			SUM (B.Balance) * -1 as Balance, B.WinlostDate
 	FROM  #GroupDetail D
 	LEFT JOIN #CustBalance B
 		ON B.CustId = D.CustId AND B.WinlostDate IN (@FromDate, @ToDate + 1)
 	GROUP BY  D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END, B.WinlostDate , IsOLD
 	ORDER BY  GroupId, IsOLD DESC, WinlostDate
+
 	 
 
 	--- Collection Breakdown
 	SELECT	D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END AS Username,  
-			MIN(T.StartDate) AS StartDate , MIN(T.EndDate) AS EndDate , SUM (T.Amount) AS Amount
+			MIN(T.StartDate) AS StartDate , MIN(T.EndDate) AS EndDate , SUM (T.Amount) * -1 AS Amount
 	FROM	#Transfer T
 	INNER JOIN   #GroupDetail D
-			ON D.CustID = T.CustID
+		ON D.CustID = T.CustID
 	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END , IsOLD
 	ORDER BY  D.GroupId, IsOLD DESC 
 	

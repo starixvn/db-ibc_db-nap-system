@@ -1,4 +1,5 @@
 /*<info serverAlias="DBRPT-bodb_report" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
+
 ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_BK]
 	@FromDate	SMALLDATETIME,
 	@ToDate		SMALLDATETIME,
