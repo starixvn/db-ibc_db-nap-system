@@ -1,14 +1,14 @@
 /*<info serverAlias="DBRPT-bodb_report" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
 
 ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_BK]
-	@FromDate	SMALLDATETIME,
-	@ToDate		SMALLDATETIME,
+	@FromDate	DATE,
+	@ToDate		DATE,
 	@CustIDList	VARCHAR(MAX)
 AS
 /*  Created: Sophia  
 	Date:	20181206
 	DB:		DBRPT-bodb_report
-	Task :  Get Balance for List Customer - Level Super - Bettrans_BK Range
+	Task :  Get Balance for List Customer - Level Super - Bettrans_BK Range [Redmine: 98621]
 	Prefer SP: Acc_StatementSel 
 	
 
@@ -23,7 +23,7 @@ AS
 						 
 
 	Revisions:  
-	- 20181206@Sophia: initial SP
+	- 20181206@Sophia: initial SP 
 
 */  
  
@@ -68,9 +68,9 @@ BEGIN
 	BEGIN		
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance)		
 		SELECT r.CustID, r.winlostdate, r.OpeningBalance
-		FROM bodb_Report.dbo.rptStatement_Old r WITH (NOLOCK)			
-			INNER JOIN #CustIds c ON c.CustId = r.custid
+		FROM bodb_Report.dbo.rptStatement_Old r WITH (NOLOCK)		
 		WHERE Winlostdate IN (@FromDate, @ToDate)
+			AND EXISTS (SELECT 1 FROM #CustIds c WHERE c.CustID = r.custid)
 		ORDER BY r.CustID, r.winlostdate   
 						
 	END

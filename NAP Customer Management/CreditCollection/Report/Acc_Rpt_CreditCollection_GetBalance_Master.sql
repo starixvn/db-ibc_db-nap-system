@@ -7,7 +7,7 @@ AS
 /*  Created: Sophia  
 	Date:	20181206
 	DB:		DBACC.bodb02 
-	Task :  Get Balance for List Customer - Level Master - Bettrans Range
+	Task :  Get Balance for List Customer - Level Master - Bettrans Range [Redmine: 98621]
 	Prefer SP: Acc_StatementSel 
 	
 

@@ -16,7 +16,7 @@ AS
 /*  Created: Sophia  
 	Date:	20181206
 	DB:		DBACC.bodb02 
-	Task :  Report Credit Collection
+	Task :  Report Credit Collection [Redmine: 98621]
 	
 	Param's Explanation:  
 
