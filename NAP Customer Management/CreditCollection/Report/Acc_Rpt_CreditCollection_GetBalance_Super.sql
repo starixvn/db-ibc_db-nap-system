@@ -154,7 +154,7 @@ BEGIN
 			,0 AS OwnerWinloss
 			,SUM(swinlost) AS winlost
 			,SUM(scomm - acomm) AS comm			
-		FROM @recommend r
+		FROM (Select TOP (@i) OwnerID, recommend FROM @recommend ) r 
 		CROSS APPLY  ( 	
 					SELECT TOP (@i) winlostdate, bettype, StatusID, stake * actualrate as stake, swinlost * actualrate as swinlost, scomm * actualrate as scomm, acomm * actualrate as acomm
 					FROM dbo.bettrans bt WITH(NOLOCK) -- use index = IX_recommend
@@ -175,7 +175,7 @@ BEGIN
 			,SUM(winlost - actual_stake) AS OwnerWinloss
 			,SUM(swinlost) AS winlost
 			,SUM(scomm - acomm) AS comm
-		FROM @mrecommend m 
+		FROM  (SELECt TOP(@i) ownerID, mrecommend FROM @mrecommend )m 
 		CROSS APPLY (	SELECT TOP (@i) Winlostdate, bettype, CASE WHEN srecommend = CustID THEN 1 ELSE 0 END as IsOwner,
 								--stake, winlost, actual_stake, swinlost, scomm, acomm
 								stake * actualrate as stake, winlost * actualrate as winlost, actual_stake * actualrate as actual_stake, swinlost * actualrate as swinlost, scomm * actualrate as scomm, acomm * actualrate as acomm
@@ -199,7 +199,7 @@ BEGIN
 			,0 AS OwnerWinloss
 			,SUM(swinlost) AS winlost
 			,SUM(scomm - acomm) AS comm		
-		FROM @recommend r
+		FROM (Select TOP (@i) OwnerID, recommend FROM @recommend ) r 
 		CROSS APPLY (
 					SELECT TOP (@i) winlostdate, StatusID, stake * actualrate as stake, swinlost * actualrate as swinlost, scomm * actualrate as scomm, acomm * actualrate as acomm
 					FROM dbo.bettransLC bt WITH (NOLOCK)		-- use index = IX_recommend					
@@ -223,7 +223,7 @@ BEGIN
 			,0 AS OwnerWinloss
 			,SUM(swinlost) AS winlost
 			,SUM(scomm - acomm) AS comm
-		FROM @recommend r
+		FROM (Select TOP (@i) OwnerID, recommend FROM @recommend ) r 
 		CROSS APPLY (
 					SELECT TOP (@i) winlostdate, StatusID, stake * actualrate as stake, swinlost * actualrate as swinlost, scomm * actualrate as scomm, acomm * actualrate as acomm
 					FROM dbo.bettransRNG bt WITH (NOLOCK)		-- use index = IX_recommend					
