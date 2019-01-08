@@ -82,8 +82,7 @@ BEGIN
 	CREATE TABLE #rptStatementTable(
 		 OwnerID			INT
 		,winlostdate		SMALLDATETIME	
-		,OpeningBalance		MONEY	NULL
-		
+		,OpeningBalance		MONEY	NULL		
 		,Winlost			MONEY	NULL
 		,Comm				MONEY	NULL	
 		,Balance			MONEY		
@@ -138,17 +137,15 @@ BEGIN
 	---IF @roleid = 3
 	BEGIN		
 		-- I.3.1. Bettrans (downline):  Exclude ticket running, waiting, Void, reject
-		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
-			r.OwnerID, winlostdate, bettype, StatusID, 0 as IsOwner
-			,SUM(ABS(stake)) AS Turnover
+			r.OwnerID, winlostdate, bettype, StatusID, 0 as IsOwner			
 			,0 AS OwnerWinloss
 			,SUM(mwinlost) AS winlost
 			,SUM(acomm - comm) AS comm
-			,COUNT(1) AS betcount
 		FROM @recommend r
 		CROSS APPLY  ( 	
-					SELECT TOP (@i) winlostdate, bettype, StatusID, stake * actualrate as stake, mwinlost * actualrate as mwinlost , acomm * actualrate as acomm, comm * actualrate as comm
+					SELECT TOP (@i) winlostdate, bettype, StatusID, mwinlost * actualrate as mwinlost , acomm * actualrate as acomm, comm * actualrate as comm
 					FROM dbo.bettrans bt WITH(NOLOCK) -- use index on custID
 					WHERE	bt.recommend = r.recommend		
 							AND winlostdate <= @todate 
@@ -159,16 +156,14 @@ BEGIN
 			 
 
 		-- I.3.1b bettrans (itself, always is transfer & Openning BL & Sum tickets)
-		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			bt.CustID, Winlostdate, bettype
 			,131 as StatusID		 --- get a general StatusId	
-			, 1 as IsOwner           --- master only
-			,0 AS Turnover
+			, 1 as IsOwner           --- master only		
 			,SUM((winlost - actual_stake) * actualrate) AS OwnerWinloss
 			,0 AS winlost
 			,0 AS comm
-			,COUNT(1) AS betcount
 		FROM dbo.bettrans bt WITH (NOLOCK)	--- Use index on custID		
 		WHERE EXISTS (SELECT 1 FROM #CustIds l WHERE l.CustID = bt.CustId)
 			  AND Bettype >= 19999
@@ -176,20 +171,18 @@ BEGIN
 		GROUP BY bt.CustID, Winlostdate, bettype 
 		
 		-- I.3.2. BettransLC:  Exclude ticket running, waiting 	
-		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.OwnerID, winlostdate
 			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
 			,StatusID
 			,0 as IsOwner
-			,SUM(ABS(stake)) AS Turnover
 			,0 AS OwnerWinloss
 			,SUM(mwinlost) AS winlost
-			,SUM(acomm - comm) AS comm
-			,COUNT(1) AS betcount 
+			,SUM(acomm - comm) AS comm	 
 		FROM @recommend r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, StatusID, stake * actualrate as stake, mwinlost * actualrate as mwinlost, acomm * actualrate as acomm, comm * actualrate as comm
+					SELECT TOP (@i) winlostdate, StatusID, mwinlost * actualrate as mwinlost, acomm * actualrate as acomm, comm * actualrate as comm
 					FROM dbo.bettransLC bt WITH (NOLOCK)	-- use index = IX_recommend						
 					WHERE r.recommend = bt.recommend
 						AND winlostdate <= @todate
@@ -200,20 +193,18 @@ BEGIN
 		OPTION (OPTIMIZE FOR (@i = 1))
 
 		-- I.3.3. BettransRNG:  Exclude ticket running, waiting 
-		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.OwnerID, winlostdate 
 			,-1 as bettype  --- Get a general bettype for BettransLC/BettransRNG
 			,StatusID
 			,0 as IsOwner
-			,SUM(ABS(stake)) AS Turnover
 			,0 AS OwnerWinloss
 			,SUM(mwinlost) AS winlost
 			,SUM(acomm - comm) AS comm
-			,COUNT(1) AS betcount 
 		FROM @recommend r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, StatusID, stake * actualrate as stake, mwinlost * actualrate as mwinlost, acomm * actualrate as acomm, comm * actualrate as comm
+					SELECT TOP (@i) winlostdate, StatusID, mwinlost * actualrate as mwinlost, acomm * actualrate as acomm, comm * actualrate as comm
 					FROM dbo.bettransRNG bt WITH (NOLOCK)		-- use index = IX_recommend					
 					WHERE r.recommend = bt.recommend
 						AND winlostdate <= @todate

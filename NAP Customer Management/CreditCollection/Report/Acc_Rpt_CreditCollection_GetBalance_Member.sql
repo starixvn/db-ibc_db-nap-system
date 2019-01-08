@@ -69,12 +69,9 @@ BEGIN
 		,winlostdate		SMALLDATETIME
 		,Bettype			SMALLINT
 		,StatusID			SMALLINT
-		,IsOwner			BIT     DEFAULT 0		
-		,Outstanding		MONEY	NULL
-		,Turnover			MONEY	NULL
+		,IsOwner			BIT     DEFAULT 0			
 		,Winlost			MONEY	NULL
 		,Comm				MONEY	NULL
-		,BetCount			INT		DEFAULT 0
 		,OwnerWinloss		MONEY	NULL
 		
 	)
@@ -125,18 +122,15 @@ BEGIN
 	--IF @roleid = 1
 	BEGIN
 		-- I.1.1. Bettrans
-		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Outstanding, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
-			r.CustID, winlostdate, bettype, StatusID, CASE WHEN bettype > 20000 THEN 1 ELSE 0 END AS IsOwner  
-			,SUM(ABS(actual_stake)) as Outstanding
-			,SUM( ABS(stake) ) AS Turnover
+			r.CustID, winlostdate, bettype, StatusID, CASE WHEN bettype > 20000 THEN 1 ELSE 0 END AS IsOwner  			
 			,SUM(winlost - actual_stake) AS OwnerWinloss
 			,SUM(winlost - actual_stake) AS winlost
-			,SUM(playercomm) AS comm
-			,COUNT(1) AS betcount		
+			,SUM(playercomm) AS comm		
 		FROM #CustIds r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, StatusID, bettype, stake * actualrate as stake, winlost * actualrate as winlost, actual_stake * actualrate as actual_stake, playercomm * actualrate as playercomm 
+					SELECT TOP (@i) winlostdate, StatusID, bettype, winlost * actualrate as winlost, playercomm * actualrate as playercomm , actual_stake * actualrate as actual_stake 
 					FROM dbo.bettrans bt WITH (NOLOCK)		-- use index = CUSTID					
 					WHERE r.CustID = bt.custID
 						AND winlostdate <= @todate					
@@ -147,20 +141,17 @@ BEGIN
 
 
 		-- I.1.2. BettransLC
-		INSERT INTO #Data (OwnerID, winlostdate ,bettype, StatusID, IsOwner, Outstanding, Turnover, OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate ,bettype, StatusID, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.CustId, winlostdate
 			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
 			,StatusID, 0 as IsOwner
-			,SUM(ABS(actual_stake)) as Outstanding
-			,SUM( ABS(stake) ) AS Turnover
 			,0 AS OwnerWinloss
-			,SUM(winlost - actual_stake) AS winlost
-			,SUM(playercomm) AS comm
-			,COUNT(1) AS betcount		
+			,(winlost - actual_stake) AS winlost
+			,(playercomm) AS comm
 		FROM #CustIds r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, StatusID, stake * actualrate as stake, winlost * actualrate as winlost, actual_stake * actualrate as actual_stake, playercomm * actualrate as playercomm
+					SELECT TOP (@i) winlostdate, StatusID, SUM(winlost * actualrate) as winlost, SUM(playercomm * actualrate) as playercomm	, SUM(actual_stake * actualrate) as actual_stake
 					FROM dbo.bettransLC bt WITH (NOLOCK)		-- use index = CUSTID					
 					WHERE r.custID = bt.custID
 						AND winlostdate <= @todate	
@@ -172,24 +163,22 @@ BEGIN
  
 		
 		-- I.1.3. BettransRNG
-		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner, Outstanding, Turnover,OwnerWinloss, Winlost, Comm, BetCount)
+		INSERT INTO #Data (OwnerID, winlostdate, bettype, StatusID, IsOwner,OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.CustId, winlostdate
 			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
 			, StatusID, 0 as IsOwner
-			,SUM(ABS(actual_stake)) as Outstanding
-			,SUM( ABS(stake) ) AS Turnover
 			,0 AS OwnerWinloss
-			,SUM(winlost - actual_stake) AS winlost
-			,SUM(playercomm) AS comm
-			,COUNT(1) AS betcount
+			,(winlost - actual_stake) AS winlost
+			,(playercomm) AS comm	
 		FROM #CustIds r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, StatusID, stake * actualrate as stake, winlost * actualrate as winlost, actual_stake * actualrate as actual_stake, playercomm * actualrate as playercomm
+					SELECT TOP (@i) winlostdate, StatusID, SUM(winlost * actualrate) as winlost, SUM(playercomm * actualrate) as playercomm, SUM(actual_stake * actualrate) as actual_stake
 					FROM dbo.bettransRNG bt WITH (NOLOCK)		-- use index = CUSTID					
 					WHERE r.custID = bt.custID
 						AND winlostdate <= @todate	
-						AND winlostdate >= @yesterday				
+						AND winlostdate >= @yesterday
+					GROUP BY winlostdate, StatusID
 					) b
 		GROUP BY r.CustId, winlostdate, StatusID
 		OPTION (OPTIMIZE FOR (@i = 1))
