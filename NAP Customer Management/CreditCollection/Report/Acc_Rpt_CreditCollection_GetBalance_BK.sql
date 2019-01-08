@@ -75,6 +75,7 @@ BEGIN
 						
 	END
 	-- End Super --
+
 	;WITH CTE_Balance (OwnerID, MaxDate, MinDate, currency ) AS 
 	(	SELECT	OwnerID, MAX(WinlostDate) MaxDate, MIN(WinlostDate) MinDate, currency
 		FROM	#rptStatementTable o
@@ -96,14 +97,10 @@ BEGIN
  
 	SELECT r.OwnerID  
 		,DATEADD(DD,1,@ToDate) AS WinlostDate 
-		,SUM(ISNULL(r.OpeningBalance, 0) * e.ActualRate) AS OpeningBalance
-		,CASE WHEN r.WinlostDate = @ToDate THEN DATEADD(dd, 1, @ToDate) ELSE @FromDate END AS WinlostDate
 		,SUM (ISNULL(r.ClosingBalance, 0) * e.ActualRate) AS OpeningBalance 
 	FROM #rptStatementTable r
 		INNER JOIN CTE_Balance m 
-			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MaxDate	 
-		INNER JOIN bodb02.dbo.Customer m WITH (NOLOCK) 
-				ON m.CustID = r.OwnerID	
+			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MaxDate	 	
 		INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
 			ON e.ExchangeId = m.currency and e.ExchangeDate = r.WinlostDate
 	GROUP BY r.WinlostDate, r.OwnerID  

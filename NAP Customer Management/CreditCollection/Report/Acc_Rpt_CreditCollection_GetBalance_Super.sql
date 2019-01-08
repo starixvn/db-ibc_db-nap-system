@@ -206,7 +206,7 @@ BEGIN
 							AND StatusID NOT IN (0,1,102,101) -- 'running','waiting','VOID','REJECT'
 					GROUP BY winlostdate, bettype, CASE WHEN srecommend = CustID THEN 1 ELSE 0 END 
 				) b
-		GROUP BY r.CustId, winlostdate, bettype
+		--GROUP BY r.CustId, winlostdate, bettype
 		OPTION (MAXDOP 4)	
 		
 		 
