@@ -146,19 +146,7 @@ BEGIN
 		  AND (C.username = @Code OR @Code  = '')
 		  AND (C.currency <> 20 OR @ExcludeTest = 0)
 		  AND NOT EXISTS (SELECT 1 FROM custAccount m WITH (NOLOCK) WHERE m.GroupID <> 0 AND m.IsGroupHeadLine = 0 AND m.CustID = D.CustID)
-	
-
-	--INSERT INTO #GroupHeadLine (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
-	--SELECT CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
-	--FROM (
-	--		SELECT ROW_NUMBER() OVER (ORDER BY GroupID, IsGroupHeadLine DESC) rn, CustId, Username, Coll_Status, IsGroupHeadLine, GroupID
-	--		FROM #GroupHeadLineAll
-	--		) t
-	--WHERE (t.rn between @RowStart and @RowEnd) OR (@pageSize = -1)
-
-	--SELECT @totalItems = COUNT (*) 
-	--FROM #GroupHeadLineAll
-	 
+			 
 	/* 2. Member of group headline and direct account table*/	
 	CREATE TABLE #GroupDetailAll
 	(
@@ -191,12 +179,14 @@ BEGIN
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON M.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 1  --- insert member of Group  
 			AND M.GroupID <> 0
+			AND (C.currency <> 20 OR @ExcludeTest = 0)
 
 	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
 	SELECT	H.CustId, H.GroupID, 0 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
 	FROM	#GroupHeadLineAll H
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
-	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 	
+	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 
+			AND (C.currency <> 20 OR @ExcludeTest = 0)	
 	
 		------Paging
 	
@@ -241,7 +231,7 @@ BEGIN
 	CREATE TABLE #CustBalance (CustId INT, WinlostDate SMALLDATETIME, Balance MONEY)
 	DECLARE @CustTmp AS TABLE (CustId INT)
 	
-	DECLARE @i INT = 100 
+	DECLARE @i BIGINT = 1000000 
 
 
 	------ LOOP
