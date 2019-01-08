@@ -54,7 +54,8 @@ BEGIN
 	CREATE TABLE #rptStatementTable(
 		 OwnerID			INT
 		,winlostdate		SMALLDATETIME	
-		,OpeningBalance		MONEY	NULL		
+		,OpeningBalance		MONEY	NULL	
+		,ClosingBalance		MONEY	NULL		
 	)
 	
 	/*
@@ -62,12 +63,11 @@ BEGIN
 	WHERE CustID IN (7214059,7213826,7213962)   --- Special acc    (ROLEID = 1 )
 	*/	
 	
-	SELECT @ToDate = DATEADD (dd, 1, @ToDate)  --- plus one day to calculate the openning BL of the day after (@ToDate + 1)  = the closing BL of the day before (@ToDate)
-	
+
 	-- Super --
 	BEGIN		
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance)		
-		SELECT r.CustID, r.winlostdate, r.OpeningBalance
+		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
+		SELECT r.CustID, r.winlostdate, r.OpeningBalance, r.ClosingBalance
 		FROM bodb_Report.dbo.rptStatement_Old r WITH (NOLOCK)		
 		WHERE Winlostdate IN (@FromDate, @ToDate)
 			AND EXISTS (SELECT 1 FROM #CustIds c WHERE c.CustID = r.custid)
@@ -75,31 +75,14 @@ BEGIN
 						
 	END
 	-- End Super --
- 		
 	
-	;WITH CTE_Balance (OwnerID, MaxDate, MinDate, currency) AS 
-	(	SELECT	OwnerID, MAX(WinlostDate) MaxDate, MIN(WinlostDate) MinDate, currency
-		FROM	#rptStatementTable o
-		INNER JOIN bodb02.dbo.Customer c WITH (NOLOCK) 
-				ON c.CustID = o.OwnerID
-		GROUP BY OwnerID , currency
-	)
-	SELECT r.OwnerID  
-		, @FromDate AS WinlostDate
-		,SUM(ISNULL(r.OpeningBalance, 0) * ActualRate) AS OpeningBalance
+	
+ 	SELECT r.OwnerID  
+		,  CASE WHEN r.WinlostDate = @ToDate THEN DATEADD(dd, 1, @ToDate) ELSE @FromDate END AS WinlostDate
+		, SUM (CASE WHEN r.Winlostdate = @FromDate THEN ISNULL(r.OpeningBalance, 0) * e.ActualRate ELSE ISNULL(r.ClosingBalance, 0) * e.ActualRate END ) AS OpeningBalance 
 	FROM #rptStatementTable r
-		INNER JOIN CTE_Balance m 
-			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MinDate	 
-		INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
-			ON e.ExchangeId = m.currency and e.ExchangeDate = r.WinlostDate
-	GROUP BY r.WinlostDate, r.OwnerID  
-	UNION ALL
-	SELECT r.OwnerID  
-		,DATEADD(DD,-1,@ToDate) AS WinlostDate 
-		,SUM(ISNULL(r.OpeningBalance, 0) * ActualRate) AS OpeningBalance
-	FROM #rptStatementTable r
-		INNER JOIN CTE_Balance m 
-			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MaxDate	 
+		INNER JOIN bodb02.dbo.Customer m WITH (NOLOCK) 
+				ON m.CustID = r.OwnerID	
 		INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
 			ON e.ExchangeId = m.currency and e.ExchangeDate = r.WinlostDate
 	GROUP BY r.WinlostDate, r.OwnerID  
