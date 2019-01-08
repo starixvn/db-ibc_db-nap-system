@@ -155,9 +155,9 @@ BEGIN
 					FROM dbo.bettransLC bt WITH (NOLOCK)		-- use index = CUSTID					
 					WHERE r.custID = bt.custID
 						AND winlostdate <= @todate	
-						AND winlostdate >= @yesterday				
+						AND winlostdate >= @yesterday	
+					GROUP BY winlostdate, StatusID
 					) b
-		GROUP BY r.CustId, winlostdate, StatusID
 		OPTION (OPTIMIZE FOR (@i = 1))
 
  
@@ -179,8 +179,7 @@ BEGIN
 						AND winlostdate <= @todate	
 						AND winlostdate >= @yesterday
 					GROUP BY winlostdate, StatusID
-					) b
-		GROUP BY r.CustId, winlostdate, StatusID
+					) b		
 		OPTION (OPTIMIZE FOR (@i = 1))
 	
 	END
