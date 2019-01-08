@@ -194,13 +194,13 @@ BEGIN
 			,(scomm - acomm) AS comm			
 		FROM #CustIds r 
 		CROSS APPLY  ( 	
-					SELECT  TOP (@i) winlostdate, bettype,  CASE WHEN srecommend = CustID THEN 1 ELSE 0 END as IsOwner, 						
+					SELECT  winlostdate, bettype,  CASE WHEN srecommend = CustID THEN 1 ELSE 0 END as IsOwner, 						
 							SUM(winlost * actualrate) as winlost, 
 							SUM(actual_stake * actualrate) as actual_stake, 
 							SUM(swinlost * actualrate) as swinlost, 
 							SUM(scomm * actualrate) as scomm, 
 							SUM(acomm * actualrate) as acomm
-					FROM dbo.bettrans bt WITH(NOLOCK) -- use index = IX_recommend
+					FROM dbo.bettrans bt WITH(NOLOCK, INDEX = CIX_matchid_bettype) -- use index = IX_recommend
 					WHERE	bt.srecommend = r.CustId		
 							AND winlostdate <= @todate 
 							AND StatusID NOT IN (0,1,102,101) -- 'running','waiting','VOID','REJECT'
