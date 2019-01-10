@@ -64,16 +64,25 @@ BEGIN
 	WHERE CustID IN (7214059,7213826,7213962)   --- Special acc    (ROLEID = 1 )
 	*/	
 	
+	
+	-- Super --		
+	BEGIN
+		CREATE TABLE #Tmp (CustID INT, Winlostdate DATE)	
+		
+		INSERT INTO #Tmp
+		SELECT CustID, @FromDate
+		FROM #CustIds
+		UNION ALL
+		SELECT CustID, @ToDate
+		FROM #CustIds
 
-	-- Super --
-	BEGIN		
+		
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
 		SELECT r.CustID, r.winlostdate, r.OpeningBalance, r.ClosingBalance
-		FROM bodb_Report.dbo.rptStatement_Old r WITH (NOLOCK)		
-		WHERE Winlostdate IN (@FromDate, @ToDate)
-			AND EXISTS (SELECT 1 FROM #CustIds c WHERE c.CustID = r.custid)
-		 
-						
+		FROM dbo.rptStatement_Old r WITH (NOLOCK)	
+		CROSS APPLY (SELECT t.*
+					 FROM #Tmp t
+					 WHERE t.CustID = r.CustID AND r.Winlostdate = t.Winlostdate) c	
 	END
 	-- End Super --
 	
