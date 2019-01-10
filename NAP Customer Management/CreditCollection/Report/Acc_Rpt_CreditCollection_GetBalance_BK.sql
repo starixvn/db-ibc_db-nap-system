@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_BK]
 	@FromDate	DATE,
 	@ToDate		DATE,
 	@CustIDList	VARCHAR(MAX),
-	@LimitMonth TINYINT
+	@LimitMonth TINYINT = 1
 AS
 /*  Created: Sophia  
 	Date:	20181206
@@ -102,28 +102,34 @@ BEGIN
 	---- IF @FromDate no record of BL then get the nearest BL of FromDate 
 	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
 	BEGIN 
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance, r.ClosingBalance
-		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-		WHERE 
-			EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
-			AND r.winlostdate < @FromDate
-			AND r.winlostdate >= @LimitDate
-		GROUP BY r.CustID, r.ClosingBalance
-		OPTION (MAXDOP 5)
+		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
+		SELECT CustID, @ToDate, OpeningBalance, ClosingBalance 
+		FROM  ( 	
+				SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
+				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
+				WHERE 
+					EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
+					AND r.winlostdate < @FromDate
+					AND r.winlostdate >= @LimitDate
+				GROUP BY r.CustID, r.ClosingBalance
+				) a
+		OPTION (MAXDOP 3)
 	END 
  
  	---- IF @ToDay no record of BL then get the nearest BL of FromDate 
 	IF EXISTS  (SELECT 1 FROM @ToDateNoBL)
 	BEGIN 
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
-		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-		WHERE 
-			EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-			AND r.winlostdate < @ToDate
-			AND r.winlostdate >= @LimitDate		
-		GROUP BY r.CustID ,r.ClosingBalance 
+		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
+		SELECT CustID, @ToDate, OpeningBalance, ClosingBalance 
+		FROM  ( 		
+				SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
+				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
+				WHERE 
+					EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
+					AND r.winlostdate < @ToDate
+					AND r.winlostdate >= @LimitDate		
+				GROUP BY r.CustID ,r.ClosingBalance 
+				) a
 		OPTION (MAXDOP 3)
 	END 
 

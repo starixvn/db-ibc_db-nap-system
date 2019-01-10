@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection]
 	@ToDate			SMALLDATETIME,
 	@MoveBetsDay	SMALLDATETIME, 
 	@BalanceUpDay	SMALLDATETIME,
+	@LimitMonth		TINYINT = 1,
 	@pageIndex	INT = 1,
 	@pageSize	INT = 100,
 	@totalItems INT = 0 OUTPUT
@@ -188,9 +189,9 @@ BEGIN
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 
 			AND (C.currency <> 20 OR @ExcludeTest = 0)	
+
 	
-		------Paging
-	
+	------Paging	
 	DECLARE @GroupID AS TABLE (GroupID INT) 
 
 	SELECT @totalItems = COUNT(*)
@@ -223,8 +224,7 @@ BEGIN
 	FROM  #GroupDetailAll t
 	WHERE EXISTS (SELECT 1 FROM @GroupID g WHERE g.GroupID = t.GroupID)
 
-   
- 
+    
 		   
 	/* 3.Get Balance */	
 	DECLARE @strCustIds VARCHAR(MAX) = '', @RowCount INT
@@ -236,236 +236,155 @@ BEGIN
 	
 	DECLARE @i BIGINT = 1000000  ---- large number means no loop at this time	
 	
-	------ LOOP
-	----* Super level *----
-	SELECT @RowCount = 1 
+	IF @HasBT = 1  
+	BEGIN 
+		------ LOOP
+		----* Super level *----
+		SELECT @RowCount = 1 
 
-	WHILE @RowCount <> 0 
-	BEGIN
-		DELETE @CustTmp 
-		SELECT @RowCount = 0
+		WHILE @RowCount <> 0 
+		BEGIN
+			DELETE @CustTmp 
+			SELECT @RowCount = 0
 			 		
-		UPDATE TOP (@i) c
-		SET		IsCal = 1
-		OUTPUT  inserted.CustId INTO @CustTmp
-		FROM	#GroupDetail c
-		WHERE	IsCal = 0 
-				AND RoleID = 4
+			UPDATE TOP (@i) c
+			SET		IsCal = 1
+			OUTPUT  inserted.CustId INTO @CustTmp
+			FROM	#GroupDetail c
+			WHERE	IsCal = 0 
+					AND RoleID = 4
  
-		SELECT @RowCount = @@ROWCOUNT
+			SELECT @RowCount = @@ROWCOUNT
 		
-		IF @RowCount <> 0 
-		BEGIN 
-			SET @strCustIds = ''
-			SET @strCustIds = ( SELECT CustId  AS '@CustId' 
-								FROM @CustTmp			 
-								FOR XML PATH('r'), ROOT( 'ROOT' ))
-								
-			IF @HasBT_BK = 1 
+			IF @RowCount <> 0 
 			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
-						@FromDate = @FromDateBT_BK,
-						@ToDate = @ToDateBT_BK,
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth
-			END
-
-			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
-			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
-						@FromDate = @FromDateBT_14,
-						@ToDate = @ToDateBT_14,						
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth,
-						@BalanceUpDay = @BalanceUpDay
-						 
-			END
+				SET @strCustIds = ''
+				SET @strCustIds = ( SELECT CustId  AS '@CustId' 
+									FROM @CustTmp			 
+									FOR XML PATH('r'), ROOT( 'ROOT' ))				
+			
 						 		 
-			IF @HasBT = 1 
-			BEGIN 
+				 
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC dbo.Acc_Rpt_CreditCollection_GetBalance_Super 
 						@FromDate = @FromDateBT,
 						@ToDate = @ToDateBT,
 						@CustIDList =@strCustIds 
+			
 			END
-		END
-	 END  
+		 END  
 
 
-	----* Master level *----
-	SELECT @RowCount = 1 
+		----* Master level *----
+		SELECT @RowCount = 1 
 
-	WHILE @RowCount <> 0 
-	BEGIN
-		DELETE @CustTmp 
-		SELECT @RowCount = 0
+		WHILE @RowCount <> 0 
+		BEGIN
+			DELETE @CustTmp 
+			SELECT @RowCount = 0
 			 		
-		UPDATE TOP (@i) c
-		SET		IsCal = 1
-		OUTPUT  inserted.CustId INTO @CustTmp
-		FROM	#GroupDetail c
-		WHERE	IsCal = 0 
-				AND RoleID = 3
+			UPDATE TOP (@i) c
+			SET		IsCal = 1
+			OUTPUT  inserted.CustId INTO @CustTmp
+			FROM	#GroupDetail c
+			WHERE	IsCal = 0 
+					AND RoleID = 3
 
-		SELECT @RowCount = @@ROWCOUNT
+			SELECT @RowCount = @@ROWCOUNT
 
-		IF @RowCount <> 0 
-		BEGIN 
-
-			SET @strCustIds = ''
-			SET @strCustIds = ( SELECT CustId  AS '@CustId' 
-								FROM @CustTmp			 
-								FOR XML PATH('r'), ROOT( 'ROOT' ))
-
-			IF @HasBT_BK = 1 
+			IF @RowCount <> 0 
 			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
-						@FromDate = @FromDateBT_BK,
-						@ToDate = @ToDateBT_BK,
-						@CustIDList =@strCustIds 
-			END
 
-			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
-			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
-						@FromDate = @FromDateBT_14,
-						@ToDate = @ToDateBT_14,						
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth,
-						@BalanceUpDay = @BalanceUpDay
-			END
+				SET @strCustIds = ''
+				SET @strCustIds = ( SELECT CustId  AS '@CustId' 
+									FROM @CustTmp			 
+									FOR XML PATH('r'), ROOT( 'ROOT' ))			
 
-			IF @HasBT = 1 
-			BEGIN 
+				 
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC dbo.Acc_Rpt_CreditCollection_GetBalance_Master 
 						@FromDate = @FromDateBT,
 						@ToDate = @ToDateBT,
 						@CustIDList =@strCustIds 
+				
 			END
-		END
-	 END 
+		 END 
 
 
-	----* Agent level *----
-	SELECT @RowCount = 1 
+		----* Agent level *----
+		SELECT @RowCount = 1 
 
-	WHILE @RowCount <> 0 
-	BEGIN
-		DELETE @CustTmp 
-		SELECT @RowCount = 0
+		WHILE @RowCount <> 0 
+		BEGIN
+			DELETE @CustTmp 
+			SELECT @RowCount = 0
 			 		
-		UPDATE TOP (@i) c
-		SET		IsCal = 1
-		OUTPUT  inserted.CustId INTO @CustTmp
-		FROM	#GroupDetail c
-		WHERE	IsCal = 0 
-				AND RoleID = 2
+			UPDATE TOP (@i) c
+			SET		IsCal = 1
+			OUTPUT  inserted.CustId INTO @CustTmp
+			FROM	#GroupDetail c
+			WHERE	IsCal = 0 
+					AND RoleID = 2
 
-		SELECT @RowCount = @@ROWCOUNT
+			SELECT @RowCount = @@ROWCOUNT
 
-		IF @RowCount <> 0 
-		BEGIN 
-
-			SET @strCustIds = ''
-			SET @strCustIds = ( SELECT CustId  AS '@CustId' 
-								FROM @CustTmp			 
-								FOR XML PATH('r'), ROOT( 'ROOT' ))
-
-			IF @HasBT_BK = 1 
+			IF @RowCount <> 0 
 			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
-						@FromDate = @FromDateBT_BK,
-						@ToDate = @ToDateBT_BK,
-						@CustIDList =@strCustIds 
-			END
 
-			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
-			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
-						@FromDate = @FromDateBT_14,
-						@ToDate = @ToDateBT_14,						
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth,
-						@BalanceUpDay = @BalanceUpDay 
-			END
-
-			IF @HasBT = 1 
-			BEGIN 
+				SET @strCustIds = ''
+				SET @strCustIds = ( SELECT CustId  AS '@CustId' 
+									FROM @CustTmp			 
+									FOR XML PATH('r'), ROOT( 'ROOT' ))
+			
+				
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC dbo.Acc_Rpt_CreditCollection_GetBalance_Agent
 						@FromDate = @FromDateBT,
 						@ToDate = @ToDateBT,
 						@CustIDList =@strCustIds 
+				
 			END
-		END
-	 END 
+		 END 
 
-	----* Member level *----
+		----* Member level *----
 	 
-	SELECT @RowCount = 1 
+		SELECT @RowCount = 1 
 
-	WHILE @RowCount <> 0 
-	BEGIN
-		DELETE @CustTmp 
-		SELECT @RowCount = 0
+		WHILE @RowCount <> 0 
+		BEGIN
+			DELETE @CustTmp 
+			SELECT @RowCount = 0
 			 		
-		UPDATE TOP (@i) c
-		SET		IsCal = 1
-		OUTPUT  inserted.CustId INTO @CustTmp
-		FROM	#GroupDetail c
-		WHERE	IsCal = 0 
-				AND RoleID = 1
+			UPDATE TOP (@i) c
+			SET		IsCal = 1
+			OUTPUT  inserted.CustId INTO @CustTmp
+			FROM	#GroupDetail c
+			WHERE	IsCal = 0 
+					AND RoleID = 1
 
-		SELECT @RowCount = @@ROWCOUNT
+			SELECT @RowCount = @@ROWCOUNT
 
 		 
-		IF @RowCount <> 0 
-		BEGIN 
-
-			SET @strCustIds = ''
-			SET @strCustIds = ( SELECT CustId  AS '@CustId' 
-								FROM @CustTmp			 
-								FOR XML PATH('r'), ROOT( 'ROOT' ))								 
-
-			IF @HasBT_BK = 1 
+			IF @RowCount <> 0 
 			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
-						@FromDate = @FromDateBT_BK,
-						@ToDate = @ToDateBT_BK,
-						@CustIDList =@strCustIds 
-			END
 
-			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
-			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
-						@FromDate = @FromDateBT_14,
-						@ToDate = @ToDateBT_14,						
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth,
-						@BalanceUpDay = @BalanceUpDay
-						 
-			END				 
+				SET @strCustIds = ''
+				SET @strCustIds = ( SELECT CustId  AS '@CustId' 
+									FROM @CustTmp			 
+									FOR XML PATH('r'), ROOT( 'ROOT' ))				 
+		
 
-			IF @HasBT = 1 
-			BEGIN  
+				  
 				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
 				EXEC dbo.Acc_Rpt_CreditCollection_GetBalance_Member
 						@FromDate = @FromDateBT,
 						@ToDate = @ToDateBT,
 						@CustIDList =@strCustIds 
+				
 			END
-		END
-	 END 
+		 END 
+
+	END 
 	 ---- End Bettrans range
 	 
 	 ---- Begin BK and 14 range
@@ -481,7 +400,8 @@ BEGIN
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
 						@FromDate = @FromDateBT_BK,
 						@ToDate = @ToDateBT_BK,
-						@CustIDList =@strCustIds 
+						@CustIDList =@strCustIds,
+						@LimitMonth = @LimitMonth						
 			END
 
 			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
