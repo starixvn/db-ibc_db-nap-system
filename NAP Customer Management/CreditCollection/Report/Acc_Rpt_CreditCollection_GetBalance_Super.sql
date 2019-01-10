@@ -188,7 +188,7 @@ BEGIN
 		INSERT INTO #Data (ownerID, winlostdate, bettype, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT 
 			r.CustId, winlostdate, bettype			
-			,IsOwner --- (Downline)		
+			,IsOwner  	
 			,(winlost - actual_stake) AS OwnerWinloss
 			,(swinlost) AS winlost
 			,(scomm - acomm) AS comm			
@@ -200,14 +200,36 @@ BEGIN
 							SUM(swinlost * actualrate) as swinlost, 
 							SUM(scomm * actualrate) as scomm, 
 							SUM(acomm * actualrate) as acomm
-					FROM dbo.bettrans bt WITH(NOLOCK, INDEX = CIX_matchid_bettype) -- use index = IX_recommend
+					FROM dbo.bettrans bt WITH(NOLOCK, INDEX = CIX_matchid_bettype) 
 					WHERE	bt.srecommend = r.CustId		
 							AND winlostdate <= @todate 
 							AND StatusID NOT IN (0,1,102,101) -- 'running','waiting','VOID','REJECT'
+							AND MatchID > 0 
 					GROUP BY winlostdate, bettype, CASE WHEN srecommend = CustID THEN 1 ELSE 0 END 
 				) b
-		--GROUP BY r.CustId, winlostdate, bettype
-		OPTION (MAXDOP 4)	
+		UNION ALL
+		SELECT 
+			r.CustId, winlostdate, bettype			
+			,IsOwner  
+			,(winlost - actual_stake) AS OwnerWinloss
+			,(swinlost) AS winlost
+			,(scomm - acomm) AS comm			
+		FROM #CustIds r 
+		CROSS APPLY  ( 	
+					SELECT  winlostdate, -1 AS bettype,  CASE WHEN srecommend = CustID THEN 1 ELSE 0 END as IsOwner, 						
+							SUM(winlost * actualrate) as winlost, 
+							SUM(actual_stake * actualrate) as actual_stake, 
+							SUM(swinlost * actualrate) as swinlost, 
+							SUM(scomm * actualrate) as scomm, 
+							SUM(acomm * actualrate) as acomm
+					FROM dbo.bettrans bt WITH(NOLOCK, INDEX = CIX_matchid_bettype) 
+					WHERE	bt.srecommend = r.CustId		
+							AND winlostdate <= @todate 
+							AND StatusID NOT IN (0,1,102,101) -- 'running','waiting','VOID','REJECT'
+							AND MatchID = 0    --- transfer
+					GROUP BY winlostdate, CASE WHEN srecommend = CustID THEN 1 ELSE 0 END 
+				) b
+		OPTION (MAXDOP 5, HASH GROUP)	
 		
 		 
 		

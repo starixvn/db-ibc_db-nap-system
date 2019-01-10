@@ -141,6 +141,7 @@ BEGIN
 
 
 		-- I.1.2. BettransLC
+		/*
 		INSERT INTO #Data (OwnerID, winlostdate ,bettype, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.CustId, winlostdate
@@ -160,10 +161,35 @@ BEGIN
 					GROUP BY winlostdate
 					) b
 		OPTION (OPTIMIZE FOR (@i = 1))
+		*/
+		
+		INSERT INTO #Data (OwnerID, winlostdate ,bettype, IsOwner, OwnerWinloss, Winlost, Comm)
+		SELECT
+			r.CustId, f.winlostdate
+			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
+			, 0 as IsOwner
+			, 0 AS OwnerWinloss
+			,SUM((winlost - actual_stake) * actualrate) AS winlost
+			,SUM(playercomm * actualrate) AS comm
+		FROM #CustIds r
+			CROSS APPLY (
+							SELECT 	TOP(@i) b.*
+							FROM 	dbo.bettransLC lc1 WITH(NOLOCK)
+									CROSS APPLY (
+										SELECT winlostdate, winlost, playercomm, actual_stake, actualrate
+										FROM dbo.bettransLC lc2 WITH(NOLOCK)
+										WHERE lc1.transid = lc2.transid
+											AND winlostdate BETWEEN @yesterday AND @ToDate
+											) b
+							WHERE r.CustId = lc1.custid
+						) f
+		GROUP BY r.CustId, f.winlostdate
+		OPTION (OPTIMIZE FOR (@i = 1))		
 
  
 		
 		-- I.1.3. BettransRNG
+		/*
 		INSERT INTO #Data (OwnerID, winlostdate, bettype, IsOwner,OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.CustId, winlostdate
@@ -183,6 +209,31 @@ BEGIN
 					GROUP BY winlostdate
 					) b		
 		OPTION (OPTIMIZE FOR (@i = 1))
+		*/
+		
+		INSERT INTO #Data (OwnerID, winlostdate ,bettype, IsOwner, OwnerWinloss, Winlost, Comm)
+		SELECT
+			r.CustId, f.winlostdate
+			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG
+			, 0 as IsOwner
+			, 0 AS OwnerWinloss
+			,SUM((winlost - actual_stake) * actualrate) AS winlost
+			,SUM(playercomm * actualrate) AS comm
+		FROM #CustIds r
+			CROSS APPLY (
+							SELECT 	TOP(@i) b.*
+							FROM 	dbo.bettransRNG lc1 WITH(NOLOCK)
+									CROSS APPLY (
+										SELECT winlostdate, winlost, playercomm, actual_stake, actualrate
+										FROM dbo.bettransRNG lc2 WITH(NOLOCK)
+										WHERE lc1.transid = lc2.transid
+											AND winlostdate BETWEEN @yesterday AND @ToDate
+											) b
+							WHERE r.CustId = lc1.custid
+						) f
+		GROUP BY r.CustId, f.winlostdate
+		OPTION (OPTIMIZE FOR (@i = 1))
+		
 	
 	END
 	-- End Member --

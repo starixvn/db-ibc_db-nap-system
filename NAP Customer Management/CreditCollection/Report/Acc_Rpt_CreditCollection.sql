@@ -146,6 +146,7 @@ BEGIN
 		  AND (C.username = @Code OR @Code  = '')
 		  AND (C.currency <> 20 OR @ExcludeTest = 0)
 		  AND NOT EXISTS (SELECT 1 FROM custAccount m WITH (NOLOCK) WHERE m.GroupID <> 0 AND m.IsGroupHeadLine = 0 AND m.CustID = D.CustID)
+		  AND NOT EXISTS (SELECT 1 FROM Dep_CustSuper s WITH (NOLOCK) WHERE s.CustID = c.CustID )  ---- exclude Licensee
 			 
 	/* 2. Member of group headline and direct account table*/	
 	CREATE TABLE #GroupDetailAll
@@ -231,8 +232,7 @@ BEGIN
 	CREATE TABLE #CustBalance (CustId INT, WinlostDate SMALLDATETIME, Balance MONEY)
 	DECLARE @CustTmp AS TABLE (CustId INT)
 	
-	DECLARE @i BIGINT = 1000000 
-
+	DECLARE @i BIGINT = 1000000  ---- large number means no loop at this time
 
 	------ LOOP
 	----* Super level *----
@@ -274,8 +274,8 @@ BEGIN
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
 						@FromDate = @FromDateBT_14,
 						@ToDate = @ToDateBT_14,
+						@BalanceUpDay = @BalanceUpDay,
 						@CustIDList =@strCustIds 
- 
 						 
 			END
 						 		 
@@ -331,6 +331,7 @@ BEGIN
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
 						@FromDate = @FromDateBT_14,
 						@ToDate = @ToDateBT_14,
+						@BalanceUpDay = @BalanceUpDay,
 						@CustIDList =@strCustIds 
 			END
 
@@ -386,6 +387,7 @@ BEGIN
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
 						@FromDate = @FromDateBT_14,
 						@ToDate = @ToDateBT_14,
+						@BalanceUpDay = @BalanceUpDay,
 						@CustIDList =@strCustIds 
 			END
 
@@ -442,6 +444,7 @@ BEGIN
 				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
 						@FromDate = @FromDateBT_14,
 						@ToDate = @ToDateBT_14,
+						@BalanceUpDay = @BalanceUpDay,
 						@CustIDList =@strCustIds 
 						 
 			END				 
