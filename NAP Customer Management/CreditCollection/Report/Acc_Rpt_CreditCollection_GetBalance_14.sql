@@ -2,8 +2,9 @@
 ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_14]
 	@FromDate	DATE,
 	@ToDate		DATE,
-	@CustIDList	VARCHAR(MAX),
-	@BalanceUpDay SMALLDATETIME
+	@CustIDList	VARCHAR(MAX),	
+	@LimitMonth TINYINT = 1,
+	@BalanceUpDay DATE
 AS
 /*  Created: Sophia  
 	Date:	20181206
@@ -61,16 +62,26 @@ BEGIN
 	/*
 	DELETE #CustIds 
 	WHERE CustID IN (7214059,7213826,7213962)   --- Special acc    (ROLEID = 1 )
-	*/		
+	*/	
  	
-	-- Super --
-	BEGIN		
+	-- Super --		
+	BEGIN
+		CREATE TABLE #Tmp (CustID INT, Winlostdate DATE)	
+		
+		INSERT INTO TmpT
+		SELECT CustID, @FromDate
+		FROM #CustIds
+		UNION ALL
+		SELECT CustID, @ToDate
+		FROM #CustIds
+
+		
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
 		SELECT r.CustID, r.winlostdate, r.OpeningBalance, r.ClosingBalance
-		FROM dbo.rptStatement r WITH (NOLOCK)			
-		WHERE Winlostdate IN (@FromDate, @ToDate)
-			AND EXISTS (SELECT 1 FROM #CustIds c WHERE c.CustID = r.custid)
-		 
+		FROM dbo.rptStatement r WITH (NOLOCK)	
+		CROSS APPLY (SELECT t.*
+					 FROM #Tmp t
+					 WHERE t.CustID = r.CustID AND r.Winlostdate = t.Winlostdate) c	
 	END
 	-- End Super --
 
@@ -79,8 +90,11 @@ BEGIN
 	DECLARE @ToDateNoBL AS TABLE (CustID INT)
 
 	DECLARE @LimitDate DATE 
-	SELECt @LimitDate = DATEADD (Month, -1 , @FromDate) 
+	SELECT @LimitDate = DATEADD (Month, - @LimitMonth , @FromDate) 
 	
+	
+	CREATE TABLE #TmpFrom (CustID INT, Winlostdate DATE)	
+	CREATE TABLE #TmpTo (CustID INT, Winlostdate DATE)	
 	------* rptStatement table * ----------
 
 	INSERT INTO @FromDateNoBL (CustID)
@@ -97,36 +111,7 @@ BEGIN
 	---- IF @FromDate no record of BL then get the nearest BL of FromDate 
 	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
 	BEGIN 
-		--INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		--SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
-		--FROM dbo.rptStatement r WITH (NOLOCK)			
-		--WHERE 
-		--	EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-		--	AND r.winlostdate < @FromDate			 
-		--GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance  
-		--OPTION (MAXDOP 5)
-
-
-		--;WITH CTE_Winlostdate (winlostdate, CustId) AS
-		--(
-		--	SELECT	@BalanceUpDay AS winlostdate, CustId
-		--	FROM	@FromDateNoBL
-		--	UNION ALL
-		--	SELECT	DATEADD(DAY, 1, winlostdate), CustId
-		--	FROM	CTE_Winlostdate
-		--	WHERE	winlostdate <= @FromDate
-					 
-		--)	
-	
-		--INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		--SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance, r.ClosingBalance
-		--FROM dbo.rptStatement r WITH (NOLOCK)		
-		--	CROSS APPLY ( SELECT * FROM CTE_Winlostdate c WHERE c.CustID = r.CustID AND c.Winlostdate = r.Winlostdate ) c
-		
-		--GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance 		
-		--OPTION (MAXDOP 5, MAXRECURSION 0)	
-
-			
+						
 		;WITH CTE_Winlostdate (winlostdate, CustId) AS
 		(
 			SELECT	@BalanceUpDay AS winlostdate, CustId
@@ -137,83 +122,30 @@ BEGIN
 			WHERE	winlostdate <= @FromDate
 					 
 		)	
-		Select * INTO #TmpFrom FROM CTE_Winlostdate
+		INSERT INTO #TmpFrom (winlostdate, CustId)
+		SELECT winlostdate, CustId
+		FROM CTE_Winlostdate
 		OPTION ( MAXRECURSION 0)
 		
 			
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.OpeningBalance, r.ClosingBalance
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
 		FROM dbo.rptStatement r WITH (NOLOCK)		
 			CROSS APPLY (	SELECT	t.* 
 							FROM	#TmpFrom t 
 							WHERE	t.CustID = r.CustID AND t.Winlostdate = r.Winlostdate 
 						) c		
-		GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance 		
-		OPTION (MAXDOP 5)		
-
-	
-		--;WITH CTE_Winlostdate (winlostdate, CustId) AS
-		--(
-		--	SELECT	@BalanceUpDay AS winlostdate, CustId
-		--	FROM	@FromDateNoBL
-		--	UNION ALL
-		--	SELECT	DATEADD(DAY, 1, winlostdate), CustId
-		--	FROM	CTE_Winlostdate
-		--	WHERE	winlostdate <= @FromDate
-					 
-		--)	
-	
-		--INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		--SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance, r.ClosingBalance
-		--FROM dbo.rptStatement r WITH (NOLOCK)		
-		--	CROSS APPLY ( SELECT * FROM CTE_Winlostdate c WHERE c.CustID = r.CustID AND c.Winlostdate = r.Winlostdate ) c
-		--WHERE
-		--	r.winlostdate < @FromDate
-		--GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance 
-		--OPTION (MAXDOP 5, MAXRECURSION 0)				
+		GROUP BY r.CustID , r.ClosingBalance 		
+		OPTION (MAXDOP 3)				
 
 	 
 	END 
  
  	---- IF @FromDate no record of BL then get the nearest BL of @ToDate 
+
 	IF EXISTS (SELECT 1 FROM @ToDateNoBL)
 	BEGIN 
-		--INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		--SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
-		--FROM dbo.rptStatement r WITH (NOLOCK)			
-		--WHERE 
-		--	EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-		--	AND r.winlostdate < @ToDate			 
-		--GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance  
-		--OPTION (MAXDOP 5)
-
-		
-		--;WITH CTE_Winlostdate (winlostdate, CustId) AS
-		--(
-		--	SELECT	@BalanceUpDay AS winlostdate, CustId
-		--	FROM	@ToDateNoBL
-		--	UNION ALL
-		--	SELECT	DATEADD(DAY, 1, winlostdate), CustId
-		--	FROM	CTE_Winlostdate
-		--	WHERE	winlostdate <= @ToDate						 
-		--)	
 	
-		--INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		--SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance, r.ClosingBalance
-		--FROM dbo.rptStatement r WITH (NOLOCK)		
-		--	CROSS APPLY ( 
-		--					SELECT * 
-		--					FROM CTE_Winlostdate c 
-		--					WHERE c.CustID = r.CustID AND c.Winlostdate = r.Winlostdate 
-		--				) c
-		--WHERE
-		--	r.winlostdate < @ToDate	
-		--GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance 
-		--OPTION (MAXDOP 5, MAXRECURSION 0)	
-
-
-
-		
 		;WITH CTE_Winlostdate (winlostdate, CustId) AS
 		(
 			SELECT	@BalanceUpDay AS winlostdate, CustId
@@ -223,12 +155,13 @@ BEGIN
 			FROM	CTE_Winlostdate
 			WHERE	winlostdate <= @ToDate						 
 		)	
-		Select * INTO #TmpTo FROM CTE_Winlostdate
-		OPTION (  MAXRECURSION 0)
+		INSERT INTO #TmpTo (winlostdate, CustId)
+		SELECT winlostdate, CustId
+		OPTION (MAXRECURSION 0)
 		
 			
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.OpeningBalance, r.OpeningBalance
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
 		FROM dbo.rptStatement r WITH (NOLOCK)		
 			CROSS APPLY ( 
 							SELECT * 
@@ -237,8 +170,8 @@ BEGIN
 						) c
 		WHERE
 			r.winlostdate < @ToDate	
-		GROUP BY r.CustID ,r.OpeningBalance 
-		OPTION (MAXDOP 5)	
+		GROUP BY r.CustID, r.ClosingBalance 
+		OPTION (MAXDOP 3)	
 
 
 	END 
@@ -264,30 +197,29 @@ BEGIN
 	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.OpeningBalance, r.ClosingBalance
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance, r.ClosingBalance
 		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
 		WHERE 
 			EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
 			AND r.winlostdate < @FromDate
 			AND r.winlostdate >= @LimitDate
-		GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance  
-		OPTION (MAXDOP 5)
+		GROUP BY r.CustID , r.ClosingBalance  
+		OPTION (MAXDOP 3)
 	END 
  
  	---- IF @FromDate no record of BL then get the nearest BL of FromDate 
 	IF EXISTS  (SELECT 1 FROM @ToDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningBalance, r.OpeningBalance
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
 		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
 		WHERE 
 			EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
 			AND r.winlostdate < @ToDate
 			AND r.winlostdate >= @LimitDate		
-		GROUP BY r.CustID ,r.OpeningBalance 
-		OPTION (MAXDOP 5)
+		GROUP BY r.CustID ,r.r.ClosingBalance 
+		OPTION (MAXDOP 3)
 	END 
-
 
 	 
 

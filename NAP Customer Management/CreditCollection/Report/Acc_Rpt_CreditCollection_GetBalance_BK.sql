@@ -3,7 +3,8 @@
 ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_BK]
 	@FromDate	DATE,
 	@ToDate		DATE,
-	@CustIDList	VARCHAR(MAX)
+	@CustIDList	VARCHAR(MAX),
+	@LimitMonth TINYINT
 AS
 /*  Created: Sophia  
 	Date:	20181206
@@ -82,7 +83,7 @@ BEGIN
 	DECLARE @ToDateNoBL AS TABLE (CustID INT)
 
 	DECLARE @LimitDate DATE 
-	SELECt @LimitDate = DATEADD (Month, -1 , @FromDate) 
+	SELECt @LimitDate = DATEADD (Month, - @LimitMonth , @FromDate) 
 	
 	
 	------* rptStatement_old table * ----------	
@@ -102,13 +103,13 @@ BEGIN
 	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.OpeningBalance, r.ClosingBalance
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance, r.ClosingBalance
 		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
 		WHERE 
 			EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
 			AND r.winlostdate < @FromDate
 			AND r.winlostdate >= @LimitDate
-		GROUP BY r.CustID ,r.OpeningBalance, r.ClosingBalance
+		GROUP BY r.CustID, r.ClosingBalance
 		OPTION (MAXDOP 5)
 	END 
  
@@ -116,14 +117,14 @@ BEGIN
 	IF EXISTS  (SELECT 1 FROM @ToDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningBalance, r.OpeningBalance
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance, r.ClosingBalance
 		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
 		WHERE 
 			EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
 			AND r.winlostdate < @ToDate
 			AND r.winlostdate >= @LimitDate		
-		GROUP BY r.CustID ,r.OpeningBalance 
-		OPTION (MAXDOP 5)
+		GROUP BY r.CustID ,r.ClosingBalance 
+		OPTION (MAXDOP 3)
 	END 
 
 	

@@ -229,7 +229,7 @@ BEGIN
 							AND MatchID = 0    --- transfer
 					GROUP BY winlostdate, CASE WHEN srecommend = CustID THEN 1 ELSE 0 END 
 				) b
-		OPTION (MAXDOP 5, HASH GROUP)	
+		OPTION (MAXDOP 3, HASH GROUP)	
 		
 		 
 		
