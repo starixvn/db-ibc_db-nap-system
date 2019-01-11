@@ -75,6 +75,7 @@ BEGIN
 		UNION ALL
 		SELECT CustID, @ToDate
 		FROM #CustIds
+		WHERE @FromDate <> @ToDate
 
 		
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
@@ -112,33 +113,28 @@ BEGIN
 	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
-		SELECT CustID, @ToDate, OpeningBalance, ClosingBalance 
-		FROM  ( 	
-				SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
-				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-				WHERE 
-					EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
-					AND r.winlostdate < @FromDate
-					AND r.winlostdate >= @LimitDate
-				GROUP BY r.CustID, r.ClosingBalance
-				) a
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
+		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
+		WHERE 
+			EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
+			AND r.winlostdate < @FromDate
+			AND r.winlostdate >= @LimitDate
+		GROUP BY r.CustID, r.ClosingBalance
 		OPTION (MAXDOP 3)
 	END 
  
  	---- IF @ToDay no record of BL then get the nearest BL of FromDate 
 	IF EXISTS  (SELECT 1 FROM @ToDateNoBL)
 	BEGIN 
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
-		SELECT CustID, @ToDate, OpeningBalance, ClosingBalance 
-		FROM  ( 		
-				SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
-				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-				WHERE 
-					EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-					AND r.winlostdate < @ToDate
-					AND r.winlostdate >= @LimitDate		
-				GROUP BY r.CustID ,r.ClosingBalance 
-				) a
+		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)			 		
+		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
+		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
+		WHERE 
+			EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
+			AND NOT EXISTS (SELECT 1 FROM #rptStatementTable c WHERE c.OwnerID = r.custid AND c.WinlostDate = r.WinlostDate)				
+			AND r.winlostdate < @ToDate
+			AND r.winlostdate >= @LimitDate		
+		GROUP BY r.CustID ,r.ClosingBalance 
 		OPTION (MAXDOP 3)
 	END 
 
@@ -161,6 +157,7 @@ BEGIN
 			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MinDate	 
 		INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
 			ON e.ExchangeId = m.currency and e.ExchangeDate = r.WinlostDate
+	WHERE m.MinDate <= @FromDate
 	GROUP BY r.WinlostDate, r.OwnerID  
 
 	UNION ALL
