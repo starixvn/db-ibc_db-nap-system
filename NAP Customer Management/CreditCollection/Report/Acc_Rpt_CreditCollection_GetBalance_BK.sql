@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_BK]
 	@FromDate	DATE,
 	@ToDate		DATE,
 	@CustIDList	VARCHAR(MAX),
-	@LimitMonth TINYINT = 1
+	@LimitDate  DATE 
 AS
 /*  Created: Sophia  
 	Date:	20181206
@@ -92,10 +92,7 @@ BEGIN
 	DECLARE @FromDateNoBL AS TABLE (CustID INT)
 	DECLARE @ToDateNoBL AS TABLE (CustID INT)
 
-	DECLARE @LimitDate DATE 
-	SELECt @LimitDate = DATEADD (Month, - @LimitMonth , @FromDate) 
-	
-	
+
 	------* rptStatement_old table * ----------	
 
 	INSERT INTO @FromDateNoBL (CustID)

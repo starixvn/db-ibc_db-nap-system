@@ -387,34 +387,36 @@ BEGIN
 	END 
 	 ---- End Bettrans range
 	 
-	 ---- Begin BK and 14 range
+	 ---- Begin BK and 14 range	 
+	 	DECLARE @LimitDate DATE 
+		SELECT @LimitDate = DATEADD (Month, - @LimitMonth , @FromDate) 	
 	 
-			SET @strCustIds = ''
-			SET @strCustIds = ( SELECT CustId  AS '@CustId' 
-								FROM  #GroupDetail		 
-								FOR XML PATH('r'), ROOT( 'ROOT' ))
-			
-			IF @HasBT_BK = 1 
-			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
-						@FromDate = @FromDateBT_BK,
-						@ToDate = @ToDateBT_BK,
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth						
-			END
+		SET @strCustIds = ''
+		SET @strCustIds = ( SELECT CustId  AS '@CustId' 
+							FROM  #GroupDetail		 
+							FOR XML PATH('r'), ROOT( 'ROOT' ))
+		
+		IF @HasBT_BK = 1 
+		BEGIN 
+			INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
+			EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
+					@FromDate = @FromDateBT_BK,
+					@ToDate = @ToDateBT_BK,
+					@CustIDList =@strCustIds,
+					@LimitDate = @LimitDate						
+		END
 
-			IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
-			BEGIN 
-				INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
-				EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
-						@FromDate = @FromDateBT_14,
-						@ToDate = @ToDateBT_14,						
-						@CustIDList =@strCustIds,
-						@LimitMonth = @LimitMonth,
-						@BalanceUpDay = @BalanceUpDay
-						 
-			END			
+		IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
+		BEGIN 
+			INSERT INTO #CustBalance (CustId, WinlostDate, Balance)
+			EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_14 
+					@FromDate = @FromDateBT_14,
+					@ToDate = @ToDateBT_14,						
+					@CustIDList =@strCustIds,
+					@LimitDate = @LimitDate,
+					@BalanceUpDay = @BalanceUpDay
+					 
+		END			
 			 	
 	 ---- End BK and 14 range
 	 

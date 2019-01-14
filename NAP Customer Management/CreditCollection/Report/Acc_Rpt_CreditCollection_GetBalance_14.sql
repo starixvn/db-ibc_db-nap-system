@@ -3,7 +3,7 @@ ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_14]
 	@FromDate	DATE,
 	@ToDate		DATE,
 	@CustIDList	VARCHAR(MAX),	
-	@LimitMonth TINYINT = 1,
+	@LimitDate 	DATE,
 	@BalanceUpDay DATE
 AS
 /*  Created: Sophia  
@@ -89,10 +89,6 @@ BEGIN
 	----======== Get data No Balance on @FromDate and @ToDate ======-------------
 	DECLARE @FromDateNoBL AS TABLE (CustID INT)
 	DECLARE @ToDateNoBL AS TABLE (CustID INT)
-
-	DECLARE @LimitDate DATE 
-	SELECT @LimitDate = DATEADD (Month, - @LimitMonth , @FromDate) 
-	
 	
 	CREATE TABLE #TmpFrom (CustID INT, Winlostdate DATE)	
 	CREATE TABLE #TmpTo (CustID INT, Winlostdate DATE)	
