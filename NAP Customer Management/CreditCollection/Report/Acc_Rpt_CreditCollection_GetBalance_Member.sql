@@ -85,10 +85,9 @@ BEGIN
 		,IsOpeningBalance	BIT		DEFAULT 0
 	)
 	
-	/*
+
 	DELETE #CustIds 
 	WHERE CustID IN (7214059,7213826,7213962)   --- Special acc    (ROLEID = 1 )
-	*/
 	
 	
 	---#3: Begin: Get Data from Bettrans table. Because of the suitable index is IX_recommend, then we will use index on recommend level. 
