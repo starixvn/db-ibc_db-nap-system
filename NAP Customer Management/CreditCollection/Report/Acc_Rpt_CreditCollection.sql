@@ -501,11 +501,11 @@ BEGIN
 
 	--- Collection Breakdown
 	SELECT	D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END AS Username,  
-			MIN(T.StartDate) AS StartDate , MIN(T.EndDate) AS EndDate , SUM (T.Amount) * -1 AS Amount
+			T.StartDate AS StartDate, T.EndDate AS EndDate , SUM (T.Amount) * -1 AS Amount
 	FROM	#Transfer T
 	INNER JOIN   #GroupDetail D
 		ON D.CustID = T.CustID
-	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END , IsOLD
+	GROUP BY D.GroupId, CASE WHEN IsOLD <> 1 AND IsGroup = 1 THEN 'Other Codes' ELSE D.Username END , IsOLD, T.StartDate, T.EndDate
 	ORDER BY  D.GroupId, IsOLD DESC 
 	
 
