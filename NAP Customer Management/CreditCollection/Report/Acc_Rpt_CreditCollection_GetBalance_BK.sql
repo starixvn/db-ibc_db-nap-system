@@ -110,13 +110,17 @@ BEGIN
 	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
-		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-		WHERE 
-			EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
-			AND r.winlostdate < @FromDate
-			AND r.winlostdate >= @LimitDate
-		GROUP BY r.CustID, r.ClosingBalance
+		SELECT CustID, winlostdate AS winlostdate, OpeningBalance, ClosingBalance 
+		FROM ( 
+				SELECT	ROW_NUMBER() OVER(ORDER BY r.winlostdate DESC) AS Row,
+						r.CustID, r.winlostdate AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
+				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
+				WHERE 
+					EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
+					AND r.winlostdate < @FromDate
+					AND r.winlostdate >= @LimitDate 
+				) a
+		WHERE Row = 1
 		OPTION (MAXDOP 3)
 	END 
  
@@ -124,14 +128,18 @@ BEGIN
 	IF EXISTS  (SELECT 1 FROM @ToDateNoBL)
 	BEGIN 
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)			 		
-		SELECT r.CustID, MAX(r.winlostdate) AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
-		FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-		WHERE 
-			EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-			AND NOT EXISTS (SELECT 1 FROM #rptStatementTable c WHERE c.OwnerID = r.custid AND c.WinlostDate = r.WinlostDate)				
-			AND r.winlostdate < @ToDate
-			AND r.winlostdate >= @LimitDate		
-		GROUP BY r.CustID ,r.ClosingBalance 
+		SELECT CustID, winlostdate AS winlostdate, OpeningBalance, ClosingBalance 
+		FROM ( 
+				SELECT	ROW_NUMBER() OVER(ORDER BY r.winlostdate DESC) AS Row,
+						r.CustID, r.winlostdate AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
+				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
+				WHERE 
+					EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
+					AND NOT EXISTS (SELECT 1 FROM #rptStatementTable c WHERE c.OwnerID = r.custid AND c.WinlostDate = r.WinlostDate)				
+					AND r.winlostdate < @ToDate
+					AND r.winlostdate >= @LimitDate		 
+				) a
+		WHERE Row = 1
 		OPTION (MAXDOP 3)
 	END 
 
