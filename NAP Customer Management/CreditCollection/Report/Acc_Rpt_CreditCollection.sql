@@ -139,7 +139,7 @@ BEGIN
 	INSERT INTO #GroupHeadLineAll   (CustId, Username, Coll_Status, IsGroupHeadLine, GroupID)
 	SELECT	D.CustId AS CustId, C.Username , D.Coll_Status AS Coll_Status, 
 			CASE WHEN ISNULL(G.GroupID,0) = 0 THEN 0 ELSE 1 END AS IsGroupHeadLine, 
-			CASE WHEN ISNULL(G.GroupID,0) = 0 THEN D.CustId ELSE G.GroupID END AS GroupID				
+			CASE WHEN ISNULL(G.GroupID,0) = 0 THEN D.CustId * -1 ELSE G.GroupID END AS GroupID				
 	FROM dbo.CustDirectAccount D WITH (NOLOCK)
 		 INNER JOIN dbo.Customer C WITH (NOLOCK) ON C.CustID = D.CustID
 		 LEFT JOIN dbo.custAccount G WITH (NOLOCK) ON G.CustID = D.CustID and G.IsGroupHeadLine = 1
@@ -184,7 +184,7 @@ BEGIN
 			AND (C.currency <> 20 OR @ExcludeTest = 0)
 
 	INSERT INTO #GroupDetailAll (CustId, GroupID, IsGroup, Username, RoleId, IsOLD)
-	SELECT	H.CustId, H.GroupID, 0 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
+	SELECT	H.CustId, H.GroupID  , 0 as IsGroup, C.Username, C.roleid, CASE WHEN c.Username LIKE '%OLD' THEN 1 ELSE 0 END
 	FROM	#GroupHeadLineAll H
 		INNER JOIN dbo.Customer C WITH (NOLOCK) ON H.CustID = C.CustID
 	WHERE   H.IsGroupHeadLine = 0  ---insert direct Account 
@@ -196,7 +196,7 @@ BEGIN
 
 	SELECT @totalItems = COUNT(*)
 	FROM  (
-			SELECT ROW_NUMBER() OVER (ORDER BY h.GroupID) rn, h.GroupID
+			SELECT ROW_NUMBER() OVER (ORDER BY IsGroupHeadLine DESC, CASE WHEN IsGroupHeadLine = 1 THEN h.GroupID ELSE h.CustId END ) rn, h.GroupID
 			FROM  #GroupHeadLineAll h					
 			WHERE EXISTS (SELECT 1 FROM #GroupDetailAll d WHERE d.GroupID = h.GroupID AND (d.IsOLD = @Type OR @Type = 2 ))
 			) t 
@@ -205,7 +205,7 @@ BEGIN
 	INSERT INTO @GroupID (GroupId) 
 	SELECT t.GroupID
 	FROM (
-		SELECT ROW_NUMBER() OVER (ORDER BY h.GroupID) rn, h.GroupID
+		SELECT ROW_NUMBER() OVER (ORDER BY IsGroupHeadLine DESC, CASE WHEN IsGroupHeadLine = 1 THEN h.GroupID ELSE h.CustId END ) rn, h.GroupID
 		FROM  #GroupHeadLineAll h					
 		WHERE EXISTS (SELECT 1 FROM #GroupDetailAll d WHERE d.GroupID = h.GroupID AND (d.IsOLD = @Type OR @Type = 2 ))
 		) t
@@ -223,6 +223,7 @@ BEGIN
 	SELECT CustId, GroupID, IsGroup, Username, RoleId, IsOLD
 	FROM  #GroupDetailAll t
 	WHERE EXISTS (SELECT 1 FROM @GroupID g WHERE g.GroupID = t.GroupID)
+		  AND (t.IsOLD = @Type OR @Type = 2 )
 
     
 		   
@@ -485,7 +486,7 @@ BEGIN
 	----- Main 
 	SELECT H.CustID, H.GroupId, H.Username, H.Coll_Status, H.IsGroupHeadLine
 	FROM  #GroupHeadLine H 
-	ORDER BY GroupId 
+	ORDER BY H.IsGroupHeadLine DESC, CASE WHEN IsGroupHeadLine = 1 THEN h.GroupID ELSE h.CustId END  
 	 
 
 	---- Detail
