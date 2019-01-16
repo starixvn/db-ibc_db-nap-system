@@ -112,7 +112,7 @@ BEGIN
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
 		SELECT CustID, winlostdate AS winlostdate, OpeningBalance, ClosingBalance 
 		FROM ( 
-				SELECT	ROW_NUMBER() OVER(ORDER BY r.winlostdate DESC) AS Row,
+				SELECT	ROW_NUMBER() OVER(PARTITION BY r.CustID ORDER BY r.winlostdate DESC) AS Row,
 						r.CustID, r.winlostdate AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
 				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
 				WHERE 
@@ -130,12 +130,12 @@ BEGIN
 		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)			 		
 		SELECT CustID, winlostdate AS winlostdate, OpeningBalance, ClosingBalance 
 		FROM ( 
-				SELECT	ROW_NUMBER() OVER(ORDER BY r.winlostdate DESC) AS Row,
+				SELECT	ROW_NUMBER() OVER(PARTITION BY r.CustID ORDER BY r.winlostdate DESC) AS Row,
 						r.CustID, r.winlostdate AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
 				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
 				WHERE 
 					EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-					AND NOT EXISTS (SELECT 1 FROM #rptStatementTable c WHERE c.OwnerID = r.custid AND c.WinlostDate = r.WinlostDate)				
+					AND NOT EXISTS (SELECT 1 FROM #rptStatementTable c WHERE c.OwnerID = r.custid AND c.WinlostDate >= r.WinlostDate)		--- had scaned data on @Fromdate block code, so they should be excluded 				
 					AND r.winlostdate < @ToDate
 					AND r.winlostdate >= @LimitDate		 
 				) a
