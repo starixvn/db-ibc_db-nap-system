@@ -172,19 +172,25 @@ BEGIN
 		INSERT INTO #Data (OwnerID, winlostdate, bettype, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.OwnerID, winlostdate
-			,- 1 as Bettype  --- Get a general bettype for BettransLC/BettransRNG			
+			,- 1 as Bettype  --- Get a general bettype for BettransLC 		
 			,0 as IsOwner
 			,0 AS OwnerWinloss
 			,SUM(mwinlost) AS winlost
 			,SUM(acomm - comm) AS comm	 
 		FROM @recommend r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, mwinlost * actualrate as mwinlost, acomm * actualrate as acomm, comm * actualrate as comm
-					FROM dbo.bettransLC bt WITH (NOLOCK)	-- use index = IX_recommend						
+					SELECT TOP (@i) bc.winlostdate, bc.mwinlost * bc.actualrate as mwinlost, bc.acomm * bc.actualrate as acomm, bc.comm * bc.actualrate as comm
+					FROM dbo.bettransLC bt WITH (NOLOCK)	-- use index = IX_recommend			
+					CROSS APPLY (
+								SELECT TOP (@i) b.winlostdate, b.mwinlost, b.actualrate, b.acomm, b.comm 
+								FROM dbo.bettransLC b WITH (NOLOCK)  
+								WHERE b.TransID = bt.TransID 
+									  AND b.StatusID NOT IN (0,1)
+									) bc					
 					WHERE r.recommend = bt.recommend
-						AND winlostdate <= @todate
-						AND winlostdate >= @yesterday				
-						AND StatusID NOT IN (0,1)
+						AND bt.winlostdate <= @todate
+						AND bt.winlostdate >= @yesterday				
+						
 					) b
 		GROUP BY r.OwnerID, winlostdate
 		OPTION (OPTIMIZE FOR (@i = 1))
@@ -193,19 +199,25 @@ BEGIN
 		INSERT INTO #Data (OwnerID, winlostdate, bettype, IsOwner, OwnerWinloss, Winlost, Comm)
 		SELECT
 			r.OwnerID, winlostdate 
-			,-1 as bettype  --- Get a general bettype for BettransLC/BettransRNG		
+			,-1 as bettype  --- Get a general bettype for BettransRNG		
 			,0 as IsOwner
 			,0 AS OwnerWinloss
 			,SUM(mwinlost) AS winlost
 			,SUM(acomm - comm) AS comm
 		FROM @recommend r
 		CROSS APPLY (
-					SELECT TOP (@i) winlostdate, mwinlost * actualrate as mwinlost, acomm * actualrate as acomm, comm * actualrate as comm
-					FROM dbo.bettransRNG bt WITH (NOLOCK)		-- use index = IX_recommend					
+					SELECT TOP (@i) bc.winlostdate, bc.mwinlost * bc.actualrate as mwinlost, bc.acomm * bc.actualrate as acomm, bc.comm * bc.actualrate as comm
+					FROM dbo.bettransRNG bt WITH (NOLOCK)		-- use index = IX_recommend			
+					CROSS APPLY (
+								SELECT TOP (@i) b.winlostdate, b.mwinlost, b.actualrate, b.acomm, b.comm 
+								FROM dbo.bettransRNG b WITH (NOLOCK)  
+								WHERE b.TransID = bt.TransID 
+									  AND b.StatusID NOT IN (0,1)
+									) bc								
 					WHERE r.recommend = bt.recommend
-						AND winlostdate <= @todate
-						AND winlostdate >= @yesterday				
-						AND StatusID NOT IN (0,1)
+						AND bt.winlostdate <= @todate
+						AND bt.winlostdate >= @yesterday		
+						
 					) b
 		GROUP BY r.OwnerID, winlostdate
 		OPTION (OPTIMIZE FOR (@i = 1))

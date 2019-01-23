@@ -179,6 +179,7 @@ BEGIN
 										FROM dbo.bettransLC lc2 WITH(NOLOCK)
 										WHERE lc1.transid = lc2.transid
 											AND winlostdate BETWEEN @yesterday AND @ToDate
+											AND StatusID NOT IN (0,1)
 											) b
 							WHERE r.CustId = lc1.custid
 						) f
@@ -227,6 +228,7 @@ BEGIN
 										FROM dbo.bettransRNG lc2 WITH(NOLOCK)
 										WHERE lc1.transid = lc2.transid
 											AND winlostdate BETWEEN @yesterday AND @ToDate
+											AND StatusID NOT IN (0,1)
 											) b
 							WHERE r.CustId = lc1.custid
 						) f
