@@ -16,6 +16,7 @@ AS
 		- 20180622@Don: Tuning trigger - [Redmine:97313]
 		- 20180626@Helen: Tuning trigger - [Redmine:97442]
 		- 20181219@Kan: TO Control - Change condition of bettype - [Redmine: 106656]
+		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
 	
 */
 BEGIN
@@ -33,6 +34,7 @@ BEGIN
 		OR @bettype BETWEEN 121 AND 999
 		OR @bettype BETWEEN 1301 AND 1399
 		OR @bettype BETWEEN 9001 AND 9399
+		OR @bettype = 38
 	)
 		RETURN
 
