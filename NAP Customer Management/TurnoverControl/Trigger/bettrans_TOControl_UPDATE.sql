@@ -14,6 +14,7 @@ AS
 		- 20171212@Helen: Support UUS - Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180625@Don: Tuning trigger - [Redmine:97313]
 		- 20181219@Kan: TO Control add new Esport bet types - [Redmine: 106656]
+		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
 */
 BEGIN
 	
@@ -66,7 +67,7 @@ BEGIN
 	
 	-- Process for sportbook bettype for TO Control only
 	IF EXISTS (SELECT 1 FROM inserted i 
-				WHERE ((i.bettype < 31 and i.bettype NOT IN (9,29,10)) OR i.bettype between 121 and 999 OR i.bettype BETWEEN 1301 and 1399 OR i.bettype BETWEEN 9001 and 9399)
+				WHERE ((i.bettype < 31 and i.bettype NOT IN (9,29,10)) OR i.bettype between 121 and 999 OR i.bettype BETWEEN 1301 and 1399 OR i.bettype BETWEEN 9001 and 9399 OR i.bettype = 38)
 						AND i.betfrom <> 'p'
 				)
 	BEGIN			
@@ -128,7 +129,7 @@ BEGIN
 				END) AS adj_HouseTO_RM
 					
 		FROM inserted i INNER JOIN deleted d ON i.transid = d.transid
-		WHERE ((i.bettype < 31 and i.bettype NOT IN (9,29,10)) OR i.bettype between 121 and 999 OR i.bettype BETWEEN 1301 and 1399 OR i.bettype BETWEEN 9001 and 9399)
+		WHERE ((i.bettype < 31 and i.bettype NOT IN (9,29,10)) OR i.bettype between 121 and 999 OR i.bettype BETWEEN 1301 and 1399 OR i.bettype BETWEEN 9001 and 9399 OR i.bettype = 38)
 			AND i.betfrom <> 'p'		
 		GROUP BY i.srecommend, i.mrecommend, i.recommend, i.matchid,i.winlostdate
 		HAVING SUM(CASE WHEN i.statusid IN (101,102,103) AND d.statusid IN (0,1,111,112,113) THEN -i.stake --delete ticket
@@ -178,7 +179,7 @@ BEGIN
 					
 		FROM inserted i 
 			INNER JOIN deleted d ON i.transid = d.transid
-		WHERE ((i.bettype < 31 and i.bettype NOT IN (9,29,10)) OR i.bettype between 121 and 999 OR i.bettype BETWEEN 1301 and 1399 OR i.bettype BETWEEN 9001 and 9399)
+		WHERE ((i.bettype < 31 and i.bettype NOT IN (9,29,10)) OR i.bettype between 121 and 999 OR i.bettype BETWEEN 1301 and 1399 OR i.bettype BETWEEN 9001 and 9399 OR i.bettype = 38)
 			AND i.betfrom <> 'p'		
 			AND EXISTS (SELECT 1 FROM bodb02.dbo.custAccount ca WITH (NOLOCK) WHERE ca.CustID = i.custid )
 			
