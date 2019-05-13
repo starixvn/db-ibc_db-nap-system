@@ -1,32 +1,28 @@
+/*<info serverAlias="DBACC-bodb_Licensee" executers="bodbAdminNet" isFunction="0" isNested="1"></info>*/
 USE [bodb_licensee]
-GO
-/****** Object:  StoredProcedure [dbo].[LA_PartyListSel]    Script Date: 11/18/2015 11:41:57 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
 GO
 
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_PartyListSel]
 	 @UserID		INT	   = 0
 	,@FunctionID	INT	   = 0
 AS
+
 /*  
 	Created: 20151118@Bobby
 	Task : get List Party of 
-	DB: DBLIC.bodb_Licensee  
-	Original: bodb_Licensee.dbo.LA_PartyListSel
+	DB: DBACC.bodb_Licensee  
 
-	Revisions:     
-	
+	Revisions:
+		- 20190510@Percy: Move SP to DBACC.bodb_Licensee [RedmineID: #103658]   
 
 	Params:
-	+ UserID : 
-	- 0 get list Party of All user
-	+ FunctionID : 
-	- 0 get list Party when config in manage User		
+		+ UserID : 
+		- 0 get list Party of All user
+		+ FunctionID : 
+		- 0 get list Party when config in manage User		
 */
-BEGIN
 
+BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @suffix_Licensee NVARCHAR(20) = 'Licensees'
@@ -222,8 +218,4 @@ BEGIN
 	DROP TABLE #data
 	DROP TABLE #ListParty
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_PayoutTrans_PartyListSel] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_PayoutTrans_PartyListSel] TO [vnteam]
 GO

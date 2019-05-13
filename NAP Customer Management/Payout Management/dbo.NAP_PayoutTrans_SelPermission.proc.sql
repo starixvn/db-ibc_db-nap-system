@@ -1,39 +1,33 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
 USE [bodb02]
 GO
-/****** Object:  StoredProcedure [dbo].[NAP_PayoutTrans_SelPermission]    Script Date: 11/12/2015 11:38:28 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
+
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_SelPermission]
-(
 	@AdminId			INT				= 0
 	, @PayoutControl	INT				= 14
 	, @ErrCode 			INT 			= 0 OUTPUT
 	, @ErrMsg 			NVARCHAR(200) 	= '' OUTPUT
-)
 AS
+
 /*
-Created: 20151012@bobby.nguyen
-Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
-DB: DBACC.bodb02
-Original:
-Revisions:
-	- 20151012@bobby.nguyen: Initial
-	- 20151113@bobby.nguyen: Include Testing Licensee 
-	- 20151126@bobby.nguyen: Bug #48175 - Check for existence of spondemo in LA setting
-	- 20170524@bobby.nguyen: 77139 - Get licensee  list being offered payout products by distinct
-	- 20180103@Paul: Add RNG Casino [RedmineID #88709]
+	Created: 20151012@bobby.nguyen
+	Task : #47290 - Colossus Bets & MCG RnG Casino Payout Management
+	DB: DBACC.bodb02
+	Original:
+	Revisions:
+		- 20151012@bobby.nguyen: Initial
+		- 20151113@bobby.nguyen: Include Testing Licensee 
+		- 20151126@bobby.nguyen: Bug #48175 - Check for existence of spondemo in LA setting
+		- 20170524@bobby.nguyen: 77139 - Get licensee  list being offered payout products by distinct
+		- 20180103@Paul: Add RNG Casino [RedmineID #88709]
+		- 20190510@Percy: Migrate DB052.bodb_Licensee to DBCUST.bodb_Licensee - Phase 2 [RedmineID: #103658]
 	
-Param's Explanation:
-	- @AdminId: Id of admin user login
-	- @PayoutControl: bitwise operator 3 bits[1:Boping-2:OneWorks-3:Credit]
-	
-	
+	Param's Explanation:
+		- @AdminId: Id of admin user login
+		- @PayoutControl: bitwise operator 3 bits[1:Boping-2:OneWorks-3:Credit]
 */
+
 BEGIN
-	
 	SET NOCOUNT ON;
 	
 	DECLARE @BopingControl 		BIT
@@ -63,7 +57,7 @@ BEGIN
 	SELECT 
 		s.sporttype
 		, s.ProductName
-	FROM bodb02.[dbo].[f_ProductPayout] () s 
+	FROM dbo.f_ProductPayout () s 
 	WHERE ((@BopingControl 	= 1 OR  @OneWorksControl = 1) AND s.sporttype IN (205)) --Microgaming RNG Casino
 		OR (@CreditControl 	= 1 AND s.sporttype IN (204)) --Colossus Bets
 		OR ((@BopingControl = 1 OR @OneWorksControl = 1 OR @CreditControl = 1) AND s.sporttype IN (208, 209, 210))
@@ -77,7 +71,7 @@ BEGIN
 	
 		-- SELECT site control
 		INSERT INTO #LA_PartyList
-		EXEC [DBLIC].[bodb_licensee].dbo.[NAP_PayoutTrans_PartyListSel]
+		EXEC bodb_licensee.dbo.NAP_PayoutTrans_PartyListSel
 			
 		;WITH CTE_SiteGroup
 		AS
@@ -126,11 +120,11 @@ BEGIN
 			, ls.siteid
 			, ls.SiteName
 		FROM CTE_LicenseeSite ls
-			INNER JOIN [DBLIC].[bodb_licensee].[dbo].[Licensees] lc WITH(NOLOCK) 
+			INNER JOIN [bodb_licensee].[dbo].[Licensees] lc WITH(NOLOCK) 
 			ON ls.SiteName = lc.LicenseeName
-			INNER JOIN [DBLIC].[bodb_licensee].[dbo].[LicenseeProduct3rd] ld WITH(NOLOCK) 
+			INNER JOIN [bodb_licensee].[dbo].[LicenseeProduct3rd] ld WITH(NOLOCK) 
 			ON lc.LicenseeID = ld.LicenseeID
-			INNER JOIN [DBLIC].[bodb_licensee].[dbo].[Product3rd] p WITH(NOLOCK) 
+			INNER JOIN [bodb_licensee].[dbo].[Product3rd] p WITH(NOLOCK) 
 			ON ld.ProductID = p.ProductID
 			INNER JOIN @tblProduct tp 
 			ON p.ProductName = tp.ProductName		
@@ -168,9 +162,4 @@ BEGIN
 	
 	RETURN;
 END
-
-GO
-GRANT EXECUTE ON [dbo].[NAP_PayoutTrans_SelPermission] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_PayoutTrans_SelPermission] TO [vnteam]
 GO
