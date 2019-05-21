@@ -21,6 +21,7 @@ AS
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		- 20190521@Helen: store the same TrackingValue for both old and new TrackingValue - [Redmine:113472]
 		
 	Parameter's explaination:
 */
@@ -120,6 +121,7 @@ BEGIN
 				@CustID = @CustID,
 				@ActionID = 668,
 				@TrackingValue = @LogData,
+				@TrackingValue2 = @LogData,
 				@Duration = @duration
 
 END
