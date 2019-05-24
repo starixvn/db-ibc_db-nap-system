@@ -1,15 +1,14 @@
-/*<info serverAlias="DBRPT-bodb_report" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
-
+/*<info serverAlias="DBRPT-bodb_report" executers="bodbAdminNet" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[Acc_Rpt_CreditCollection_GetBalance_BK]
 	@FromDate	DATE,
 	@ToDate		DATE,
 	@CustIDList	VARCHAR(MAX),
-	@LimitDate  DATE 
+	@BalanceUpDay DATE
 AS
 /*  Created: Sophia  
 	Date:	20181206
 	DB:		DBRPT-bodb_report
-	Task :  Get Balance for List Customer - Level Super - Bettrans_BK Range [Redmine: 98621]
+	Task :  Get Balance for List Customer - Level Super - Bettrans_BK Range 
 	Prefer SP: Acc_StatementSel 
 	
 
@@ -24,7 +23,8 @@ AS
 						 
 
 	Revisions:  
-	- 20181206@Sophia: initial SP 
+		- 20181206@Sophia: initial SP [Redmine: 98621]
+		- 20190520@Sophia: Change report get total Balance [redmine: #109293]
 
 */  
  
@@ -51,138 +51,70 @@ BEGIN
 	END CATCH
 	---#1: End: Get CustID List
 	  
-
+	DECLARE  @BUSaturday DATE, @i TINYINT
+	
+	SELECT @i = DATEPART (DW,@BalanceUpDay) 
+	SELECT @BUSaturday = DATEADD ( DD, -@i, @BalanceUpDay)		
+	-----------------------------------------------------
+		
 	CREATE TABLE #rptStatementTable(
 		 OwnerID			INT
 		,winlostdate		SMALLDATETIME	
-		,OpeningBalance		MONEY	NULL	
-		,ClosingBalance		MONEY	NULL		
-	)
-	
-	/*
-	DELETE #CustIds 
-	WHERE CustID IN (7214059,7213826,7213962)   --- Special acc    (ROLEID = 1 )
-	*/	
-	
-	
-	-- Super --		
-	BEGIN
-		CREATE TABLE #Tmp (CustID INT, Winlostdate DATE)	
-		
-		INSERT INTO #Tmp
-		SELECT CustID, @FromDate
-		FROM #CustIds
-		UNION ALL
-		SELECT CustID, @ToDate
-		FROM #CustIds
-		WHERE @FromDate <> @ToDate
-
-		
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)		
-		SELECT r.CustID, r.winlostdate, r.OpeningBalance, r.ClosingBalance
-		FROM dbo.rptStatement_Old r WITH (NOLOCK)	
-		CROSS APPLY (SELECT t.*
-					 FROM #Tmp t
-					 WHERE t.CustID = r.CustID AND r.Winlostdate = t.Winlostdate) c	
-	END
-	-- End Super --
-	
-	
-	----======== Get data No Balance on @FromDate and @ToDate ======-------------
-	DECLARE @FromDateNoBL AS TABLE (CustID INT)
-	DECLARE @ToDateNoBL AS TABLE (CustID INT)
-
-
-	------* rptStatement_old table * ----------	
-
-	INSERT INTO @FromDateNoBL (CustID)
-	SELECT	c.CustId 
-	FROM	#CustIds c
-	WHERE	NOT EXISTS (SELECT 1 FROM #rptStatementTable s WHERE s.OwnerID = c.CustID AND s.WinlostDate = @FromDate) 
- 	
-	INSERT INTO @ToDateNoBL (CustID)
-	SELECT	c.CustId 
-	FROM	#CustIds c
-	WHERE	NOT EXISTS (SELECT 1 FROM #rptStatementTable s WHERE s.OwnerID = c.CustID AND s.WinlostDate = @ToDate) 
-	 
-
-	---- IF @FromDate no record of BL then get the nearest BL of FromDate 
-	IF EXISTS  (SELECT 1 FROM @FromDateNoBL)
-	BEGIN 
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)	
-		SELECT CustID, winlostdate AS winlostdate, OpeningBalance, ClosingBalance 
-		FROM ( 
-				SELECT	ROW_NUMBER() OVER(PARTITION BY r.CustID ORDER BY r.winlostdate DESC) AS Row,
-						r.CustID, r.winlostdate AS winlostdate,  r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
-				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-				WHERE 
-					EXISTS (SELECT 1 FROM @FromDateNoBL c WHERE c.CustID = r.custid)
-					AND r.winlostdate < @FromDate
-					AND r.winlostdate >= @LimitDate 
-				) a
-		WHERE Row = 1
-		OPTION (MAXDOP 3)
-	END 
+		,OpeningTotalBalance MONEY	NULL	 
+	) 
  
- 	---- IF @ToDay no record of BL then get the nearest BL of FromDate 
-	IF EXISTS  (SELECT 1 FROM @ToDateNoBL)
-	BEGIN 
-		INSERT INTO #rptStatementTable (OwnerID, winlostdate, OpeningBalance, ClosingBalance)			 		
-		SELECT CustID, winlostdate AS winlostdate, OpeningBalance, ClosingBalance 
-		FROM ( 
-				SELECT	ROW_NUMBER() OVER(PARTITION BY r.CustID ORDER BY r.winlostdate DESC) AS Row,
-						r.CustID, r.winlostdate AS winlostdate, r.ClosingBalance as OpeningBalance, r.ClosingBalance as ClosingBalance
-				FROM dbo.rptStatement_Old r WITH (NOLOCK)			
-				WHERE 
-					EXISTS (SELECT 1 FROM @ToDateNoBL c WHERE c.CustID = r.custid)
-					AND NOT EXISTS (SELECT 1 FROM #rptStatementTable c WHERE c.OwnerID = r.custid AND c.WinlostDate >= r.WinlostDate)		--- had scaned data on @Fromdate block code, so they should be excluded 				
-					AND r.winlostdate < @ToDate
-					AND r.winlostdate >= @LimitDate		 
-				) a
-		WHERE Row = 1
-		OPTION (MAXDOP 3)
-	END 
+	BEGIN 	
 
-	
+		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
+		SELECT CustID, @ToDate AS winlostdate, OpeningTotalBalance
+		FROM (
+				SELECT t.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningTotalBalance
+				FROM   #CustIds t 
+				LEFT JOIN dbo.rptStatement_Old r WITH (NOLOCK)	
+					ON t.CustID = r.CustID 
+				WHERE  r.Winlostdate <= @Todate
+					   AND r.Winlostdate >= @BUSaturday
+				GROUP BY t.CustID, r.OpeningTotalBalance
+				) T			   
+			   
+		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
+		SELECT CustID, @FromDate AS winlostdate, OpeningTotalBalance
+		FROM (
+				SELECT t.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningTotalBalance
+				FROM   #CustIds t 
+				LEFT JOIN dbo.rptStatement_Old r WITH (NOLOCK)	
+					ON t.CustID = r.CustID 
+				WHERE   r.Winlostdate <= @FromDate
+						AND r.Winlostdate >= @BUSaturday
+				GROUP BY t.CustID, r.OpeningTotalBalance
+				) F						
+	END
+	 
+	---- Update BL of @Todate = @FromDate 
+	UPDATE 	t
+	SET 	t.OpeningTotalBalance = f.OpeningTotalBalance
+	FROM 	#rptStatementTable t 
+		INNER JOIN #rptStatementTable f
+			ON t.CustID = f.custid 				
+			AND f.OpeningTotalBalance IS NOT NULL
+			AND t.OpeningTotalBalance IS NULL
+			AND f.winlostdate = @FromDate
+			AND t.winlostdate = @Todate 
+
 	
 	----Show data
-
-	;WITH CTE_Balance (OwnerID, MaxDate, MinDate, currency ) AS 
-	(	SELECT	OwnerID, MAX(WinlostDate) MaxDate, MIN(WinlostDate) MinDate, currency
-		FROM	#rptStatementTable o
-		INNER JOIN bodb02.dbo.Customer c WITH (NOLOCK) 
-				ON c.CustID = o.OwnerID
-		GROUP BY OwnerID ,currency
-	)
-	SELECT r.OwnerID  
-		, @FromDate AS WinlostDate
-		,SUM(ISNULL(r.OpeningBalance, 0) * e.ActualRate) AS OpeningBalance
-	FROM #rptStatementTable r
-		INNER JOIN CTE_Balance m 
-			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MinDate	 
-		INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
-			ON e.ExchangeId = m.currency and e.ExchangeDate = r.WinlostDate
-	WHERE m.MinDate <= @FromDate
-	GROUP BY r.WinlostDate, r.OwnerID  
-
-	UNION ALL
- 
-	SELECT r.OwnerID  
-		,DATEADD(DD,1,@ToDate) AS WinlostDate 
-		,SUM (ISNULL(r.ClosingBalance, 0) * e.ActualRate) AS OpeningBalance    ---- OpeningBalance of @ToDate + 1 means closing BL of @ToDate 
-	FROM #rptStatementTable r
-		INNER JOIN CTE_Balance m 
-			ON m.OwnerID = r.OwnerID AND r.WinlostDate = m.MaxDate	 	
-		INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
-			ON e.ExchangeId = m.currency and e.ExchangeDate = r.WinlostDate
-	GROUP BY r.WinlostDate, r.OwnerID  
-	
+	SELECT 	r.CustId, r.winlostdate, (r.OpeningTotalBalance * e.ActualRate) AS OpeningTotalBalance 
+	FROM 	#rptStatementTable r
+	INNER JOIN bodb02.dbo.CustInfo c WITH (NOLOCK) 
+			ON c.CustID = r.CustID
+	INNER JOIN bodb02.dbo.ExchangeDailyOanda e WITH (NOLOCK) 
+			ON e.ExchangeId = c.currency AND e.ExchangeDate = r.WinlostDate
 	
 
 	DROP TABLE #rptStatementTable
-	DROP TABLE #CustIds
+	DROP TABLE #CustIds 
 
-END
+ END
 
 GO 
 
