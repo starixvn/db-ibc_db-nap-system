@@ -58,12 +58,18 @@ BEGIN
 	-----------------------------------------------------
 		
 	CREATE TABLE #rptStatementTable(
-		 OwnerID			INT
+		 CustID			INT
 		,winlostdate		SMALLDATETIME	
 		,OpeningTotalBalance MONEY	NULL	 
 	) 
  
 	BEGIN 	
+	
+		IF @Todate < @BUSaturday 
+		BEGIN 
+			SELECT @i = DATEPART (DW,@Todate) 	
+			SELECT @BUSaturday = DATEADD ( DD, -@i, @Todate)	
+		END 
 
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
 		SELECT CustID, @ToDate AS winlostdate, OpeningTotalBalance
@@ -75,7 +81,13 @@ BEGIN
 				WHERE  r.Winlostdate <= @Todate
 					   AND r.Winlostdate >= @BUSaturday
 				GROUP BY t.CustID, r.OpeningTotalBalance
-				) T			   
+				) T		
+
+		IF @FromDate < @BUSaturday 
+		BEGIN 
+			SELECT @i = DATEPART (DW,@FromDate) 	
+			SELECT @BUSaturday = DATEADD ( DD, -@i, @FromDate)	
+		END 
 			   
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
 		SELECT CustID, @FromDate AS winlostdate, OpeningTotalBalance

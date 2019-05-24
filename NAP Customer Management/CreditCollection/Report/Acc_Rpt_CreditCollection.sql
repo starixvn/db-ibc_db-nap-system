@@ -281,7 +281,8 @@ BEGIN
 			EXEC bodb_report.dbo.Acc_Rpt_CreditCollection_GetBalance_BK
 					@FromDate = @FromDateBT_BK,
 					@ToDate = @ToDateBT_BK,
-					@CustIDList =@strCustIds 					
+					@CustIDList =@strCustIds,
+					@BalanceUpDay = @BalanceUpDay 					
 		END
 
 		IF @HasBT_14 = 1 AND (@HasBT_BK <> 1 OR @HasBT <> 1)
@@ -291,6 +292,7 @@ BEGIN
 					@FromDate = @FromDateBT_14,
 					@ToDate = @ToDateBT_14,						
 					@CustIDList =@strCustIds, 
+					@MoveBetsDay= @MoveBetsDay,
 					@BalanceUpDay = @BalanceUpDay
 					 
 		END				

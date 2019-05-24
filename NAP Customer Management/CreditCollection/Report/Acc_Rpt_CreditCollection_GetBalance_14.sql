@@ -53,9 +53,9 @@ BEGIN
 	---#1: End: Get CustID List	  
 
 	DECLARE @MBSaturday DATE, @BUSaturday DATE, @i TINYINT
-	
-	SELECT @i = DATEPART (DW,@MoveBetsDay) 
-	SELECT @MBSaturday = DATEADD ( DD, -@i, @MoveBetsDay)
+
+	SELECT @i = DATEPART (DW,@MoveBetsDay) 	
+	SELECT @MBSaturday = DATEADD ( DD, -@i, @MoveBetsDay)	
 	
 	SELECT @i = DATEPART (DW,@BalanceUpDay) 
 	SELECT @BUSaturday = DATEADD ( DD, -@i, @BalanceUpDay)		
@@ -68,6 +68,11 @@ BEGIN
 	) 
 	
 	BEGIN 	
+		IF @Todate < @MBSaturday 
+		BEGIN 
+			SELECT @i = DATEPART (DW,@Todate) 	
+			SELECT @MBSaturday = DATEADD ( DD, -@i, @Todate)	
+		END 
 
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
 		SELECT CustID, @ToDate AS winlostdate, OpeningTotalBalance
@@ -80,7 +85,14 @@ BEGIN
 					   AND r.Winlostdate >= @MBSaturday
 				GROUP BY t.CustID, r.OpeningTotalBalance
 				) T			   
-			   
+		
+
+		IF @FromDate < @MBSaturday 
+		BEGIN 
+			SELECT @i = DATEPART (DW,@FromDate) 	
+			SELECT @MBSaturday = DATEADD ( DD, -@i, @FromDate)	
+		END 
+		
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
 		SELECT CustID, @FromDate AS winlostdate, OpeningTotalBalance
 		FROM (
