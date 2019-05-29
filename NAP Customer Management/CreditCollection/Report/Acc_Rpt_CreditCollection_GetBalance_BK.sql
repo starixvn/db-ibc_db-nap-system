@@ -69,19 +69,20 @@ BEGIN
 		BEGIN 
 			SELECT @i = DATEPART (DW,@Todate) 	
 			SELECT @BUSaturday = DATEADD ( DD, -@i, @Todate)	
-		END 
-
+		END 	
+				
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
-		SELECT CustID, @ToDate AS winlostdate, OpeningTotalBalance
-		FROM (
-				SELECT t.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningTotalBalance
-				FROM   #CustIds t 
-				LEFT JOIN dbo.rptStatement_Old r WITH (NOLOCK)	
-					ON t.CustID = r.CustID 
-				WHERE  r.Winlostdate <= @Todate
-					   AND r.Winlostdate >= @BUSaturday
-				GROUP BY t.CustID, r.OpeningTotalBalance
-				) T		
+		SELECT c.CustID, @ToDate AS winlostdate, r.OpeningTotalBalance
+		FROM #CustIds c 
+		LEFT JOIN 	(
+						SELECT CustID, winlostdate, OpeningTotalBalance, ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY  Winlostdate DESC) as Num
+						FROM   dbo.rptStatement_Old WITH (NOLOCK) 
+						WHERE  Winlostdate <= @Todate
+							   AND Winlostdate >= @BUSaturday
+						GROUP BY CustID, Winlostdate, OpeningTotalBalance	
+					) r		
+			ON c.CustID = r.CustId AND r.Num = 1		
+				
 
 		IF @FromDate < @BUSaturday 
 		BEGIN 
@@ -90,16 +91,17 @@ BEGIN
 		END 
 			   
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
-		SELECT CustID, @FromDate AS winlostdate, OpeningTotalBalance
-		FROM (
-				SELECT t.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningTotalBalance
-				FROM   #CustIds t 
-				LEFT JOIN dbo.rptStatement_Old r WITH (NOLOCK)	
-					ON t.CustID = r.CustID 
-				WHERE   r.Winlostdate <= @FromDate
-						AND r.Winlostdate >= @BUSaturday
-				GROUP BY t.CustID, r.OpeningTotalBalance
-				) F						
+		SELECT c.CustID, @FromDate AS Winlostdate, r.OpeningTotalBalance 
+		FROM  #CustIds c
+		LEFT JOIN (		
+						SELECT CustID, Winlostdate, OpeningTotalBalance, ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY  Winlostdate DESC) as Num
+						FROM   dbo.rptStatement_Old WITH (NOLOCK) 
+						WHERE  Winlostdate <= @FromDate
+								AND Winlostdate >= @BUSaturday
+						GROUP BY CustID, Winlostdate, OpeningTotalBalance		
+					) r
+			ON c.CustID = r.CustId AND r.Num = 1
+		
 	END
 	 
 	---- Update BL of @Todate = @FromDate 

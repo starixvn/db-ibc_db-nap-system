@@ -75,35 +75,37 @@ BEGIN
 		END 
 
 		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
-		SELECT CustID, @ToDate AS winlostdate, OpeningTotalBalance
-		FROM (
-				SELECT t.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningTotalBalance
-				FROM   #CustIds t 
-				LEFT JOIN dbo.rptStatement r WITH (NOLOCK)	
-					ON t.CustID = r.CustID 
-				WHERE  r.Winlostdate <= @Todate
-					   AND r.Winlostdate >= @MBSaturday
-				GROUP BY t.CustID, r.OpeningTotalBalance
-				) T			   
-		
+		SELECT c.CustID, @ToDate AS winlostdate, r.OpeningTotalBalance
+		FROM #CustIds c 
+		LEFT JOIN 	(
+						SELECT CustID, winlostdate, OpeningTotalBalance, ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY  Winlostdate DESC) as Num
+						FROM   dbo.rptStatement WITH (NOLOCK) 
+						WHERE  Winlostdate <= @Todate
+							   AND Winlostdate >= @MBSaturday
+						GROUP BY CustID, Winlostdate, OpeningTotalBalance	
+					) r		
+			ON c.CustID = r.CustId AND r.Num = 1		
+			
 
 		IF @FromDate < @MBSaturday 
 		BEGIN 
 			SELECT @i = DATEPART (DW,@FromDate) 	
 			SELECT @MBSaturday = DATEADD ( DD, -@i, @FromDate)	
-		END 
+		END 				
+
+		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)			
+		SELECT c.CustID, @FromDate AS Winlostdate, r.OpeningTotalBalance 
+		FROM  #CustIds c
+		LEFT JOIN (		
+						SELECT CustID, Winlostdate, OpeningTotalBalance, ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY  Winlostdate DESC) as Num
+						FROM   dbo.rptStatement WITH (NOLOCK) 
+						WHERE  Winlostdate <= @FromDate
+								AND Winlostdate >= @MBSaturday
+						GROUP BY CustID, Winlostdate, OpeningTotalBalance		
+					) r
+		ON c.CustID = r.CustId AND r.Num = 1
+
 		
-		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
-		SELECT CustID, @FromDate AS winlostdate, OpeningTotalBalance
-		FROM (
-				SELECT t.CustID, MAX(r.winlostdate) AS winlostdate, r.OpeningTotalBalance
-				FROM   #CustIds t 
-				LEFT JOIN dbo.rptStatement r WITH (NOLOCK)	
-					ON t.CustID = r.CustID 
-				WHERE   r.Winlostdate <= @FromDate
-						AND r.Winlostdate >= @MBSaturday
-				GROUP BY t.CustID, r.OpeningTotalBalance
-				) F						
 	END
 	
 	--------IF no record of BL of FromDate, then get the nearest BL on rptStatement_old-----------------------------
@@ -113,21 +115,21 @@ BEGIN
 					WHERE 	OpeningTotalBalance IS NULL
 							AND winlostdate = @FromDate)
 	BEGIN 			
-		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)	
-		SELECT CustID, @FromDate AS winlostdate, OpeningTotalBalance
-		FROM (
-			SELECT	t.CustId, MAX(r.Winlostdate), r.OpeningTotalBalance
-			FROM 	(
+		INSERT INTO #rptStatementTable (CustId, winlostdate, OpeningTotalBalance)			
+		SELECT c.CustID, @FromDate AS Winlostdate, r.OpeningTotalBalance 
+		FROM  (
 						SELECT	CustId, Winlostdate
 						FROM	#rptStatementTable 
 						WHERE 	OpeningTotalBalance IS NULL
-								AND winlostdate = @FromDate
-					) t
-			LEFT JOIN dbo.rptStatement_Old r WITH (NOLOCK) 
-					ON t.CustID = r.CustID
-			WHERE  r.Winlostdate >= @BUSaturday
-			GROUP BY t.CustId, r.OpeningTotalBalance
-			) F
+							AND winlostdate = @FromDate
+					) c
+		LEFT JOIN (		
+						SELECT CustID, Winlostdate, OpeningTotalBalance, ROW_NUMBER() OVER (PARTITION BY CustID ORDER BY  Winlostdate DESC) as Num
+						FROM   dbo.rptStatement_Old WITH (NOLOCK) 
+						WHERE  Winlostdate >= @BUSaturday
+						GROUP BY CustID, Winlostdate, OpeningTotalBalance		
+					) r
+		ON c.CustID = r.CustId AND r.Num = 1
 		
 		
 		;WITH tmpDel AS (	SELECT CustID, Count (1) as Cnt
@@ -135,7 +137,7 @@ BEGIN
 							WHERE winlostdate = @FromDate
 							GROUP BY CustID
 							HAVING Count (1) > 1
-										)										 		
+						)										 		
 		---- Delete BL of @Fromdate is null
 		DELETE 	r
 		FROM 	#rptStatementTable r			 
