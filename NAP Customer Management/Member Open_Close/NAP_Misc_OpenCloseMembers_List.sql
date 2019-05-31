@@ -1,125 +1,143 @@
+/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+
 ALTER PROCEDURE [dbo].[NAP_Misc_OpenCloseMembers_List] 
-	@username varchar(30),
-	@TotalItems int = 0 output,
-	@ItemPerPage int = 50,
-	@PageIndex int = 1,
-	@IsClosed int = -1,
-	@ErrorCode int = null output,
-	@ErrorMsg varchar(max) = '' output,
-	@Language varchar(2)= 'E'
+	@username VARCHAR(30),
+	@TotalItems INT = 0 OUTPUT,
+	@ItemPerPage INT = 50,
+	@PageIndex INT = 1,
+	@IsClosed INT = -1,
+	@ErrorCode INT = NULL OUTPUT,
+	@ErrorMsg VARCHAR(max) = '' OUTPUT,
+	@Language VARCHAR(2)= 'E'
 AS
-
 /*
-Created: 2014-03-13
-Author: Dom
-Task : get list of accounts to close/open
-DB: DBAGE/bodb02
-Original:
+	Created: 2014-03-13
+	Author: Dom
+	Task : get list of accounts to close/open
+	DB: DBAGE/bodb02
+
+	Revisions:
+		- 20190514@Paul: Create new SP [RedmineID: #113198]
+		- 20190527@Elodie: New account status for CN88 [Redmine: 113198]
+	
+	Example: NAP_customerUpdClosebyList_sel
+				@username = 'SSS',
+				@TotalPages = 0 ,
+				@ItemPerPage = 20,
+				@PageIndex = 1
 */
+BEGIN
+	DECLARE @custid INT = NULL, @roleid	INT = NULL
+	DECLARE @closedacc TABLE(custid INT)
+	CREATE TABLE #Customer (custid INT,srecommend INT,mrecommend INT,recommend INT,username VARCHAR(50))
 
-declare @custid int = null,
-		@roleid	int = null
-declare @closedacc TABLE(custid int)
+	SELECT @custid = ci.custid, @roleid = ci.roleid 
+	FROM custinfo ci WITH (NOLOCK) 
+		INNER JOIN dbo.Customer c ON c.custid = ci.custid
+	WHERE ci.username = @username 
+		AND ci.roleid <> 1
+		AND closed = 0
+		AND c.site <> 'CN88'
 
-select @custid = custid, @roleid = roleid from custinfo(nolock) 
-where username = @username 
-	and roleid <> 1
-	and closed = 0
+	IF(@custid IS NULL)
+	BEGIN				
+		SELECT @ErrorMsg = [dbo].[f_Get_MsgNamebyMsgID](40001,@Language), @ErrorCode = 201
+		RETURN
+	END
 
-IF(@roleid=4)
-begin
-	insert into @closedacc
-	select custid from custInfo(nolock) where srecommend = @custid and (roleid in(2,3)) and closed=1
-end
-else if(@roleid=3)
-begin
-	insert into @closedacc
-	select custid from custInfo(nolock) where mrecommend = @custid and roleid=2 and closed=1
-end
+	---------------INSERT TEMP CUSTOMER------------------------
+	IF(@roleid=4)
+	BEGIN
+		INSERT INTO @closedacc
+		SELECT custid FROM custInfo WITH (NOLOCK) WHERE srecommend = @custid AND (roleid IN(2,3)) AND closed=1
 
-if(@custid is null)
-begin
-	select @errorcode  = MsgID,
-			@errormsg = MsgNameEN
-	from MsgError WHERE MsgID=40019
-	Select @ErrorMsg = [dbo].[f_Get_MsgNamebyMsgID](40001,@Language)	
-		,@ErrorCode = 201
-	return;
-end
+		INSERT INTO #Customer
+		SELECT custid,srecommend,mrecommend,recommend,username FROM custinfo (NOLOCK)
+		WHERE (srecommend = @custid)
+				AND roleid=1
+				AND (@IsClosed = -1 or closed = @IsClosed)
+	END
+	ELSE IF(@roleid=3)
+	BEGIN
+		INSERT INTO @closedacc
+		SELECT custid FROM custInfo WITH (NOLOCK) WHERE mrecommend = @custid AND roleid=2 AND closed=1
 
-;WITH CustomerTemp AS
-(
-select ROW_NUMBER() OVER (ORDER BY username) as row, custid from custinfo(nolock)
-where (srecommend = @custid or mrecommend = @custid or recommend=@custid )
-		and roleid=1
-		and (@IsClosed = -1 or closed = @IsClosed)
-		and srecommend not in (select custid from dep_custsuper)
-		and mrecommend not in(SELECT custid from @closedacc)
-		and recommend not in(SELECT custid from @closedacc)
-) 
-select custid,total,row 
-into #temp
-from CustomerTemp 
-OUTER APPLY (
-	select max(row) total  from CustomerTemp
-)A
-where row between @ItemPerPage*@PageIndex - @itemperpage+1 and @ItemPerPage*@PageIndex
+		INSERT INTO #Customer
+		SELECT custid,srecommend,mrecommend,recommend,username FROM custinfo(NOLOCK)
+		WHERE (mrecommend = @custid)
+				AND roleid=1
+				AND (@IsClosed = -1 or closed = @IsClosed)
+	END
+	ELSE IF(@roleid=2)
+	BEGIN
+		INSERT INTO #Customer
+		SELECT custid,srecommend,mrecommend,recommend,username FROM custinfo(NOLOCK)
+		WHERE (recommend = @custid)
+				AND roleid=1
+				AND (@IsClosed = -1 or closed = @IsClosed)
+	END
+	---------------END INSERT TEMP CUSTOMER------------------------
 
-select top 1 @TotalItems = total from #temp 
-if @roleid = 4
-begin
-	select ci.custid,
-			master.username master,
-			agent.username agent,
-			ci.username member, 
-			ci.SyncCasino,
-			ci.closed
-	from custInfo(NOLOCK) ci
-	inner join custInfo(NOLOCK) master on master.custid = ci.mrecommend
-	inner join custInfo(NOLOCK) agent on agent.custid = ci.recommend
-	where ci.custid in(select custid from #temp)
-	order by master.username,
-			agent.username,
-			ci.username
-end
-else if @roleid = 3
-begin
-	select ci.custid,
-			agent.username agent,
-			ci.username member, 
-			ci.SyncCasino,
-			ci.closed
-	from custInfo(NOLOCK) ci
-	inner join custInfo(NOLOCK) agent on agent.custid = ci.recommend
-	where ci.custid in(select custid from #temp)
-	order by agent.username,
-			ci.username
-end
-else if @roleid = 2
-begin
-	select ci.custid,
-			ci.username member, 
-			ci.SyncCasino,
-			ci.closed
-	from custInfo(NOLOCK) ci
-	where ci.custid in(select custid from #temp)
-end
+	DELETE #Customer 
+	WHERE srecommend IN (SELECT custid FROM dep_custsuper(NOLOCK))
+			OR mrecommend IN(SELECT custid FROM @closedacc)
+			OR recommend IN(SELECT custid FROM @closedacc)
+		
+	SELECT ROW_NUMBER() OVER (ORDER BY c.username) as row, c.custid 
+	INTO #CustomerList
+	FROM #Customer c
 
-drop table #temp
+	SELECT custid, row 
+	INTO #temp
+	FROM #CustomerList 
+	WHERE row BETWEEN @ItemPerPage*@PageIndex - @itemperpage+1 AND @ItemPerPage*@PageIndex
 
-/*
-NAP_customerUpdClosebyList_sel
-	@username = 'SSS',
-	@TotalPages = 0 ,
-	@ItemPerPage = 20,
-	@PageIndex = 1
+	SELECT @TotalItems = COUNT(1) FROM #CustomerList 
 
-	select super.custid srecommend,super.username,count(ci.custid) count 
-from custInfo(NOLOCK) ci
-inner join custInfo(NOLOCK) super on super.custid = ci.srecommend
- GROUP by super.custid,super.username
+	IF @roleid = 4
+	BEGIN
+		SELECT ci.custid,
+				master.username master,
+				agent.username agent,
+				ci.username member, 
+				ci.SyncCasino,
+				ci.closed
+		FROM custInfo(NOLOCK) ci
+			INNER JOIN custInfo(NOLOCK) master ON master.custid = ci.mrecommend
+			INNER JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
+		WHERE ci.custid IN(SELECT custid FROM #temp)
+		ORDER BY master.username ASC, 
+				agent.username ASC,
+				ci.username ASC,
+				ci.closed ASC
+	END
+	ELSE IF @roleid = 3
+	BEGIN
+		SELECT ci.custid,
+				agent.username agent,
+				ci.username member, 
+				ci.SyncCasino,
+				ci.closed
+		FROM custInfo(NOLOCK) ci
+			INNER JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
+		WHERE ci.custid IN(SELECT custid FROM #temp)
+		ORDER BY agent.username,
+				ci.username,
+				ci.closed
+	END
+	ELSE IF @roleid = 2
+	BEGIN
+		SELECT ci.custid,
+				ci.username member, 
+				ci.SyncCasino,
+				ci.closed
+		FROM custInfo(NOLOCK) ci
+		WHERE ci.custid IN(SELECT custid FROM #temp)
+		ORDER BY ci.username,
+				ci.closed
+	END
 
- select * from MsgError
-*/
-
-
+	DROP TABLE #Customer
+	DROP TABLE #CustomerList
+	DROP TABLE #temp
+END
