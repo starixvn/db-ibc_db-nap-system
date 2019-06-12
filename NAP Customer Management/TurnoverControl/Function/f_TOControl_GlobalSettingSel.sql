@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="vnteam" isFunction="1"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="1"></info>*/
 ALTER FUNCTION [dbo].[f_TOControl_GlobalSettingSel]() 
 RETURNS TABLE
 WITH SCHEMABINDING
