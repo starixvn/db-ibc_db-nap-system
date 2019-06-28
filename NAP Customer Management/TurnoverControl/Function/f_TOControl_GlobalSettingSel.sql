@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="vnteam" isFunction="1"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="" viewers="" isFunction="1"></info>*/
 ALTER FUNCTION [dbo].[f_TOControl_GlobalSettingSel]() 
 RETURNS TABLE
 WITH SCHEMABINDING
@@ -15,7 +15,8 @@ AS
       + 789y site: equivalent to USD 200,000
       + Other sites: equivalent to MYR 500,000
     - 20180706@Kan: Rollback new global setting to old value after World Cup event [Redmine: 97774]
-
+	- 20190604@Helen: Implement Turnover Control for CN88 site [Redmine: 113233]
+	
     Parameters Explanation:  
     
     Notes:
@@ -23,11 +24,23 @@ AS
     + Other Sports	:	150 K MYR
 */
 RETURN (
-   SELECT CAST(1 AS SMALLINT) sporttype, CAST('789y' AS NVARCHAR(50)) AS site,CAST(0 AS INT) ExchangeID, CAST(200000 AS MONEY) MaxTurnOver, CAST(3 AS INT) TOCurrency -- US$
+   SELECT CAST(1 AS SMALLINT) sporttype
+	, CAST('789y' AS NVARCHAR(50)) AS site
+	, CAST(0 AS INT) ExchangeID
+	, CAST(200000 AS MONEY) MaxTurnOver
+	, CAST(3 AS INT) TOCurrency -- US$
+	
    UNION ALL
    SELECT 1 AS sporttype, '' site,0 ExchangeID, 300000 MaxTurnOver, 2 TOCurrency --RM	
    UNION ALL
    SELECT 99 AS sporttype,'' site,0 ExchangeID, 150000 MaxTurnOver, 2 TOCurrency --RM	
+   
+    --- For CN88
+   UNION ALL
+   SELECT 1 AS sporttype,'CN88' site,0 ExchangeID, 660000 MaxTurnOver, 2 TOCurrency --RM
+   UNION ALL
+   SELECT 99 AS sporttype,'CN88' site,0 ExchangeID, 660000 MaxTurnOver, 2 TOCurrency --RM
+   
    -------------------------CONFIG FOR TEST CURRENCY -----------------------------------------
    -- for UUS
    UNION ALL
@@ -37,6 +50,11 @@ RETURN (
    UNION ALL  
    SELECT 99 AS sporttype,'' site,20 ExchangeID, 150000 MaxTurnOver, 20 TOCurrency --UUS   
    
+   -- for UUS of CN88 site
+   UNION ALL
+   SELECT 1 sporttype, 'CN88' AS site,20 ExchangeID, 660000 MaxTurnOver, 20 TOCurrency -- UUS
+   UNION ALL  
+   SELECT 99 AS sporttype,'CN88' site,20 ExchangeID, 660000 MaxTurnOver, 20 TOCurrency --UUS   
    -- for H
    UNION ALL
    SELECT 1 sporttype, '789y' AS site,27 ExchangeID, 200000 MaxTurnOver, 27 TOCurrency -- H
