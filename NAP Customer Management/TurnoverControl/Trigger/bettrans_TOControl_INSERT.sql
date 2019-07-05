@@ -17,6 +17,7 @@ AS
 		- 20180626@Helen: Tuning trigger - [Redmine:97442]
 		- 20181219@Kan: TO Control - Change condition of bettype - [Redmine: 106656]
 		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
+		- 20190701@Patrick: Move hardcode licensee to table setting - [Redmine: #112219]
 	
 */
 BEGIN
@@ -68,6 +69,7 @@ BEGIN
 	
 	INSERT INTO TOControl_TicketDetails_Insert (transid,bettype, statusID)
 	VALUES (@TransID,@bettype, @statusID)
-		
 	
 END 
+
+GO
