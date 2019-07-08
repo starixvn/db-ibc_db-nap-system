@@ -12,6 +12,7 @@ Original:
 
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
+	- 20190708@Patrick: Move to DB052 [Redmine: #112219]
 
 Param explanation:
 */
@@ -28,7 +29,7 @@ BEGIN
 	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid,IsGroupHeadline,sporttype)
 
 	INSERT INTO #TmpTableRaw(CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadline,sporttype)
-	EXEC DB054.bodb02.dbo.TASK_TOControl_GetTransition
+	EXEC DBEXT.bodb02.dbo.TASK_TOControl_GetTransition
 
 	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, adjusted_TurnOver, adjusted_HouseTurnOver)
 	SELECT CustID, matchid,IsGroupHeadline, sporttype,  SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
