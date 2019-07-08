@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0"></info>*/
 GO
 ALTER PROCEDURE [dbo].[Task_TOControl_GetTickets_Insert]
 	@batchSize int = 300
