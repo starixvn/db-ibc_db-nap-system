@@ -1,5 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0"></info>*/
-USE [bodb02]
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[TASK_TOControl_DeleteOldTransition]
 AS 
 /*
