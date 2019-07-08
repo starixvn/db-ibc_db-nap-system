@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0" isNested=""></info>*/
 ALTER PROCEDURE[sb].[DBA_ConversationManagement]
 
 		@FunctionName VARCHAR(100)
