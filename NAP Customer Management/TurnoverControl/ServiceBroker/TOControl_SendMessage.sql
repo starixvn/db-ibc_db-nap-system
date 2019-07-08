@@ -16,7 +16,7 @@ AS
 		
 	Revision
 		- 20180508@Helen: Hardcode messagetype to have better performance [Redmine: N/A]
-		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 		
 	Para's explaination
 */

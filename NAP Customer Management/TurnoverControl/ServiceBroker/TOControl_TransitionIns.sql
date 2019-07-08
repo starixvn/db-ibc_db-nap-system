@@ -12,7 +12,7 @@ AS
 	Revisions:
 		- 20170919@Helen: TO Control Phase 3 - [redmine:75557]
 		- 20171110@Helen: Enhance performance for TO - [Redmine: 86052]
-		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 
 	Param explanation:
 

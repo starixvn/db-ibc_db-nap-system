@@ -9,7 +9,7 @@ DB: DBAGE.bodb02
 Original:
 
 Revisions:
-	- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+	- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 
 Param explanation:
 */

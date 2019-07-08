@@ -13,7 +13,7 @@ AS/*
 	Task: ServiceBroker Consersation troubleshoot
 	DB: ServiceBrokerDB
 	Revisions:
-		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 	
 	Para's explaination
 

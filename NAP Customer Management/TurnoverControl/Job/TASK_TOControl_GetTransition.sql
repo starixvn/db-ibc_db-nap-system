@@ -12,7 +12,7 @@ Original:
 
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
-	- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+	- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 
 Param explanation:
 */

@@ -14,7 +14,7 @@ AS
 	
 	Revision
 		- 20180626@Helen: Tuning trigger - [Redmine:97313]
-		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 	Para's explaination
 */
 BEGIN 

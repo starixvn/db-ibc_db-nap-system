@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[TASK_TOControl_DeleteTicketDetails_Insert]
 AS 
 /*
@@ -10,7 +10,7 @@ AS
 
 	Revisions:
 		- 20180629@Helen: Delete old data for TOControl_TicketDetails_Insert - [Redmine:97442]
-		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 	Param explanation:
 */
 BEGIN

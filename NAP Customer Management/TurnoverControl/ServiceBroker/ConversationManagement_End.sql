@@ -10,7 +10,7 @@ AS
 	Task: Apply Service Broker for Turnover Control function
 	DB: DBAGE.bodb02
 	Revisions:
-		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 	
 	Para's explaination
 */
