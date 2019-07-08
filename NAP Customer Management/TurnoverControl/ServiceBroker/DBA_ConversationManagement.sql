@@ -1,5 +1,5 @@
 /*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0" isNested=""></info>*/
-ALTER PROCEDURE[sb].[DBA_ConversationManagement]
+ALTER PROCEDURE [sb].[DBA_ConversationManagement]
 
 		@FunctionName VARCHAR(100)
 	,	@ContractName VARCHAR(100)  
