@@ -1,5 +1,6 @@
-/*<info serverAlias="DBCUST-CustDB" executers="" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="" viewers="" isFunction="0"></info>*/
 USE [CustDB]
+GO
 ALTER PROCEDURE [dbo].[TASK_TOControl_MergeTransition]
 AS 
 /*
@@ -11,6 +12,8 @@ Original:
 
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
+	- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
+
 Param explanation:
 */
 BEGIN
