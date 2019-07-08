@@ -1,10 +1,5 @@
 /*<info serverAlias="DBCUST-CustDB" executers="" viewers="vnteam" isFunction="0"></info>*/
 USE [CustDB]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[TASK_TOControl_MergeTransition]
 AS 
 /*

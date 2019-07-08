@@ -9,7 +9,8 @@ AS
 	Original:
 
 	Revisions:
-		20180629@Helen: Delete old data for TOControl_TicketDetails_Insert - [Redmine:97442]
+		- 20180629@Helen: Delete old data for TOControl_TicketDetails_Insert - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
 	Param explanation:
 */
 BEGIN

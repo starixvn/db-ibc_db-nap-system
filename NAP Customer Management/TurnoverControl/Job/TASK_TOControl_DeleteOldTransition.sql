@@ -1,10 +1,5 @@
 /*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0"></info>*/
 USE [bodb02]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
 ALTER PROCEDURE [dbo].[TASK_TOControl_DeleteOldTransition]
 AS 
 /*
@@ -15,6 +10,7 @@ DB: DBAGE.bodb02
 Original:
 
 Revisions:
+	- 20190708@Patrick: Move to DB052 - [Redmine:97442]
 
 Param explanation:
 */

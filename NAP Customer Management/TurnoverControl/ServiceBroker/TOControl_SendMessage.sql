@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [sb].[TOControl_SendMessage]
 (	
@@ -16,6 +16,7 @@ AS
 		
 	Revision
 		- 20180508@Helen: Hardcode messagetype to have better performance [Redmine: N/A]
+		- 20190708@Patrick: Move to DB052 - [Redmine:97442]
 		
 	Para's explaination
 */
