@@ -18,8 +18,8 @@ BEGIN
 
 	DECLARE @MaxID BIGINT = 0
 
-	SELECT @MaxID = CONVERT(BIGINT, VValue)
-	FROM dbo.TOConTrol_GlobalVariables WITH (ROWLOCK)
+	SELECT TOP (1) @MaxID = CONVERT(BIGINT, VValue)
+	FROM DBCUST.CustDB.dbo.TOConTrol_GlobalVariables WITH (ROWLOCK)
 	WHERE VName = 'MaxID'
 
 	--Keep 10000 very first rows in the table
