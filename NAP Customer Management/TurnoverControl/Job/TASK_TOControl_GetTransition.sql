@@ -2,6 +2,7 @@
 USE [bodb02]
 GO
 ALTER PROCEDURE [dbo].[TASK_TOControl_GetTransition]
+	@RowId BIGINT
 AS 
 /*
 Created: 20170324@Francis
@@ -12,36 +13,18 @@ Original:
 
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
-	- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
+	- 20190708@Patrick: Move to DB052 [Redmine: #112219]
 
 Param explanation:
 */
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @MaxID BIGINT = 0
-	DECLARE @TmpTable AS TABLE (ID BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, IsGroupHeadline BIT, sporttype SMALLINT)
-
-	SELECT @MaxID = CONVERT(BIGINT, VValue)
-	FROM dbo.TOConTrol_GlobalVariables WITH (ROWLOCK)
-	WHERE VName = 'MaxID'
-
-	INSERT INTO @TmpTable (ID, CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadline,sporttype) --To avoid TABLOCK escalation
-	SELECT TOP (4500) t.ID, t.CustID, t.matchid, t.adjusted_TurnOver, t.adjusted_HouseTurnOver,t.IsGroupHeadline,m.sporttype
+	SELECT TOP (4500) t.ID AS RowId, t.CustID, t.matchid
+		, t.adjusted_TurnOver, t.adjusted_HouseTurnOver
+		,t.IsGroupHeadline, m.sporttype
 	FROM dbo.TOControl_Transition t WITH (ROWLOCK)
 		INNER JOIN dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid
-	WHERE t.ID > @MaxID
-
-	IF @@ROWCOUNT <> 0
-	BEGIN
-		SELECT @MaxID = MAX(ID)
-			FROM @TmpTable
-
-		UPDATE dbo.TOConTrol_GlobalVariables WITH (UPDLOCK, ROWLOCK)
-		SET VValue = CONVERT(VARCHAR(200), @MaxID)
-		WHERE VName = 'MaxID'
-	END
-
-	SELECT CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadline,sporttype
-	FROM @TmpTable
+	WHERE t.ID > @RowId
+	ORDER BY t.ID ASC
 END
