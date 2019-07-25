@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0" isNested="0"></info>*/
 
 CREATE PROCEDURE [Sb].[ConversationManagement_Upd]
 ( 
@@ -14,6 +14,8 @@ AS
 	Created Date: 2017-03-22
 	Task: Apply Service Broker for Turnover Control function
 	DB: DBAGE.bodb02
+	Revisions:
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 	
 	Para's explaination
 */

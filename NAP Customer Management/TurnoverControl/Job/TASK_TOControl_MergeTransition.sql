@@ -1,9 +1,5 @@
-/*<info serverAlias="DBCUST-CustDB" executers="" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="" viewers="" isFunction="0"></info>*/
 USE [CustDB]
-GO
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
 GO
 ALTER PROCEDURE [dbo].[TASK_TOControl_MergeTransition]
 AS 
@@ -16,6 +12,7 @@ Original:
 
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
+
 Param explanation:
 */
 BEGIN
@@ -31,7 +28,7 @@ BEGIN
 	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid,IsGroupHeadline,sporttype)
 
 	INSERT INTO #TmpTableRaw(CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadline,sporttype)
-	EXEC DBAGE.bodb02.dbo.TASK_TOControl_GetTransition
+	EXEC DB054.bodb02.dbo.TASK_TOControl_GetTransition
 
 	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, adjusted_TurnOver, adjusted_HouseTurnOver)
 	SELECT CustID, matchid,IsGroupHeadline, sporttype,  SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)

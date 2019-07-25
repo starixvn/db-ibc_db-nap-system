@@ -1,5 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0" isNested="1"></info>*/
-
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0" isNested="1"></info>*/
 CREATE PROCEDURE [Sb].[MsgSent]
 (
 		@Xml XML
@@ -16,6 +15,7 @@ AS
 	DB: DBAGE.bodb02 
 	
 	Revision
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 
 	Para's explaination
 */

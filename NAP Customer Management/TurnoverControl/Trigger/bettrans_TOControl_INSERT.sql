@@ -68,6 +68,7 @@ BEGIN
 	
 	INSERT INTO TOControl_TicketDetails_Insert (transid,bettype, statusID)
 	VALUES (@TransID,@bettype, @statusID)
-		
 	
 END 
+
+GO

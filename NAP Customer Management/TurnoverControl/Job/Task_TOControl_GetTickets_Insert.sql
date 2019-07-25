@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0"></info>*/
 GO
 ALTER PROCEDURE [dbo].[Task_TOControl_GetTickets_Insert]
 	@batchSize int = 300
@@ -10,6 +10,7 @@ AS
 		
 	Revision:
 		- 20180626@Helen: Tuning trigger - [Redmine:97442]
+		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 	
 */
 BEGIN
