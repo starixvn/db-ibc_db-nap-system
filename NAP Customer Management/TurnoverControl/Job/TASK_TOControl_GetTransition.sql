@@ -31,7 +31,7 @@ BEGIN
 	FROM dbo.TOControl_Transition t WITH (ROWLOCK)
 		INNER JOIN dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid
 	WHERE t.ID > @MaxID
-
+	ORDER BY t.ID ASC
 	IF @@ROWCOUNT <> 0
 	BEGIN
 		SELECT @MaxID = MAX(ID)
