@@ -131,5 +131,19 @@ BEGIN
 			@Duration			= @Duration,
 			@AffectedDownlines	= @SuccessDownlineList
 	END
+
+	IF ISNULL(@SuccessList,'') <> '' AND ISNULL(@FailList,'') = ''
+    BEGIN
+	   SELECT @ErrCode = 0, @ErrMsg = 'Successfully added accounts: ' + @SuccessList	   	   
+    END
+	ELSE IF ISNULL(@SuccessList,'') = '' AND ISNULL(@FailList,'') <> ''
+    BEGIN
+	   SELECT @ErrCode = 105, @ErrMsg = 'The following account(s) cannot be added due to an error occurred: ' + @FailList	   	   
+    END
+	ELSE
+	BEGIN
+	   SELECT @ErrCode = 105, @ErrMsg = 'Successfully added accounts: ' + @SuccessList + ' \n ' + 
+										'The following account(s) cannot be added due to an error occurred: ' + @FailList	   	   
+    END
 END
 GO
