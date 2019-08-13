@@ -9,7 +9,9 @@ ALTER PROCEDURE CS_ProblemAccount_AddCustomer
 	@UserID			INT,
 	@IP				NVARCHAR(50),
 	@ErrCode		INT = 0 OUTPUT,
-	@ErrMsg			NVARCHAR(MAX) = '' OUTPUT
+	@ErrMsg			NVARCHAR(MAX) = '' OUTPUT,
+	@SuccessList	VARCHAR(MAX) = '' OUTPUT, 
+	@FailList		VARCHAR(MAX) = '' OUTPUT
 AS
 /*
 	Created: Elodie
@@ -27,7 +29,7 @@ BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @endRun	DATETIME, @duration	INT
 	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName NVARCHAR(50), @ReasonName VARCHAR(100)
-	DECLARE @IsSuccess BIT, @SuccessList VARCHAR(MAX) = '', @FailList VARCHAR(MAX) = '', @SuccessDownlineList VARCHAR(MAX) = ''
+	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpList TABLE (Username NVARCHAR(50))
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))
 
@@ -132,18 +134,9 @@ BEGIN
 			@AffectedDownlines	= @SuccessDownlineList
 	END
 
-	IF ISNULL(@SuccessList,'') <> '' AND ISNULL(@FailList,'') = ''
+	IF ISNULL(@FailList,'') <> ''
     BEGIN
-	   SELECT @ErrCode = 0, @ErrMsg = 'Successfully added accounts: ' + @SuccessList	   	   
-    END
-	ELSE IF ISNULL(@SuccessList,'') = '' AND ISNULL(@FailList,'') <> ''
-    BEGIN
-	   SELECT @ErrCode = 105, @ErrMsg = 'The following account(s) cannot be added due to an error occurred: ' + @FailList	   	   
-    END
-	ELSE
-	BEGIN
-	   SELECT @ErrCode = 105, @ErrMsg = 'Successfully added accounts: ' + @SuccessList + ' \n ' + 
-										'The following account(s) cannot be added due to an error occurred: ' + @FailList	   	   
-    END
+	   SELECT @ErrCode = 500
+    END	
 END
 GO

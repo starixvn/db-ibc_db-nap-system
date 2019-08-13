@@ -45,7 +45,8 @@ BEGIN
 
 	UPDATE pa 
 	SET pa.MaxBet = @MaxBet,
-		pa.MaxPerEvent = @MaxPerEvent
+		pa.MaxPerEvent = @MaxPerEvent,
+		pa.IsReducedBetLimit = 1
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
