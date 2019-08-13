@@ -1,20 +1,20 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE CS_ProblemAccount_RemoveReduceBetLimit
-	@CustomerList	VARCHAR(MAX),
-	@RoleId			TINYINT,
-	@MaxBet			MONEY,
-	@MaxPerEvent	MONEY,
+	@CustomerList				VARCHAR(MAX),
+	@RoleId						TINYINT,
+	@IsExcludeAbnomalBetMember	BIT,
+	@IsExcludeDirectMarkedCust	BIT,
 
-	@UserID			INT,
-	@IP				NVARCHAR(50),
-	@ErrCode		INT = 0 OUTPUT,
-	@ErrMsg			NVARCHAR(MAX) = '' OUTPUT
+	@UserID						INT,
+	@IP							NVARCHAR(50),
+	@ErrCode					INT = 0 OUTPUT,
+	@ErrMsg						NVARCHAR(MAX) = '' OUTPUT
 AS
 /*
 	Created: Elodie
 	Date: 20190808
-	Task : Reduce BetLimit of problem account
+	Task : Remove reduce BetLimit of problem account
 	DB: DBCUST/CustDB
 
 	Revisions:
@@ -44,9 +44,9 @@ BEGIN
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
 	UPDATE pa 
-	SET pa.MaxBet = @MaxBet,
-		pa.MaxPerEvent = @MaxPerEvent,
-		pa.IsReducedBetLimit = 1
+	SET pa.MaxBet = NULL,
+		pa.MaxPerEvent = NULL,
+		pa.IsReducedBetLimit = 0
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
@@ -70,7 +70,7 @@ BEGIN
 			EXEC dbo.CS_DynamicCustomerInfo_02
 				@CustId = @CustId,
 				@RoleId = @RoleId,
-				@Action = 'ReduceBetLimit'
+				@Action = 'RemoveReduceBetLimit'
 		END
 
 		-- Write log
@@ -87,8 +87,8 @@ BEGIN
 
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
+							+ ' MPM="NULL"'
+							+ ' Max="NULL"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 	

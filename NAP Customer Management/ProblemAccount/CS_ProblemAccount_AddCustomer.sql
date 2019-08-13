@@ -134,9 +134,14 @@ BEGIN
 			@AffectedDownlines	= @SuccessDownlineList
 	END
 
+	IF ISNULL(@SuccessList,'') <> ''
+    BEGIN
+	   SELECT @SuccessList = STUFF(@SuccessList,1,1,'')
+    END
+
 	IF ISNULL(@FailList,'') <> ''
     BEGIN
-	   SELECT @ErrCode = 500
-    END	
+	   SELECT @ErrCode = 500, @FailList = STUFF(@FailList,1,1,'')
+    END
 END
 GO

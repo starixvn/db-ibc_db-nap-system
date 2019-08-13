@@ -48,9 +48,7 @@ BEGIN
 		pa.MaxPerEvent = @MaxPerEvent,
 		pa.IsReducedBetLimit = 1
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
-		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
-
-	SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
+		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
 	WHILE (1=1)
 	BEGIN		
@@ -71,7 +69,7 @@ BEGIN
 				@CustId = @CustId,
 				@RoleId = @RoleId,
 				@Action = 'ReduceBetLimit'
-		END
+		END		
 
 		-- Write log
 		DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
@@ -113,6 +111,8 @@ BEGIN
 										WHERE c.recommend = @CustId AND c.custid <> @CustId
 										FOR XML PATH('')),1,1,'')
 		END
+
+		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
 		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
