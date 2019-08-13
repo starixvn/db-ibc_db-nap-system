@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE CS_ProblemAccount_ReduceBetLimit
+ALTER PROCEDURE CS_ProblemAccount_RemoveReduceBetLimit
 	@CustomerList	VARCHAR(MAX),
 	@RoleId			TINYINT,
 	@MaxBet			MONEY,
