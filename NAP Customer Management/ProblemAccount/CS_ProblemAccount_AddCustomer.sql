@@ -100,7 +100,7 @@ BEGIN
 	
 		IF @@ROWCOUNT = 0 BREAK
 
-		EXEC dbo.CS_DynamicCustomerInfo_02
+		EXEC dbo.CS_DynamicCustSetting_01
 			@CustId = @CustId,
 			@RoleId = @RoleId,
 			@ReasonId = @ReasonId,

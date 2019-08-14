@@ -65,7 +65,7 @@ BEGIN
 
 		IF @RoleId <> 1
 		BEGIN
-			EXEC dbo.CS_DynamicCustomerInfo_02
+			EXEC dbo.CS_DynamicCustSetting_01
 				@CustId = @CustId,
 				@RoleId = @RoleId,
 				@Action = 'ReduceBetLimit'

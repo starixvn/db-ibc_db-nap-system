@@ -5,6 +5,7 @@ ALTER PROCEDURE CS_ProblemAccount_RemoveReduceBetLimit
 	@RoleId						TINYINT,
 	@IsExcludeAbnomalBetMember	BIT,
 	@IsExcludeDirectMarkedCust	BIT,
+	@IsConfirmed				BIT,
 
 	@UserID						INT,
 	@IP							NVARCHAR(50),
@@ -25,8 +26,9 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-	DECLARE	@startRun DATETIME, @endRun	DATETIME, @duration	INT
-	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @IsReduce BIT, @Old_MaxBet MONEY, @Old_MaxPerEvent MONEY
+	DECLARE	@startRun DATETIME, @endRun	DATETIME, @duration	INT, @ActionId INT
+	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX),
+			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, IsReduce BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 
 	SET	@startRun = GETDATE()
@@ -43,6 +45,26 @@ BEGIN
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
+	IF @IsConfirmed = 0
+	BEGIN
+		SELECT @WarningList= STUFF((SELECT ','+ t.Username
+									FROM @tmpCust t
+									WHERE t.IsReduce = 0
+									FOR XML PATH('')),1,1,'')
+
+		IF ISNULL(@WarningList,'') <> '' 
+		BEGIN
+		   SELECT @ErrCode = 101, @ErrMsg = @WarningList
+		   RETURN
+		END
+    END
+	ELSE
+	BEGIN
+		DELETE t 
+		FROM @tmpCust t
+		WHERE IsReduce = 0
+	END
+
 	UPDATE pa 
 	SET pa.MaxBet = NULL,
 		pa.MaxPerEvent = NULL,
@@ -58,7 +80,6 @@ BEGIN
 		SET isfinished = 1,
 			@CustId = custid,
 			@UserName = Username,
-			@IsReduce = IsReduce,
 			@Old_MaxBet = MaxBet,
 			@Old_MaxPerEvent = MaxPerEvent
 		WHERE isfinished = 0
@@ -67,61 +88,62 @@ BEGIN
 
 		IF @RoleId <> 1
 		BEGIN
-			EXEC dbo.CS_DynamicCustomerInfo_02
+			EXEC dbo.CS_DynamicCustSetting_01
 				@CustId = @CustId,
 				@RoleId = @RoleId,
-				@Action = 'RemoveReduceBetLimit'
+				@Action = 'RemoveReduceBetLimit',
+				@IsExcludeAbnomalBetMember = @IsExcludeAbnomalBetMember,
+				@IsExcludeDirectMarkedCust = @IsExcludeDirectMarkedCust,
+				@SuccessDownlineList = @SuccessDownlineList OUTPUT
 		END
 
 		-- Write log
 		DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
-		IF @IsReduce = 1
+		IF @RoleId = 1
 		BEGIN
+			SELECT @ActionId = 31604
 			SELECT  @LogDataOld = '<R'
-							+ ' Username="' + @UserName + '"'
-							+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
-							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-							+ ' />'
-		END
+								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
+								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+								+ ' />'
 
-		SELECT  @LogDataNew = '<R'
-							+ ' Username="' + @UserName + '"'
-							+ ' MPM="NULL"'
-							+ ' Max="NULL"'
-							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-							+ ' />'
-	
-		IF @RoleId = 4
-		BEGIN
-			SELECT @DownlineList = STUFF((SELECT ','+ CAST(c.CustID AS VARCHAR(20))
-										FROM dbo.custInfo c
-										WHERE c.srecommend = @CustId AND c.custid <> @CustId
-										FOR XML PATH('')),1,1,'')
+			SELECT  @LogDataNew = '<R'
+								+ ' MPM="NULL"'
+								+ ' Max="NULL"'
+								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+								+ ' />'		
 		END
-		ELSE IF @RoleId = 3
+		ELSE
 		BEGIN
-			SELECT @DownlineList = STUFF((SELECT ','+ CAST(c.CustID AS VARCHAR(20))
-										FROM dbo.custInfo c
-										WHERE c.mrecommend = @CustId AND c.custid <> @CustId
-										FOR XML PATH('')),1,1,'')
-		END
-		ELSE IF @RoleId = 2
-		BEGIN
-			SELECT @DownlineList = STUFF((SELECT ','+ CAST(c.CustID AS VARCHAR(20))
-										FROM dbo.custInfo c
-										WHERE c.recommend = @CustId AND c.custid <> @CustId
-										FOR XML PATH('')),1,1,'')
+			SELECT @ActionId = 31603
+			SELECT  @LogDataOld = '<R'
+								+ ' Username="' + @UserName + '"'								
+								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
+								+ ' ExcludeAbnomalBet="' + CAST (@IsExcludeAbnomalBetMember AS VARCHAR(1)) + '"'
+								+ ' ExcludeDirectMarked="' + CAST (@IsExcludeDirectMarkedCust AS VARCHAR(1)) + '"'
+								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+								+ ' />'
+
+			SELECT  @LogDataNew = '<R'
+								+ ' Username="' + @UserName + '"'								
+								+ ' MPM="NULL"'
+								+ ' Max="NULL"'
+								+ ' ExcludeAbnomalBet="' + CAST (@IsExcludeAbnomalBetMember AS VARCHAR(1)) + '"'
+								+ ' ExcludeDirectMarked="' + CAST (@IsExcludeDirectMarkedCust AS VARCHAR(1)) + '"'
+								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+								+ ' />'		
 		END
 
 		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
-			@ActionId			= 31602,
+			@ActionId			= @ActionId,
 			@TrackingValue		= @LogDataNew,
 			@TrackingValue2		= @LogDataOld,
 			@Duration			= @Duration,
-			@AffectedDownlines	= @DownlineList
+			@AffectedDownlines	= @SuccessDownlineList
 	END	
 END
 GO
