@@ -27,7 +27,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @endRun	DATETIME, @duration	INT, @ActionId INT
-	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX),
+	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX), @AbnomalBetMember VARCHAR(MAX), @DirectMarkedCust VARCHAR(MAX),
 			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, IsReduce BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 
@@ -86,14 +86,23 @@ BEGIN
 	
 		IF @@ROWCOUNT = 0 BREAK	
 
+		IF @RoleId = 4
+		BEGIN
+			SELECT @AbnomalBetMember = STUFF((SELECT ','+ CAST(ci.custid AS VARCHAR(20))
+												FROM dbo.custInfo ci WITH (NOLOCK)                                                    
+													INNER JOIN DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction tv ON pa.CustId = ci.CustId
+												WHERE ci.srecommend = @CustId AND ci.roleid = 1
+												FOR XML PATH('')),1,1,'')
+		END
+
 		IF @RoleId <> 1
 		BEGIN
 			EXEC dbo.CS_DynamicCustSetting_01
 				@CustId = @CustId,
 				@RoleId = @RoleId,
 				@Action = 'RemoveReduceBetLimit',
-				@IsExcludeAbnomalBetMember = @IsExcludeAbnomalBetMember,
-				@IsExcludeDirectMarkedCust = @IsExcludeDirectMarkedCust,
+				@AbnomalBetMember = @AbnomalBetMember,
+				@DirectMarkedCust = @DirectMarkedCust,
 				@SuccessDownlineList = @SuccessDownlineList OUTPUT
 		END
 
