@@ -7,7 +7,7 @@ ALTER PROCEDURE CS_ProblemAccount_AddCustomer
 	@Comment		NVARCHAR(300) = '',
 
 	@UserID			INT,
-	@IP				NVARCHAR(50),
+	@IP				VARCHAR(15),
 	@ErrCode		INT = 0 OUTPUT,
 	@ErrMsg			NVARCHAR(MAX) = '' OUTPUT,
 	@SuccessList	VARCHAR(MAX) = '' OUTPUT, 
@@ -27,7 +27,7 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-	DECLARE	@startRun DATETIME, @endRun	DATETIME, @duration	INT
+	DECLARE	@startRun DATETIME, @duration INT
 	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName NVARCHAR(50), @ReasonName VARCHAR(100)
 	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpList TABLE (Username NVARCHAR(50))

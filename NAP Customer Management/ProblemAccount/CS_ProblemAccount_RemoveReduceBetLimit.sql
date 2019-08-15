@@ -8,7 +8,7 @@ ALTER PROCEDURE CS_ProblemAccount_RemoveReduceBetLimit
 	@IsConfirmed				BIT,
 
 	@UserID						INT,
-	@IP							NVARCHAR(50),
+	@IP							VARCHAR(15),
 	@ErrCode					INT = 0 OUTPUT,
 	@ErrMsg						NVARCHAR(MAX) = '' OUTPUT
 AS
@@ -26,7 +26,7 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-	DECLARE	@startRun DATETIME, @endRun	DATETIME, @duration	INT, @ActionId INT
+	DECLARE	@startRun DATETIME, @duration INT, @ActionId INT
 	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX), @AbnomalBetMember VARCHAR(MAX), @DirectMarkedCust VARCHAR(MAX),
 			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, IsReduce BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
