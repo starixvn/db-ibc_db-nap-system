@@ -86,14 +86,14 @@ BEGIN
 	
 		IF @@ROWCOUNT = 0 BREAK	
 
-		IF @RoleId = 4
-		BEGIN
-			SELECT @AbnomalBetMember = STUFF((SELECT ','+ CAST(ci.custid AS VARCHAR(20))
-												FROM dbo.custInfo ci WITH (NOLOCK)                                                    
-													INNER JOIN DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction tv ON pa.CustId = ci.CustId
-												WHERE ci.srecommend = @CustId AND ci.roleid = 1
-												FOR XML PATH('')),1,1,'')
-		END
+		--IF @RoleId = 4
+		--BEGIN
+		--	--SELECT @AbnomalBetMember = STUFF((SELECT ','+ CAST(ci.custid AS VARCHAR(20))
+		--	--									FROM dbo.custInfo ci WITH (NOLOCK)                                                    
+		--	--										INNER JOIN DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction tv ON pa.CustId = ci.CustId
+		--	--									WHERE ci.srecommend = @CustId AND ci.roleid = 1
+		--	--									FOR XML PATH('')),1,1,'')
+		--END
 
 		IF @RoleId <> 1
 		BEGIN
