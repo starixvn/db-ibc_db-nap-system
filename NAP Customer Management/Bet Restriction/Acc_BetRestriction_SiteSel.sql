@@ -1,5 +1,5 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,bodbDownlineNetView" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Acc_CustSetting_BetRestrictionSiteSel] 
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Acc_BetRestriction_SiteSel] 
 	 @PageSize		INT = 50
 	,@PageIndex		INT = 1
 	,@TotalPages	INT = 1 OUTPUT
@@ -15,31 +15,29 @@ AS
 	Example: 
 	declare @TotalPages	INT 
 		,@TotalItems	INT 
-	EXEC Acc_CustSetting_BetRestrictionSiteSel 
+	EXEC Acc_BetRestriction_SiteSel 
 		@PageSize	= 10,
 		@PageIndex	= 1,
 		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
-		@IsTest = 0
+		@IsTest = 1
 	select @TotalItems,@TotalPages
 	
 	
 	*/
 BEGIN
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
-	DECLARE @IsShowData BIT = 0
-
-	IF EXISTS(	SELECT 1
-				FROM BetRestriction_Setting WITH (NOLOCK)
-				WHERE SportType = 1 AND SettingType = 2
-				  AND SettingStatus <=  @IsTest )
-	BEGIN
-		SET @IsShowData = 1
-	END
-
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
+	SELECT DISTINCT SportType,
+		   IsShowData = CASE WHEN BackEndStatus <=  @IsTest THEN 1 ELSE 0 END
+	INTO  #Setting
+	FROM  BetRestriction_Setting WITH (NOLOCK)
+	WHERE RestrictionLevel = 'BetRestriction_Site'
+
 	SELECT s.[site],
+		   bs.SiteID,
+		   bs.SportType,
 		   bs.LiveBetAccept, 
 		   bs.SeizeBetTicket, 
 		   bs.FollowAccount AS FollowAccountID,
@@ -47,9 +45,9 @@ BEGIN
 		   ROW_NUMBER() OVER (ORDER BY [Site]) AS RowNumber
 	INTO #BetRestriction_Site
 	FROM BetRestriction_Site bs WITH(NOLOCK)
-		 JOIN [Site] s WITH(NOLOCK) ON bs.SiteID = s.siteid
+		 INNER JOIN [Site] s WITH(NOLOCK) ON bs.SiteID = s.siteid
 		 LEFT JOIN CustInfo ci WITH(NOLOCK) ON ci.custid = bs.FollowAccount
-	WHERE @IsShowData = 1
+		 INNER JOIN #Setting st WITH(NOLOCK) ON bs.SportType = st.SportType AND st.IsShowData = 1
 	
 	SELECT @TotalItems = COUNT(1),@TotalPages=@TotalItems/@PageSize + CASE WHEN @TotalItems%@PageSize > 0 THEN 1 ELSE 0 END  
 	FROM #BetRestriction_Site

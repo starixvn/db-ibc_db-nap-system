@@ -1,9 +1,9 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet,bodbDownlineNet,bodbExtAccNet,bodbDownlineNetView" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Acc_CustSetting_BetRestrictionCustomerSel] (
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[Acc_BetRestriction_CustomerSel] (
 	 @Username		NVARCHAR(100) = NULL
 	,@RoleID		TINYINT = NULL
 	,@Status		VARCHAR(10) = NULL
-	,@Site			NVARCHAR(100) = NULL
+	,@SiteID		INT = NULL
 	,@CurrencyID	TINYINT = NULL
 	,@PageSize		INT = 50
 	,@PageIndex		INT = 1
@@ -23,37 +23,35 @@ AS
 		@Status = : All, Active, View Only, Suspended, Inactive
 
 	Example: 
-	declare @TotalPages	INT 
+	DECLARE @TotalPages	INT 
 		,@TotalItems	INT 
-	EXEC Acc_CustSetting_BetRestrictionCustomerSel 
+	EXEC Acc_BetRestriction_CustomerSel 
 		--@Username  = 'SuperTest1',
 		--@RoleID    = 4,
-		--@Status	= 'Active',
-		--@Site		= 'CN88',
-		--@CurrencyID = 20,
-		@PageSize	= 10,
+		@Status	= 'All',
+		@SiteID		= 0,
+		@CurrencyID = 0,
+		@PageSize	= 50,
 		@PageIndex	= 1,
 		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
 		@IsTest= 1
-	select @TotalItems,@TotalPages
+	SELECT @TotalItems,@TotalPages
 	
 	*/
 BEGIN
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
-	DECLARE @IsShowData BIT = 0
-
-	IF EXISTS(	SELECT 1
-				FROM BetRestriction_Setting WITH (NOLOCK)
-				WHERE SportType = 1 AND SettingType = 1
-				  AND SettingStatus <=  @IsTest )
-	BEGIN
-		SET @IsShowData = 1
-	END
 
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
+	SELECT DISTINCT SportType,
+		   IsShowData = CASE WHEN BackEndStatus <=  @IsTest THEN 1 ELSE 0 END
+	INTO  #Setting
+	FROM  BetRestriction_Setting WITH (NOLOCK)
+	WHERE RestrictionLevel = 'BetRestriction_Customer'
+
 	SELECT bc.CustID,
+		   bc.SportType,
 		   headname.username AS Headline,
 		   ci.username as Account, 
 		   ci.roleid,
@@ -73,6 +71,7 @@ BEGIN
 				ELSE 'N/A'
 		   END AS [Status],
 		   COALESCE(NULLIF(c.[site],''),agent.site,'') AS Site,
+		   ISNULL(s.siteid,AgentSite.siteid) as SiteID,
 		   bc.LiveBetAccept, 
 		   bc.SeizeBetTicket, 
 		   e.Currency,
@@ -83,9 +82,9 @@ BEGIN
 		   rm.username AS [FollowAccount]
 	INTO #BetRestriction_Customer
 	FROM BetRestriction_Customer bc WITH(NOLOCK)
-		 JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
-		 JOIN Customer c WITH(NOLOCK) ON bc.custid = c.custid
-		 JOIN exchange e WITH(NOLOCK) ON ci.currency = e.exchangeid
+		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
+		 INNER JOIN Customer c WITH(NOLOCK) ON bc.custid = c.custid
+		 INNER JOIN exchange e WITH(NOLOCK) ON ci.currency = e.exchangeid
 		 LEFT JOIN custAccount ca WITH(NOLOCK) ON bc.CustID = ca.CustID
 		 LEFT JOIN custAccount head WITH(NOLOCK) ON ca.groupID = head.groupID AND head.IsGroupHeadLine = 1
 		 LEFT JOIN custInfo headname WITH(NOLOCK) ON headname.custid = head.custid
@@ -95,15 +94,15 @@ BEGIN
 		 LEFT JOIN Site AgentSite WITH(NOLOCK) ON AgentSite.site = agent.site
 		 OUTER APPLY dbo.f_CS_GetCustomerStatus (bc.custid) cn88Stat
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.FollowAccount
+		 INNER JOIN #Setting st WITH(NOLOCK) ON bc.SportType = st.SportType AND st.IsShowData = 1
 	WHERE ci.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE ci.username END
 		  AND ci.currency = CASE WHEN ISNULL(@CurrencyID,0) <> 0 THEN @CurrencyID ELSE ci.currency END
 		  AND ci.roleid = CASE WHEN @RoleID IS NOT NULL THEN @RoleID ELSE ci.roleid END
-		  AND @IsShowData = 1
 	
 	SELECT *, ROW_NUMBER() OVER (ORDER BY Account,Status) AS RowNumber
 	INTO #BetRestriction_Customer2
 	FROM #BetRestriction_Customer tmp
-	WHERE tmp.Site = CASE WHEN ISNULL(@Site,'All') <> 'All' THEN @Site ELSE tmp.Site END 
+	WHERE tmp.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE tmp.SiteID END 
 		AND tmp.Status = CASE WHEN ISNULL(@Status,'All') <> 'All' THEN @Status ELSE tmp.Status END 
 	
 	SELECT @TotalItems = COUNT(1),@TotalPages=@TotalItems/@PageSize + CASE WHEN @TotalItems%@PageSize > 0 THEN 1 ELSE 0 END  
