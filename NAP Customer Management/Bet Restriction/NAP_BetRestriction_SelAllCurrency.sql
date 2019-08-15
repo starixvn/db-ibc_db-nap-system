@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Acc_BetRestriction_SelAllSite]
+ALTER PROCEDURE [dbo].[NAP_BetRestriction_SelAllCurrency]
 AS
 /*
 	Created: 20190815@Eden
@@ -8,16 +8,16 @@ AS
 	Original:
 
 	Revisions:  
-	- 20190815@Eden: Create New SP 
+	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 
 	Example: 
-	EXEC Acc_BetRestriction_SelAllSite 
+	EXEC NAP_BetRestriction_SelAllCurrency 
 
 	
 	*/
 BEGIN
-		SELECT SiteID,Site
-		FROM dbo.[Site] WITH(NOLOCK)
+		SELECT exchangeid,currency
+		FROM dbo.exchange WITH(NOLOCK)
 END
 GO
 

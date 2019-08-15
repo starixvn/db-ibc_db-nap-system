@@ -10,7 +10,7 @@ AS
 	Original:
 
 	Revisions:  
-	- 20190815@Eden: Create New SP 
+	- 20190815@Eden: Create New SP [RedmineID: #117727]
 
 	Example: EXEC Dot_Member_BetRestrictionInfoSel @CustID = 35684622
 	

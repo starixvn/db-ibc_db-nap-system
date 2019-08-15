@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[Acc_BetRestriction_CustomerSel] (
+ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSel] (
 	 @Username		NVARCHAR(100) = NULL
 	,@RoleID		TINYINT = NULL
 	,@Status		VARCHAR(10) = NULL
@@ -19,7 +19,7 @@ AS
 	Original:
 
 	Revisions:  
-	- 20190815@Eden: Create New SP 
+	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
@@ -28,7 +28,7 @@ AS
 	Example: 
 	DECLARE @TotalPages	INT 
 		,@TotalItems	INT 
-	EXEC Acc_BetRestriction_CustomerSel 
+	EXEC NAP_BetRestriction_CustomerSel 
 		--@Username  = 'SuperTest1',
 		--@RoleID    = 4,
 		@Status	= 'All',
