@@ -4,10 +4,13 @@ ALTER PROCEDURE [dbo].[Dot_Member_BetRestrictionInfoSel]
 	 ,@SportType    SMALLINT = 1
 AS
 /*
-	Created: 20190807@Eden
+	Created: 20190815@Eden
 	Task : Get Bet Restriction info by CustID for MemberSite
 	DB: DBCUST/CustDB
 	Original:
+
+	Revisions:  
+	- 20190815@Eden: Create New SP 
 
 	Example: EXEC Dot_Member_BetRestrictionInfoSel @CustID = 35684622
 	

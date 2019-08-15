@@ -7,6 +7,9 @@ AS
 	DB: DBCUST/CustDB
 	Original:
 
+	Revisions:  
+	- 20190815@Eden: Create New SP 
+
 	Example: 
 	EXEC Acc_BetRestriction_SelAllCurrency 
 

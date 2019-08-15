@@ -13,10 +13,13 @@ ALTER PROCEDURE [dbo].[Acc_BetRestriction_CustomerSel] (
 )
 AS
 /*
-	Created: 20190807@Eden
+	Created: 20190815@Eden
 	Task : Get Bet Restriction Customer 
 	DB: DBCUST/CustDB
 	Original:
+
+	Revisions:  
+	- 20190815@Eden: Create New SP 
 
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super

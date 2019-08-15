@@ -7,10 +7,13 @@ ALTER PROCEDURE [dbo].[Acc_BetRestriction_SiteSel]
 	,@IsTest		BIT = 0
 AS
 /*
-	Created: 20190807@Eden
+	Created: 20190815@Eden
 	Task : Get Bet Restriction Site 
 	DB: DBCUST/CustDB
 	Original:
+
+	Revisions:  
+	- 20190815@Eden: Create New SP 
 
 	Example: 
 	declare @TotalPages	INT 
