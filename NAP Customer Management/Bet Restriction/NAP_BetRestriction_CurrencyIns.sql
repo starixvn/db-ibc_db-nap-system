@@ -41,7 +41,7 @@ AS
 
 	*/
 BEGIN
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31707
 	DECLARE @FollowAccountID INT
 
 	SET @ErrCode = 0

@@ -42,7 +42,7 @@ AS
 
 	*/
 BEGIN	
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31702
 	DECLARE @site VARCHAR(10)
 	DECLARE @FollowAccountID INT
 	DECLARE @LiveBetAccept_Old  SMALLINT, 

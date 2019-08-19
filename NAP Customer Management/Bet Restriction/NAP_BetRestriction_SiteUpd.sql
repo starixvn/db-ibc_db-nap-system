@@ -38,7 +38,7 @@ AS
 	
 	*/
 BEGIN	
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31705
 	DECLARE @FollowAccountID INT
 	DECLARE @LiveBetAccept_Old  SMALLINT, 
 			@SeizeBetTicket_Old TINYINT, 
