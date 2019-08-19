@@ -29,13 +29,13 @@ AS
 	DECLARE @TotalPages	INT 
 		,@TotalItems	INT 
 	EXEC NAP_BetRestriction_CustomerSel 
-		--@Username  = 'SuperTest1',
+		--@Username  = 'supertest01',
 		--@RoleID    = 4,
 		@Status	= 'All',
 		@SiteID		= 0,
 		@CurrencyID = 0,
 		@PageSize	= 50,
-		@PageIndex	= 7,
+		@PageIndex	= 1,
 		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
 		@IsTest= 1

@@ -12,15 +12,16 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
 
-	Example: EXEC NAP_BetRestriction_CheckExistLine @CustID = 1752427, @SportType = 1
+	Example: EXEC NAP_BetRestriction_CheckExistLine @CustID = 132672, @SportType = 1
 		
 	*/
 BEGIN
 	SELECT ci.CustID,
-		   up.CustID as ExistingUpline,
+		   CAST(CASE WHEN up.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
 		   upCust.username AS ExistingUplineUserName,
-		   --up.SeizeBetTicket AS Upline_SeizeBetTicket,
-		   ISNULL(down.IsDownlineExists,0) AS IsDownlineExists
+		   up.SeizeBetTicket AS Upline_SeizeBetTicket,
+		   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists,
+		   down.Min_Downline_SeizeBetTicket
 	FROM custInfo ci WITH(NOLOCK) 
 		 LEFT JOIN BetRestriction_Customer Up WITH(NOLOCK) 
 			ON up.CustID = CASE WHEN ci.roleid = 1 THEN ci.recommend
@@ -29,7 +30,7 @@ BEGIN
 						    END
 			AND up.SportType = @SportType
 		 LEFT JOIN custInfo upCust WITH(NOLOCK) ON up.CustID = upCust.custid
-		 OUTER APPLY (	SELECT TOP 1 1 AS IsDownlineExists 
+		 OUTER APPLY (	SELECT MIN(b.SeizeBetTicket) AS Min_Downline_SeizeBetTicket  , MIN(b.CustID) AS ExistingDownLine
 						FROM BetRestriction_Customer b WITH(NOLOCK) 
 							JOIN custInfo ci1 WITH(NOLOCK) ON b.CustID = ci1.custid
 						WHERE ci.CustID = CASE WHEN ci.roleid = 4 THEN ci1.srecommend

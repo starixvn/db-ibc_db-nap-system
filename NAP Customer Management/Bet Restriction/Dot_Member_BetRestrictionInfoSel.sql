@@ -17,13 +17,18 @@ AS
 	
 	*/
 BEGIN 
-	DECLARE @siteID		INT, 
-			@site		NVARCHAR(50), 
-			@currency	INT, 
-			@isLicensee BIT, 
-			@recommend	INT, 
-			@mrecommend INT, 
-			@srecommend INT
+	DECLARE @siteID			INT, 
+			@site			NVARCHAR(50), 
+			@currency		INT, 
+			@isLicensee		BIT, 
+			@recommend		INT, 
+			@mrecommend		INT, 
+			@srecommend		INT,
+			@LiveBetAccept	SMALLINT,
+			@SeizeBetTicket TINYINT,
+			@MaxBet			MONEY,
+			@MaxPerMatch	MONEY,
+			@FollowAccount	INT
 	
 	SELECT @CustID = c.CustID, 
 		   @siteID = s.siteID, 
@@ -38,18 +43,37 @@ BEGIN
 		  INNER JOIN Site s  WITH (NOLOCK) ON agent.site = s.site
 	WHERE c.CustID = @CustID	
 	
-	SELECT ci.CustID,@SportType AS SportType,
-		   COALESCE(bc.LiveBetAccept,agt.LiveBetAccept,mst.LiveBetAccept,spt.LiveBetAccept) AS LiveBetAccept,
-		   COALESCE(bc.SeizeBetTicket,agt.SeizeBetTicket,mst.SeizeBetTicket,spt.SeizeBetTicket) AS SeizeBetTicket,
-		   COALESCE(bc.FollowAccount,agt.FollowAccount,mst.FollowAccount,spt.FollowAccount) AS FollowAccount,
-		   COALESCE(bc.MaxBet,agt.MaxBet,mst.MaxBet,spt.MaxBet) AS MaxBet, 
-		   COALESCE(bc.MaxPerMatch,agt.MaxPerMatch,mst.MaxPerMatch,spt.MaxPerMatch) AS MaxPerMatch
+	SELECT @LiveBetAccept	= (SELECT MAX(LiveBetAccept) FROM (VALUES (bc.LiveBetAccept), (agt.LiveBetAccept), (mst.LiveBetAccept), (spt.LiveBetAccept)) AS value(LiveBetAccept)) ,
+		   @SeizeBetTicket	= (SELECT MAX(SeizeBetTicket) FROM (VALUES (bc.SeizeBetTicket), (agt.SeizeBetTicket), (mst.SeizeBetTicket), (spt.SeizeBetTicket)) AS value(SeizeBetTicket)),
+		   @MaxBet			= (SELECT MIN(MaxBet) FROM (VALUES (bc.MaxBet), (agt.MaxBet), (mst.MaxBet), (spt.MaxBet)) AS value(MaxBet)),
+		   @MaxPerMatch		= (SELECT MIN(MaxPerMatch) FROM (VALUES (bc.MaxPerMatch), (agt.MaxPerMatch), (mst.MaxPerMatch), (spt.MaxPerMatch)) AS value(MaxPerMatch))
 	FROM (VALUES (@CustID)) AS ci(CustID)
 		LEFT JOIN BetRestriction_Customer bc   WITH (NOLOCK) ON bc.CustID  = @custid AND bc.SportType = @SportType 
 		LEFT JOIN BetRestriction_Customer Agt  WITH (NOLOCK) ON Agt.CustID = @recommend AND agt.SportType = @SportType 
 		LEFT JOIN BetRestriction_Customer Mst  WITH (NOLOCK) ON Mst.CustID = @mrecommend  AND mst.SportType = @SportType 
 		LEFT JOIN BetRestriction_Customer Spt  WITH (NOLOCK) ON Spt.CustID = @srecommend  AND spt.SportType = @SportType 
 
+	SELECT @FollowAccount = CASE WHEN bc.SeizeBetTicket = @SeizeBetTicket  AND @FollowAccount IS NULL THEN bc.FollowAccount 
+								 WHEN agt.SeizeBetTicket = @SeizeBetTicket AND @FollowAccount IS NULL THEN agt.FollowAccount 
+								 WHEN Mst.SeizeBetTicket = @SeizeBetTicket AND @FollowAccount IS NULL THEN Mst.FollowAccount 
+								 WHEN Spt.SeizeBetTicket = @SeizeBetTicket AND @FollowAccount IS NULL THEN bc.FollowAccount 
+							END
+	FROM (VALUES (@CustID)) AS ci(CustID)
+		LEFT JOIN BetRestriction_Customer bc   WITH (NOLOCK) ON bc.CustID  = @custid AND bc.SportType = @SportType 
+		LEFT JOIN BetRestriction_Customer Agt  WITH (NOLOCK) ON Agt.CustID = @recommend AND agt.SportType = @SportType 
+		LEFT JOIN BetRestriction_Customer Mst  WITH (NOLOCK) ON Mst.CustID = @mrecommend  AND mst.SportType = @SportType 
+		LEFT JOIN BetRestriction_Customer Spt  WITH (NOLOCK) ON Spt.CustID = @srecommend  AND spt.SportType = @SportType  
+	
+	--> For SMA Line
+	SELECT	 @CustID			AS CustID
+			,@SportType			AS SportType
+			,@LiveBetAccept		AS LiveBetAccept	
+			,@SeizeBetTicket	AS SeizeBetTicket
+			,@MaxBet			AS MaxBet		
+			,@MaxPerMatch		AS MaxPerMatch	
+			,@FollowAccount     AS FollowAccount
+	
+	--> For Site
 	SELECT @CustID AS CustID,
 		   @SportType AS  SportType,
 		   @Site Site,
@@ -60,6 +84,7 @@ BEGIN
 	FROM   BetRestriction_Site bs WITH (NOLOCK) 
 	WHERE  bs.SiteID = @SiteID AND bs.SportType = @SportType
 
+	--> For Currency
 	SELECT @CustID AS CustID,
 		   @SportType AS  SportType,
 		   bcu.ExchangeID,
