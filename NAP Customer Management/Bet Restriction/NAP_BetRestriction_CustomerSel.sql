@@ -38,7 +38,7 @@ AS
 		@PageIndex	= 1,
 		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
-		@IsTest= 1
+		@IsTest= 0
 	SELECT @TotalItems,@TotalPages
 	
 	*/
@@ -47,11 +47,9 @@ BEGIN
 
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
-	SELECT DISTINCT SportType,
-		   IsShowData = CASE WHEN BackEndStatus <=  @IsTest THEN 1 ELSE 0 END
+	SELECT SportType,IsShowData 
 	INTO  #Setting
-	FROM  BetRestriction_Setting WITH (NOLOCK)
-	WHERE RestrictionLevel = 'BetRestriction_Customer'
+	FROM  dbo.f_BetRestrictionSettingSel('BetRestriction_Customer',@IsTest)
 
 	SELECT bc.CustID,
 		   bc.SportType,

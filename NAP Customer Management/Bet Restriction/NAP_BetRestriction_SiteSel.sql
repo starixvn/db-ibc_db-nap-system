@@ -32,11 +32,9 @@ BEGIN
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1
 
-	SELECT DISTINCT SportType,
-		   IsShowData = CASE WHEN BackEndStatus <=  @IsTest THEN 1 ELSE 0 END
+	SELECT SportType,IsShowData 
 	INTO  #Setting
-	FROM  BetRestriction_Setting WITH (NOLOCK)
-	WHERE RestrictionLevel = 'BetRestriction_Site'
+	FROM  dbo.f_BetRestrictionSettingSel('BetRestriction_Site',@IsTest)
 
 	SELECT s.[site],
 		   bs.SiteID,
