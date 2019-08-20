@@ -2,7 +2,6 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CurrencySel] 
 	 @PageSize		INT = 50
 	,@PageIndex		INT = 1
-	,@TotalPages	INT = 1 OUTPUT
 	,@TotalItems	INT = 0 OUTPUT
 	,@IsTest		BIT = 0
 AS
@@ -21,10 +20,9 @@ AS
 	EXEC NAP_BetRestriction_CurrencySel 
 		@PageSize	= 10,
 		@PageIndex	= 1,
-		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
 		@IsTest = 0
-	select @TotalItems,@TotalPages
+	select @TotalItems
 	*/
 BEGIN
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
@@ -50,7 +48,7 @@ BEGIN
 		 LEFT JOIN CustInfo ci WITH(NOLOCK) ON ci.custid = bc.FollowAccount
 		 INNER JOIN #Setting st WITH(NOLOCK) ON bc.SportType = st.SportType AND st.IsShowData = 1
 
-	SELECT @TotalItems = COUNT(1),@TotalPages=@TotalItems/@PageSize + CASE WHEN @TotalItems%@PageSize > 0 THEN 1 ELSE 0 END  
+	SELECT @TotalItems = COUNT(1)
 	FROM #BetRestriction_Currency
 
 	SELECT * 

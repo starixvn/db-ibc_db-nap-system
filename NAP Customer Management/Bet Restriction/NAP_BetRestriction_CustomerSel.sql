@@ -7,7 +7,6 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSel] (
 	,@CurrencyID	TINYINT = NULL
 	,@PageSize		INT = 50
 	,@PageIndex		INT = 1
-	,@TotalPages	INT = 1 OUTPUT
 	,@TotalItems	INT = 0 OUTPUT
 	,@IsTest		BIT = 0
 )
@@ -26,8 +25,7 @@ AS
 		@Status = : All, Active, View Only, Suspended, Inactive
 
 	Example: 
-	DECLARE @TotalPages	INT 
-		,@TotalItems	INT 
+	DECLARE @TotalItems	INT 
 	EXEC NAP_BetRestriction_CustomerSel 
 		--@Username  = 'supertest01',
 		--@RoleID    = 4,
@@ -36,10 +34,9 @@ AS
 		@CurrencyID = 0,
 		@PageSize	= 50,
 		@PageIndex	= 1,
-		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
 		@IsTest= 0
-	SELECT @TotalItems,@TotalPages
+	SELECT @TotalItems
 	
 	*/
 BEGIN
@@ -106,7 +103,7 @@ BEGIN
 	WHERE tmp.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE tmp.SiteID END 
 		AND tmp.Status = CASE WHEN ISNULL(@Status,'All') <> 'All' THEN @Status ELSE tmp.Status END 
 	
-	SELECT @TotalItems = COUNT(1),@TotalPages=@TotalItems/@PageSize + CASE WHEN @TotalItems%@PageSize > 0 THEN 1 ELSE 0 END  
+	SELECT @TotalItems = COUNT(1) 
 	FROM #BetRestriction_Customer2
 
 	SELECT * 

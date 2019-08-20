@@ -2,7 +2,6 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteSel] 
 	 @PageSize		INT = 50
 	,@PageIndex		INT = 1
-	,@TotalPages	INT = 1 OUTPUT
 	,@TotalItems	INT = 0 OUTPUT
 	,@IsTest		BIT = 0
 AS
@@ -16,15 +15,13 @@ AS
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 
 	Example: 
-	declare @TotalPages	INT 
-		,@TotalItems	INT 
+	DECLARE @TotalItems	INT 
 	EXEC NAP_BetRestriction_SiteSel 
 		@PageSize	= 10,
 		@PageIndex	= 1,
-		@TotalPages = @TotalPages OUTPUT,
 		@TotalItems = @TotalItems OUTPUT,
 		@IsTest = 1
-	select @TotalItems,@TotalPages
+	SELECT @TotalItems
 	
 	
 	*/
@@ -50,7 +47,7 @@ BEGIN
 		 LEFT JOIN CustInfo ci WITH(NOLOCK) ON ci.custid = bs.FollowAccount
 		 INNER JOIN #Setting st WITH(NOLOCK) ON bs.SportType = st.SportType AND st.IsShowData = 1
 	
-	SELECT @TotalItems = COUNT(1),@TotalPages=@TotalItems/@PageSize + CASE WHEN @TotalItems%@PageSize > 0 THEN 1 ELSE 0 END  
+	SELECT @TotalItems = COUNT(1)  
 	FROM #BetRestriction_Site
 
 	SELECT * 
