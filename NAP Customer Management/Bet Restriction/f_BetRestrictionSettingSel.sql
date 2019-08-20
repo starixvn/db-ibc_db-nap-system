@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="" viewers="" isFunction="1"></info>*/
+/*<info serverAlias="DBACC-bodb02" selecters="bodbAdminNet" executers="" viewers="" isFunction="1"></info>*/
 ALTER FUNCTION [dbo].[f_BetRestrictionSettingSel](
 	@RestrictionLevel VARCHAR(30),
 	@IsTest BIT
