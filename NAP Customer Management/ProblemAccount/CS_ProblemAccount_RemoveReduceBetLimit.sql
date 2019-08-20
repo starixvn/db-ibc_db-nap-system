@@ -3,8 +3,7 @@
 ALTER PROCEDURE CS_ProblemAccount_RemoveReduceBetLimit
 	@CustomerList				VARCHAR(MAX),
 	@RoleId						TINYINT,
-	@IsExcludeAbnomalBetMember	BIT,
-	@IsExcludeDirectMarkedCust	BIT,
+	@IsAllDownline				BIT,
 	@IsConfirmed				BIT,
 
 	@UserID						INT,
