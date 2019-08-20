@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSel] (
-	 @Username		NVARCHAR(100) = NULL
+	 @Username		NVARCHAR(50) = NULL
 	,@RoleID		TINYINT = NULL
 	,@Status		VARCHAR(10) = NULL
 	,@SiteID		INT = NULL

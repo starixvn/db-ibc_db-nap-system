@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CheckExistLine] 
-	  @CustID		INT = NULL
+	  @Username		NVARCHAR(50) 
 	 ,@SportType    TINYINT = 1
 AS
 /*
@@ -12,7 +12,7 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
 
-	Example: EXEC NAP_BetRestriction_CheckExistLine @CustID = 132672, @SportType = 1
+	Example: EXEC NAP_BetRestriction_CheckExistLine @Username = 'master1', @SportType = 1
 		
 	*/
 BEGIN
@@ -39,7 +39,7 @@ BEGIN
 										END
 							AND b.SportType = @SportType
 					 ) down
-	WHERE ci.CustID = @CustID 
+	WHERE ci.username = @Username 
 		  
 END
 GO
