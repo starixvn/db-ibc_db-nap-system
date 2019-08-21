@@ -137,7 +137,7 @@ BEGIN
 		GROUP BY c.CustId, tv.SubIssueTypeId	
 
 		UPDATE c 
-		SET c.AbnormalBetNumber = SUM(t.AbnormalBetNumber)
+		SET c.AbnormalBetNumber = t.AbnormalBetNumber
 		FROM #CustList c
 			INNER JOIN (SELECT custid, SUM(AbnormalBetNumber) AS AbnormalBetNumber
 						FROM #CustDetailList 
