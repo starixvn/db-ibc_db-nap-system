@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE CS_ProblemAccount_CustomerList
+ALTER PROCEDURE CS_ProblemAccount_MonitorList
 	@FromDate				DATETIME,
 	@ToDate					DATETIME,
 	@RoleId					TINYINT = 1,
@@ -185,7 +185,6 @@ BEGIN
 		LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 		LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
 		LEFT JOIN dbo.CS_ProblemAccount apa WITH (NOLOCK) ON a.custid = apa.CustId
-
 
 	SELECT cd.Custid, CreateDate, pr.ReasonName, ci.Username
 	FROM #CustDetailList cd

@@ -26,9 +26,10 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT, @ActionId INT
-	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX), @AbnomalBetMember VARCHAR(MAX), @DirectMarkedCust VARCHAR(MAX),
+	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX),
 			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = ''
-	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, IsReduce BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCustDownline TABLE (Username NVARCHAR(50), CustId INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 
 	SET	@startRun = GETDATE()
 
@@ -36,10 +37,10 @@ BEGIN
 	SELECT ci.Username, ci.custid
 	FROM dbo.f_StringSplit(@CustomerList, ',') f
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	OPTION (MAXRECURSION 0)
 
 	UPDATE t 
-	SET t.IsReduce = pa.IsReducedBetLimit,
-		t.MaxBet = pa.MaxBet,
+	SET t.MaxBet = pa.MaxBet,
 		t.MaxPerEvent = pa.MaxPerEvent
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
@@ -48,7 +49,7 @@ BEGIN
 	BEGIN
 		SELECT @WarningList= STUFF((SELECT ','+ t.Username
 									FROM @tmpCust t
-									WHERE t.IsReduce = 0
+									WHERE t.MaxBet IS NULL
 									FOR XML PATH('')),1,1,'')
 
 		IF ISNULL(@WarningList,'') <> '' 
@@ -61,13 +62,12 @@ BEGIN
 	BEGIN
 		DELETE t 
 		FROM @tmpCust t
-		WHERE IsReduce = 0
+		WHERE t.MaxBet IS NULL
 	END
 
 	UPDATE pa 
 	SET pa.MaxBet = NULL,
-		pa.MaxPerEvent = NULL,
-		pa.IsReducedBetLimit = 0
+		pa.MaxPerEvent = NULL
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
@@ -84,24 +84,13 @@ BEGIN
 		WHERE isfinished = 0
 	
 		IF @@ROWCOUNT = 0 BREAK	
-
-		--IF @RoleId = 4
-		--BEGIN
-		--	--SELECT @AbnomalBetMember = STUFF((SELECT ','+ CAST(ci.custid AS VARCHAR(20))
-		--	--									FROM dbo.custInfo ci WITH (NOLOCK)                                                    
-		--	--										INNER JOIN DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction tv ON pa.CustId = ci.CustId
-		--	--									WHERE ci.srecommend = @CustId AND ci.roleid = 1
-		--	--									FOR XML PATH('')),1,1,'')
-		--END
-
-		IF @RoleId <> 1
+		
+		IF @RoleId <> 1 AND @IsAllDownline = 1
 		BEGIN
 			EXEC dbo.CS_DynamicCustSetting_01
 				@CustId = @CustId,
 				@RoleId = @RoleId,
 				@Action = 'RemoveReduceBetLimit',
-				@AbnomalBetMember = @AbnomalBetMember,
-				@DirectMarkedCust = @DirectMarkedCust,
 				@SuccessDownlineList = @SuccessDownlineList OUTPUT
 		END
 
@@ -129,8 +118,7 @@ BEGIN
 								+ ' Username="' + @UserName + '"'								
 								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
-								+ ' ExcludeAbnomalBet="' + CAST (@IsExcludeAbnomalBetMember AS VARCHAR(1)) + '"'
-								+ ' ExcludeDirectMarked="' + CAST (@IsExcludeDirectMarkedCust AS VARCHAR(1)) + '"'
+								+ ' AllDownline="' + CAST (@IsAllDownline AS VARCHAR(1)) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 								+ ' />'
 
@@ -138,8 +126,7 @@ BEGIN
 								+ ' Username="' + @UserName + '"'								
 								+ ' MPM="NULL"'
 								+ ' Max="NULL"'
-								+ ' ExcludeAbnomalBet="' + CAST (@IsExcludeAbnomalBetMember AS VARCHAR(1)) + '"'
-								+ ' ExcludeDirectMarked="' + CAST (@IsExcludeDirectMarkedCust AS VARCHAR(1)) + '"'
+								+ ' AllDownline="' + CAST (@IsAllDownline AS VARCHAR(1)) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 								+ ' />'		
 		END
