@@ -130,7 +130,7 @@ BEGIN
 			INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON c.recommend = pa.CustId
 
 		INSERT INTO #CustDetailList (CustId, CreateDate, UplineId, ReasonId, MaxBet, AbnormalBetNumber)
-		SELECT c.CustId, MIN(tv.CreateDate), 0, tv.SubIssueTypeId, NULL, COUNT(1)
+		SELECT c.CustId, MIN(tv.CreatedDate), 0, tv.SubIssueTypeId, NULL, COUNT(1)
 		FROM #CustList c
 			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
 		WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate AND IssueTypeId = 11
