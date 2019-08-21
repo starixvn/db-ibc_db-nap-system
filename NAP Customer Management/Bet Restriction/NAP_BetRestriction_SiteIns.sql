@@ -62,7 +62,7 @@ BEGIN
 				WHERE SiteID = @SiteID AND SportType = @SportType )
 	BEGIN
 		SET @ErrCode = 2
-		SELECT @ErrMsg = 'This Site has already exists in the Bet Restriction list.' 
+		SELECT @ErrMsg = 'This site has already exists in the Bet Restriction list.' 
 		RETURN
 	END
 
