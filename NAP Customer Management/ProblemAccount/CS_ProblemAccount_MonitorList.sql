@@ -7,8 +7,7 @@ ALTER PROCEDURE CS_ProblemAccount_MonitorList
 	@CurrrencyId			INT = 81,
 	@Status					TINYINT = 0,
 	@IsReduce				TINYINT = 0,
-	@AbnormalBetReasonId	VARCHAR(50),
-	@ManualReasonId			VARCHAR(50),
+	@ReasonId				VARCHAR(50),
 	@UserSearch				NVARCHAR(50) = '',
 	@IsSearchDownline		BIT = 0,
 	@OrderType				TINYINT = 0,
@@ -32,21 +31,16 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE @CustSearchId INT, @CustSearchRoleId TINYINT
-	DECLARE @Reason TABLE (ReasonId TINYINT, ReasonType BIT)	
+	DECLARE @Reason TABLE (ReasonId TINYINT)	
 	CREATE TABLE #CustList (CustId INT PRIMARY KEY, HeadlineId INT, srecommend INT, mrecommend INT, recommend INT, CustStatus TINYINT, AbnormalBetNumber INT)
 	CREATE TABLE #CustDetailList (CustId INT, CreateDate DATETIME, UplineId NVARCHAR(50), ReasonId TINYINT, MaxBet MONEY, AbnormalBetNumber INT DEFAULT(0))
 
 	SELECT @CustSearchId = CustId, @CustSearchRoleId = roleid FROM dbo.custInfo WITH (NOLOCK) WHERE username = @UserSearch
 
-	INSERT INTO @Reason (ReasonId, ReasonType)	
-	SELECT CAST(f.val AS TINYINT), 0
-	FROM dbo.f_SplitString(@AbnormalBetReasonId, ',') f
-	OPTION (MAXRECURSION 0)
-
-	INSERT INTO @Reason (ReasonId, ReasonType)	
-	SELECT CAST(f.val AS TINYINT), 1
-	FROM dbo.f_SplitString(@ManualReasonId, ',') f
-	OPTION (MAXRECURSION 0)
+	INSERT INTO @Reason (ReasonId)	
+	SELECT CAST(f.val AS TINYINT)
+	FROM dbo.f_SplitString(@ReasonId, ',') f
+	OPTION (MAXRECURSION 0)	
 
 	IF @CustSearchId IS NOT NULL
 	BEGIN
