@@ -18,6 +18,11 @@ AS
 BEGIN
 	SELECT ci.CustID,
 		   CAST(CASE WHEN up.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
+		   [UplineLevel] = CASE WHEN upCust.roleid = 1 THEN 'Member'
+						  WHEN upCust.roleid = 2 THEN 'Agent'
+						  WHEN upCust.roleid = 3 THEN 'Master'
+						  WHEN upCust.roleid = 4 THEN 'Super'
+					END,
 		   upCust.username AS ExistingUplineUserName,
 		   up.SeizeBetTicket AS Upline_SeizeBetTicket,
 		   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists,
