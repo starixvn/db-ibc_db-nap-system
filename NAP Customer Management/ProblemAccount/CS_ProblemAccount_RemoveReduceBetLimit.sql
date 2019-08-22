@@ -26,10 +26,10 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT, @ActionId INT
-	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX),
-			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = ''
+	DECLARE @CustId INT, @UserName NVARCHAR(50), @WarningList VARCHAR(MAX),
+			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = '', @LogDataNew VARCHAR(500)
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
-	DECLARE @tmpCustDownline TABLE (Username NVARCHAR(50), CustId INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCustDownline TABLE (CustId INT, UplineName NVARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 
 	SET	@startRun = GETDATE()
 
@@ -71,7 +71,49 @@ BEGIN
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
-	SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
+	IF @IsAllDownline = 1 AND @RoleId <> 1
+	BEGIN
+		IF @RoleId = 4
+		BEGIN
+			INSERT INTO @tmpCustDownline(CustID, UplineName, MaxBet, MaxPerEvent)
+			SELECT ci.custid, t.Username, pa.MaxBet, pa.MaxPerEvent
+			FROM @tmpCust t				
+				INNER JOIN dbo.custInfo c WITH (NOLOCK) ON t.CustId = c.custid		
+				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON t.CustId = ci.srecommend
+				INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON pa.CustId = ci.custid
+			WHERE pa.MaxBet IS NOT NULL
+		END
+		ELSE IF @RoleId = 3
+		BEGIN
+			INSERT INTO @tmpCustDownline(CustID, UplineName, MaxBet, MaxPerEvent)
+			SELECT ci.custid, t.Username, pa.MaxBet, pa.MaxPerEvent
+			FROM @tmpCust t				
+				INNER JOIN dbo.custInfo c WITH (NOLOCK) ON t.CustId = c.custid	
+				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON t.CustId = ci.mrecommend
+				INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON pa.CustId = ci.custid
+			WHERE pa.MaxBet IS NOT NULL
+		END
+		ELSE IF @RoleId = 2
+		BEGIN
+			INSERT INTO @tmpCustDownline(CustID, UplineName, MaxBet, MaxPerEvent)
+			SELECT ci.custid, t.Username, pa.MaxBet, pa.MaxPerEvent
+			FROM @tmpCust t				
+				INNER JOIN dbo.custInfo c WITH (NOLOCK) ON t.CustId = c.custid
+				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON t.CustId = ci.recommend
+				INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON pa.CustId = ci.custid
+			WHERE pa.MaxBet IS NOT NULL
+		END
+
+		UPDATE pa 
+		SET pa.MaxBet = NULL,
+			pa.MaxPerEvent = NULL
+		FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
+			INNER JOIN @tmpCustDownline t ON t.CustId = pa.CustId
+	END
+
+	SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())	
+
+	SELECT @ActionId = CASE WHEN @RoleId = 1 THEN 31604 ELSE 31603 END
 
 	WHILE (1=1)
 	BEGIN		
@@ -84,51 +126,25 @@ BEGIN
 		WHERE isfinished = 0
 	
 		IF @@ROWCOUNT = 0 BREAK	
-		
-		IF @RoleId <> 1 AND @IsAllDownline = 1
-		BEGIN
-			EXEC dbo.CS_DynamicCustSetting_01
-				@CustId = @CustId,
-				@RoleId = @RoleId,
-				@Action = 'RemoveReduceBetLimit',
-				@SuccessDownlineList = @SuccessDownlineList OUTPUT
-		END
 
-		-- Write log
-		DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
+		-- Write log		
 		IF @RoleId = 1
 		BEGIN
-			SELECT @ActionId = 31604
-			SELECT  @LogDataOld = '<R'
+			SELECT  @LogDataNew = '<R'
 								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-								+ ' />'
-
-			SELECT  @LogDataNew = '<R'
-								+ ' MPM="NULL"'
-								+ ' Max="NULL"'
-								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-								+ ' />'		
+								+ ' />'				
 		END
 		ELSE
 		BEGIN
-			SELECT @ActionId = 31603
-			SELECT  @LogDataOld = '<R'
+			SELECT  @LogDataNew = '<R'
 								+ ' Username="' + @UserName + '"'								
 								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 								+ ' AllDownline="' + CAST (@IsAllDownline AS VARCHAR(1)) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-								+ ' />'
-
-			SELECT  @LogDataNew = '<R'
-								+ ' Username="' + @UserName + '"'								
-								+ ' MPM="NULL"'
-								+ ' Max="NULL"'
-								+ ' AllDownline="' + CAST (@IsAllDownline AS VARCHAR(1)) + '"'
-								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
-								+ ' />'		
+								+ ' />'			
 		END
 
 		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
@@ -136,9 +152,37 @@ BEGIN
 			@CustId				= @CustId,
 			@ActionId			= @ActionId,
 			@TrackingValue		= @LogDataNew,
-			@TrackingValue2		= @LogDataOld,
-			@Duration			= @Duration,
-			@AffectedDownlines	= @SuccessDownlineList
+			@Duration			= @Duration
+	END	
+
+	SELECT @ActionId = 31606
+	WHILE (1=1)
+	BEGIN		
+		UPDATE TOP (1) @tmpCustDownline
+		SET isfinished = 1,
+			@CustId = custid,
+			@UserName = UplineName,
+			@Old_MaxBet = MaxBet,
+			@Old_MaxPerEvent = MaxPerEvent
+		WHERE isfinished = 0
+	
+		IF @@ROWCOUNT = 0 BREAK	
+
+		-- Write log
+		
+		SELECT  @LogDataNew = '<R'
+							+ ' Upline="' + @UserName + '"'								
+							+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
+							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
+							+ ' />'			
+
+		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
+			@UserId				= @UserId,
+			@CustId				= @CustId,
+			@ActionId			= @ActionId,
+			@TrackingValue		= @LogDataNew,
+			@Duration			= @Duration
 	END	
 END
 GO

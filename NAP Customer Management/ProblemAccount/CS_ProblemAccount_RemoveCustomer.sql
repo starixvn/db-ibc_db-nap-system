@@ -3,8 +3,8 @@
 ALTER PROCEDURE CS_ProblemAccount_RemoveCustomer
 	@CustomerList				VARCHAR(MAX),
 	@RoleId						TINYINT,
-	@IsAllDownline				BIT,
-	@IsConfirmed				BIT,
+	@ExcludeAbnormalMember		BIT,
+	@ExcludeManualCust			BIT,
 
 	@UserID						INT,
 	@IP							VARCHAR(15),
@@ -14,7 +14,7 @@ AS
 /*
 	Created: Elodie
 	Date: 20190808
-	Task : Remove reduce BetLimit of problem account
+	Task : Unmark problem account
 	DB: DBCUST/CustDB
 
 	Revisions:
@@ -26,7 +26,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT, @ActionId INT
-	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @WarningList VARCHAR(MAX),
+	DECLARE @CustId INT, @UserName NVARCHAR(50),
 			@Old_MaxBet MONEY, @Old_MaxPerEvent MONEY, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 	DECLARE @tmpCustDownline TABLE (Username NVARCHAR(50), CustId INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
