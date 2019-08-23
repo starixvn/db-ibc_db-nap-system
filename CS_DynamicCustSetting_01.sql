@@ -9,6 +9,8 @@ ALTER PROCEDURE [dbo].[CS_DynamicCustSetting_01]
 	@Action						VARCHAR(50),
 	@AbnomalBetMember			VARCHAR(MAX) = NULL,
 	@DirectMarkedCust			VARCHAR(MAX) = NULL,
+	@ExcludeAbnormalMember		BIT = 0,
+	@ExcludeDirectMark			BIT = 0,
 	@IsSuccess					BIT = 1 OUTPUT,
 	@SuccessDownlineList		VARCHAR(MAX) = '' OUTPUT
 AS
@@ -29,8 +31,8 @@ BEGIN
 
 	DECLARE @SetBit1 INT, @Pos TINYINT
 	CREATE TABLE #DownlineCust (CustID INT PRIMARY KEY, RoleID TINYINT)
-	CREATE TABLE #IgnoreCust (CustID INT PRIMARY KEY)
 	CREATE TABLE #DownlineSuccess (CustID INT)
+	CREATE TABLE #DirectMarkCust (CustID INT, RoleID TINYINT)
 
 	IF dbo.f_CheckRepTable('custInfo') = 0 RETURN
 	IF dbo.f_CheckRepTable('CS_ProblemAccount') = 0 RETURN
@@ -77,8 +79,6 @@ BEGIN
 				pa.Comment = @Comment
 			FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 			WHERE CustId = @CustId			
-
-			SELECT @IsSuccess = 1
 		END TRY
 		BEGIN CATCH
 			SELECT @IsSuccess = 0
@@ -122,7 +122,43 @@ BEGIN
 											FROM #DownlineSuccess l
 											FOR XML PATH('')),1,1,'')
 	END
+	ELSE IF @Action = 'UnmarkProblem'
+	BEGIN
+		IF @ExcludeAbnormalMember = 1
+		BEGIN
+			DELETE c 
+			FROM #DownlineCust c
+				INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON pa.CustId = c.CustID
+			WHERE pa.IsAbnormalMember = 1
+		END	
+		IF @ExcludeDirectMark = 1
+		BEGIN
+			INSERT INTO #DirectMarkCust (CustID, RoleID)
+			SELECT c.CustID, c.RoleID
+			FROM #DownlineCust c
+				INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON pa.CustId = c.CustID
+			WHERE pa.ReasonId IS NOT NULL
 
+			DELETE c 
+			FROM #DownlineCust c
+				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.CustId = c.CustID
+				INNER JOIN #DirectMarkCust dm WITH (NOLOCK) ON dm.CustId = CASE WHEN c.RoleID = 3 THEN ci.mrecommend
+																				WHEN c.RoleID = 2 THEN ci.recommend END
+				
+			DELETE c 
+			FROM #DownlineCust c
+				INNER JOIN #DirectMarkCust dm WITH (NOLOCK) ON dm.CustID = c.CustID
+		END	
+
+		DELETE pa 
+		OUTPUT Deleted.CustId INTO #DownlineSuccess
+		FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
+			INNER JOIN #DownlineCust c ON c.CustID = pa.CustId
+
+		SELECT @SuccessDownlineList = STUFF((SELECT ','+ CAST(l.CustID AS VARCHAR(20))
+											FROM #DownlineSuccess l
+											FOR XML PATH('')),1,1,'')
+	END
 	DROP TABLE #DownlineCust
 END
 GO
