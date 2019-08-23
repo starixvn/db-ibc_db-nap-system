@@ -10,10 +10,10 @@ ALTER PROCEDURE CS_ProblemAccount_MonitorList
 	@ReasonId				VARCHAR(50),
 	@UserSearch				NVARCHAR(50) = '',
 	@IsSearchDownline		BIT = 0,
-	@OrderType				TINYINT = 0,
+	@OrderType				TINYINT = 1,
 	
 	@PageSize				INT = 100,
-	@PageIndex				INT = 0,
+	@PageIndex				INT = 1,
 	@TotalItems				INT = 0 OUTPUT
 AS
 /*
@@ -183,13 +183,13 @@ BEGIN
 			spa.MaxBet AS SuperMaxBet, spa.MaxPerEvent AS SuperMPM, mpa.MaxBet AS MasterMaxBet, mpa.MaxPerEvent AS MasterMPM, 
 			apa.MaxBet AS AgentMaxBet, apa.MaxPerEvent AS AgentMPM, cpa.MaxBet AS MaxBet, cpa.MaxPerEvent AS MPM,
 			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber,
-			ROW_NUMBER() OVER (ORDER BY Headline, Super, Master, Agent, username, CustStatus DESC, MarkDate DESC) AS RowNumber
+			ROW_NUMBER() OVER (ORDER BY hl.username, s.username, m.username, a.username, ci.username, c.CustStatus DESC, cpa.CreatedDate DESC) AS RowNumber
 		FROM #CustList c
-			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.HeadlineId
-			INNER JOIN dbo.custInfo hl WITH (NOLOCK) ON hl.custid = c.HeadlineId
-			INNER JOIN dbo.custInfo s WITH (NOLOCK) ON s.custid = c.srecommend
-			INNER JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
-			INNER JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+			LEFT JOIN dbo.custInfo hl WITH (NOLOCK) ON hl.custid = c.HeadlineId
+			LEFT JOIN dbo.custInfo s WITH (NOLOCK) ON s.custid = c.srecommend
+			LEFT JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
+			LEFT JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
 			INNER JOIN dbo.CS_ProblemAccount cpa WITH (NOLOCK) ON c.custid = cpa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
@@ -209,13 +209,13 @@ BEGIN
 			spa.MaxBet AS SuperMaxBet, spa.MaxPerEvent AS SuperMPM, mpa.MaxBet AS MasterMaxBet, mpa.MaxPerEvent AS MasterMPM, 
 			apa.MaxBet AS AgentMaxBet, apa.MaxPerEvent AS AgentMPM, cpa.MaxBet AS MaxBet, cpa.MaxPerEvent AS MPM,
 			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber,
-			ROW_NUMBER() OVER (ORDER BY MarkDate DESC, Headline, Super, Master, Agent, username, CustStatus DESC) AS RowNumber
+			ROW_NUMBER() OVER (ORDER BY cpa.CreatedDate DESC, hl.username, s.username, m.username, a.username, ci.username, c.CustStatus DESC) AS RowNumber
 		FROM #CustList c
-			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.HeadlineId
-			INNER JOIN dbo.custInfo hl WITH (NOLOCK) ON hl.custid = c.HeadlineId
-			INNER JOIN dbo.custInfo s WITH (NOLOCK) ON s.custid = c.srecommend
-			INNER JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
-			INNER JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+			LEFT JOIN dbo.custInfo hl WITH (NOLOCK) ON hl.custid = c.HeadlineId
+			LEFT JOIN dbo.custInfo s WITH (NOLOCK) ON s.custid = c.srecommend
+			LEFT JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
+			LEFT JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
 			INNER JOIN dbo.CS_ProblemAccount cpa WITH (NOLOCK) ON c.custid = cpa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
@@ -235,13 +235,13 @@ BEGIN
 			spa.MaxBet AS SuperMaxBet, spa.MaxPerEvent AS SuperMPM, mpa.MaxBet AS MasterMaxBet, mpa.MaxPerEvent AS MasterMPM, 
 			apa.MaxBet AS AgentMaxBet, apa.MaxPerEvent AS AgentMPM, cpa.MaxBet AS MaxBet, cpa.MaxPerEvent AS MPM,
 			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber,
-			ROW_NUMBER() OVER (ORDER BY CustStatus DESC, Headline, Super, Master, Agent, username, MarkDate DESC) AS RowNumber
+			ROW_NUMBER() OVER (ORDER BY c.CustStatus DESC, hl.username, s.username, m.username, a.username, ci.username, cpa.CreatedDate DESC) AS RowNumber
 		FROM #CustList c
-			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.HeadlineId
-			INNER JOIN dbo.custInfo hl WITH (NOLOCK) ON hl.custid = c.HeadlineId
-			INNER JOIN dbo.custInfo s WITH (NOLOCK) ON s.custid = c.srecommend
-			INNER JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
-			INNER JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
+			LEFT JOIN dbo.custInfo hl WITH (NOLOCK) ON hl.custid = c.HeadlineId
+			LEFT JOIN dbo.custInfo s WITH (NOLOCK) ON s.custid = c.srecommend
+			LEFT JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
+			LEFT JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
 			INNER JOIN dbo.CS_ProblemAccount cpa WITH (NOLOCK) ON c.custid = cpa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
