@@ -78,7 +78,9 @@ BEGIN
 				pa.ReasonId = @ReasonId,
 				pa.Comment = @Comment
 			FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
-			WHERE CustId = @CustId			
+			WHERE CustId = @CustId		
+			
+			SELECT @IsSuccess = 1	
 		END TRY
 		BEGIN CATCH
 			SELECT @IsSuccess = 0
