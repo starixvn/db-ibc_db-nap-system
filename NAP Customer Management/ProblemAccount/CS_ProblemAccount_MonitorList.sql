@@ -89,8 +89,8 @@ BEGIN
 	END 
 	ELSE
 	BEGIN
-			INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend)				
-			SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend
+			INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
+				SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
 			FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
 				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
 				CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
