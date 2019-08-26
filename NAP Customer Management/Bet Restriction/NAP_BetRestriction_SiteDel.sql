@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteDel] 
 	  @SiteID		INT = NULL
 	 ,@UserId		INT
+	 ,@IP			VARCHAR(15) = ''
 	 ,@SportType	SMALLINT = 1
 	 ,@ErrMsg		NVARCHAR(MAX) = '' OUTPUT
 	 ,@ErrCode		TINYINT = 0 OUTPUT
@@ -18,7 +19,7 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SiteDel 
-		@SiteID = 5,
+		@SiteID = 329,
 		@UserID = 8,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
@@ -27,23 +28,27 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31706
-	DECLARE @site VARCHAR(10)
+	DECLARE @site NVARCHAR(50)
 	DECLARE @LiveBetAccept_Old  SMALLINT, 
 			@SeizeBetTicket_Old TINYINT, 
 			@MaxBet_Old         MONEY, 
 			@MaxPerMatch_Old    MONEY, 
-			@FollowAccount_Old  INT;
+			@FollowAccountID_Old  INT,
+			@FollowAccount_Old	NVARCHAR(50)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 	
 	SELECT @LiveBetAccept_Old = LiveBetAccept, 
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
-		   @FollowAccount_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount
 	FROM BetRestriction_Site WITH(NOLOCK)
 	WHERE SiteID = @SiteID
 		  AND SportType = @SportType;
 	
+	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
+	SELECT @Site = Site FROM Site WITH(NOLOCK) WHERE siteid = @SiteID
+
 	BEGIN TRY
 		DELETE
 		FROM BetRestriction_Site WITH(UPDLOCK,ROWLOCK)
@@ -60,11 +65,12 @@ BEGIN
 
 	DECLARE @LogData VARCHAR(500)
 	SELECT  @LogData = '<R'
-						+ 'SiteID="'+ coalesce(cast(@SiteID as varchar(50)),space(1)) + '" ' 
+						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
 

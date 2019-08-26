@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	  @UserName			NVARCHAR(50)
 	 ,@UserId			INT
+	 ,@IP				VARCHAR(15) = ''
 	 ,@SportType		SMALLINT = 1
 	 ,@LiveBetAccept	SMALLINT
 	 ,@SeizeBetTicket	TINYINT = NULL
@@ -47,7 +48,7 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31701
-	DECLARE @site VARCHAR(10)
+	DECLARE @site  NVARCHAR(50)
 	DECLARE @FollowAccountID INT, @CustID INT
 
 	SET @ErrCode = 0
@@ -109,13 +110,14 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500)
 	SELECT  @LogDataNew = '<R'
-						+ 'CustID="'+ coalesce(cast(@CustID as varchar(50)),space(1)) + '" ' 
+						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" ' 
 						+ 'MaxBet="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccountID as varchar(50)),space(1)) + '" ' 
+						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 
 	IF @site = 'CN88'

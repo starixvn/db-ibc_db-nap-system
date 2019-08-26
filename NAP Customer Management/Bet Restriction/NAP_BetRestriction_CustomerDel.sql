@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerDel] 
 	  @CustID		INT
 	 ,@UserId		INT
+	 ,@IP			VARCHAR(15) = ''
 	 ,@SportType    SMALLINT = 1
 	 ,@ErrMsg		NVARCHAR(MAX) = '' OUTPUT
 	 ,@ErrCode		TINYINT = 0 OUTPUT
@@ -22,7 +23,7 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_CustomerDel 
-	    @CustID = 1176092,	
+	    @CustID = 15924397,	
 		@UserID = 8,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
@@ -31,12 +32,14 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31703
-	DECLARE @site VARCHAR(10)
+	DECLARE @site  NVARCHAR(50)
 	DECLARE @LiveBetAccept_Old  SMALLINT, 
 			@SeizeBetTicket_Old TINYINT, 
 			@MaxBet_Old         MONEY, 
 			@MaxPerMatch_Old    MONEY, 
-			@FollowAccount_Old  INT;
+			@FollowAccountID_Old  INT,
+			@UserName	NVARCHAR(50),
+			@FollowAccount_Old	NVARCHAR(50)
 
 	SET @ErrCode = 0
 
@@ -48,10 +51,13 @@ BEGIN
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
 		   @MaxBet_Old = MaxBet, 
 		   @MaxPerMatch_Old = MaxPerMatch, 
-		   @FollowAccount_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount
 	FROM BetRestriction_Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
 		  AND SportType = @SportType;
+	
+	SELECT @UserName = username FROM Customer WITH(NOLOCK) WHERE custid = @CustID
+	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
 	
 	BEGIN TRY
 		DELETE
@@ -69,13 +75,14 @@ BEGIN
 
 	DECLARE @LogData VARCHAR(500)
 	SELECT  @LogData = '<R'
-						+ 'CustID="'+ coalesce(cast(@CustID as varchar(50)),space(1)) + '" ' 
+						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
 						+ 'MaxBet="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
 						+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
 

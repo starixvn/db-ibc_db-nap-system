@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteIns] (
 	  @SiteID			INT
 	 ,@UserId			INT
+	 ,@IP				VARCHAR(15) = ''
 	 ,@SportType		SMALLINT = 1
 	 ,@LiveBetAccept	SMALLINT
 	 ,@SeizeBetTicket	TINYINT = NULL
@@ -29,7 +30,7 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SiteIns
-		@SiteID = 4, 
+		@SiteID = 334, 
 		@UserId =8,
 		@LiveBetAccept = 5 , 
 		@SeizeBetTicket = 20 , 
@@ -42,7 +43,7 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31704
-	DECLARE @site VARCHAR(10)
+	DECLARE @site NVARCHAR(50)
 	DECLARE @FollowAccountID INT
 
 	SET @ErrCode = 0
@@ -76,6 +77,8 @@ BEGIN
 		SELECT @ErrMsg = 'Invalid 8RM Account.' 
 		RETURN
 	END
+
+	SELECT @Site = Site FROM Site WITH(NOLOCK) WHERE siteid = @SiteID
 	
 	BEGIN TRY
 		INSERT INTO BetRestriction_Site(
@@ -102,11 +105,12 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500)
 	SELECT  @LogDataNew = '<R'
-						+ 'SiteID="'+ coalesce(cast(@SiteID as varchar(50)),space(1)) + '" ' 
+						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" '  
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccountID as varchar(50)),space(1)) + '" ' 
+						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 
 	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper

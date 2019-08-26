@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CurrencyUpd] (
 	  @ExchangeID		INT
 	 ,@UserId			INT
+	 ,@IP				VARCHAR(15) = ''
 	 ,@CurrentType		TINYINT
 	 ,@NewType			TINYINT
 	 ,@SportType		SMALLINT = 1
@@ -31,10 +32,10 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_CurrencyUpd
-		@ExchangeID = 5, 
+		@ExchangeID = 35, 
 		@UserID = 8,
-		@CurrentType = 1,
-		@NewType = 0,
+		@CurrentType = 0,
+		@NewType = 2,
 		@LiveBetAccept = 15 , 
 		@SeizeBetTicket = 60 , 
 		@FollowAccount = '8RM888',
@@ -48,7 +49,11 @@ BEGIN
 	DECLARE @FollowAccountID INT
 	DECLARE @LiveBetAccept_Old  SMALLINT, 
 			@SeizeBetTicket_Old TINYINT, 
-			@FollowAccount_Old  INT;
+			@FollowAccountID_Old  INT,
+			@FollowAccount_Old	NVARCHAR(50),
+			@Currency	NVARCHAR(50),
+			@vNewType VARCHAR(10),
+			@vCurrentType VARCHAR(10)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -81,7 +86,7 @@ BEGIN
 
 	SELECT @LiveBetAccept_Old = LiveBetAccept, 
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
-		   @FollowAccount_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount
 	FROM BetRestriction_Currency WITH(NOLOCK)
 	WHERE ExchangeID = @ExchangeID	
 		  ANd Type = @CurrentType
@@ -89,13 +94,23 @@ BEGIN
 	
 	IF	@LiveBetAccept_Old = @LiveBetAccept 
 		AND ISNULL(@SeizeBetTicket_Old,0) = ISNULL(@SeizeBetTicket,0)
-		AND ISNULL(@FollowAccount_Old ,0)= ISNULL(@FollowAccountID,0)
+		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 		AND ISNULL(@CurrentType,-1) = ISNULL(@NewType,-1)
 	BEGIN
 		SELECT @ErrMsg = N'No change'
 		RETURN
 	END
+
+	SELECT @Currency = Currency FROM exchange WITH(NOLOCK) WHERE exchangeid = @ExchangeID
+	SELECT @vNewType = CASE WHEN @NewType = 0 THEN 'All' 
+						 WHEN @NewType = 1 THEN 'Credit'
+						 WHEN @NewType = 2 THEN 'Licensee' END
+		  ,@vCurrentType = CASE WHEN @CurrentType = 0 THEN 'All' 
+						 WHEN @CurrentType = 1 THEN 'Credit'
+						 WHEN @CurrentType = 2 THEN 'Licensee' END
 	
+	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
+
 	BEGIN TRY
 		UPDATE BetRestriction_Currency WITH(ROWLOCK)
 		SET	LiveBetAccept 	= @LiveBetAccept, 
@@ -117,20 +132,22 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 	SELECT  @LogDataNew = '<R'
-						+ 'ExchangeID="'+ coalesce(cast(@ExchangeID as varchar(50)),space(1)) + '" ' 
+						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'Type="'+ coalesce(cast(@NewType as varchar(50)),space(1)) + '" ' 
+						+ 'Type="'+ coalesce(cast(@vNewType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccountID as varchar(50)),space(1)) + '" ' 
+						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@LogDataOld = '<R'
-						+ 'ExchangeID="'+ coalesce(cast(@ExchangeID as varchar(50)),space(1)) + '" ' 
+						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'Type="'+ coalesce(cast(@CurrentType as varchar(50)),space(1)) + '" ' 
+						+ 'Type="'+ coalesce(cast(@vCurrentType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
 

@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteUpd] (
 	  @SiteID			INT
 	 ,@UserId			INT
+	 ,@IP				VARCHAR(15) = ''
 	 ,@SportType		SMALLINT = 1
 	 ,@LiveBetAccept	SMALLINT
 	 ,@SeizeBetTicket	TINYINT = NULL
@@ -42,7 +43,9 @@ BEGIN
 	DECLARE @FollowAccountID INT
 	DECLARE @LiveBetAccept_Old  SMALLINT, 
 			@SeizeBetTicket_Old TINYINT, 
-			@FollowAccount_Old  INT;
+			@FollowAccountID_Old  INT,
+			@site NVARCHAR(50),
+			@FollowAccount_Old	NVARCHAR(50)
 	
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -60,18 +63,21 @@ BEGIN
 
 	SELECT @LiveBetAccept_Old = LiveBetAccept, 
 		   @SeizeBetTicket_Old = SeizeBetTicket,  
-		   @FollowAccount_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount
 	FROM BetRestriction_Site WITH(NOLOCK)
 	WHERE SiteID = @SiteID
 		  AND SportType = @SportType;
 	
 	IF	@LiveBetAccept_Old = @LiveBetAccept 
 		AND ISNULL(@SeizeBetTicket_Old,0) = ISNULL(@SeizeBetTicket,0)
-		AND ISNULL(@FollowAccount_Old ,0)= ISNULL(@FollowAccountID,0)
+		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 	BEGIN
 		SELECT @ErrMsg = N'No change'
 		RETURN
 	END
+
+	SELECT @Site = Site FROM Site WITH(NOLOCK) WHERE siteid = @SiteID
+	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
 
 	BEGIN TRY
 		UPDATE BetRestriction_Site WITH(ROWLOCK)
@@ -91,18 +97,20 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 	SELECT  @LogDataNew = '<R'
-						+ 'SiteID="'+ coalesce(cast(@SiteID as varchar(50)),space(1)) + '" ' 
+						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccountID as varchar(50)),space(1)) + '" ' 
+						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@LogDataOld = '<R'
-						+ 'SiteID="'+ coalesce(cast(@SiteID as varchar(50)),space(1)) + '" ' 
+						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
 	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper

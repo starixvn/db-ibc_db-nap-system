@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CurrencyIns] (
 	  @ExchangeID		INT
 	 ,@UserId			INT
+	 ,@IP				VARCHAR(15) = ''
 	 ,@SportType		SMALLINT = 1
 	 ,@Type				TINYINT
 	 ,@LiveBetAccept	SMALLINT
@@ -30,7 +31,7 @@ AS
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_CurrencyIns
 		@ExchangeID = 12, 
-		@userid = 8,
+		@userid = 10,
 		@Type = 2,
 		@LiveBetAccept = 10 , 
 		@SeizeBetTicket = 30 , 
@@ -42,7 +43,7 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31707
-	DECLARE @FollowAccountID INT
+	DECLARE @FollowAccountID INT ,@Currency	NVARCHAR(50),@vType VARCHAR(10)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -71,6 +72,11 @@ BEGIN
 		SELECT @ErrMsg = 'Invalid 8RM Account.' 
 		RETURN
 	END
+
+	SELECT @Currency = Currency FROM exchange WITH(NOLOCK) WHERE exchangeid = @ExchangeID
+	SELECT @vType = CASE WHEN @Type = 0 THEN 'All' 
+						 WHEN @Type = 1 THEN 'Credit'
+						 WHEN @Type = 2 THEN 'Licensee' END
 	
 	BEGIN TRY
 		INSERT INTO BetRestriction_Currency(
@@ -99,12 +105,13 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500)
 	SELECT  @LogDataNew = '<R'
-						+ 'ExchangeID="'+ coalesce(cast(@ExchangeID as varchar(50)),space(1)) + '" ' 
+						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'Type="'+ coalesce(cast(@Type as varchar(50)),space(1)) + '" ' 
+						+ 'Type="'+ coalesce(cast(@vType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccountID as varchar(50)),space(1)) + '" ' 
+						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
 	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper

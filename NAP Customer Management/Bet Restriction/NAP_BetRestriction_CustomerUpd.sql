@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerUpd] (
 	  @CustID			INT
 	 ,@UserId			INT
+	 ,@IP				VARCHAR(15) = ''
 	 ,@SportType		SMALLINT = 1
 	 ,@LiveBetAccept	SMALLINT
 	 ,@SeizeBetTicket	TINYINT = NULL
@@ -29,12 +30,12 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_CustomerUpd
-		@CustID = 1752427, 
+		@CustID = 15924397, 
 		@UserID = 8,
-		@LiveBetAccept = 5 , 
+		@LiveBetAccept = 6 , 
 		@SeizeBetTicket = 40 , 
-		@MaxBet = 100.00, 
-		@MaxPerMatch = 1000.00, 
+		@MaxBet = 200.00, 
+		@MaxPerMatch = 2000.00, 
 		@FollowAccount = '8RM888',
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
@@ -43,13 +44,15 @@ AS
 	*/
 BEGIN	
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31702
-	DECLARE @site VARCHAR(10)
+	DECLARE @site NVARCHAR(50)
 	DECLARE @FollowAccountID INT
 	DECLARE @LiveBetAccept_Old  SMALLINT, 
 			@SeizeBetTicket_Old TINYINT, 
 			@MaxBet_Old         MONEY, 
 			@MaxPerMatch_Old    MONEY, 
-			@FollowAccount_Old  INT;
+			@FollowAccountID_Old  INT,
+			@UserName	NVARCHAR(50),
+			@FollowAccount_Old	NVARCHAR(50)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -71,7 +74,7 @@ BEGIN
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
 		   @MaxBet_Old = MaxBet, 
 		   @MaxPerMatch_Old = MaxPerMatch, 
-		   @FollowAccount_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount
 	FROM BetRestriction_Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
 		  AND SportType = @SportType;
@@ -80,11 +83,14 @@ BEGIN
 		AND ISNULL(@SeizeBetTicket_Old,0) = ISNULL(@SeizeBetTicket,0)
 		AND ISNULL(@MaxBet_Old,-1) = ISNULL(@MaxBet,-1)
 		AND ISNULL(@MaxPerMatch_Old,-1) = ISNULL(@MaxPerMatch,-1)
-		AND ISNULL(@FollowAccount_Old ,0)= ISNULL(@FollowAccountID,0)
+		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 	BEGIN
 		SELECT @ErrMsg = N'No change'
 		RETURN
 	END
+
+	SELECT @UserName = username FROM Customer WITH(NOLOCK) WHERE custid = @CustID
+	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
 	
 	BEGIN TRY
 		UPDATE BetRestriction_Customer WITH(ROWLOCK)
@@ -107,22 +113,24 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 	SELECT  @LogDataNew = '<R'
-						+ 'CustID="'+ coalesce(cast(@CustID as varchar(50)),space(1)) + '" ' 
+						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" ' 
 						+ 'MaxBet="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccountID as varchar(50)),space(1)) + '" ' 
+						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />',
 			@LogDataOld = '<R'
-						+ 'CustID="'+ coalesce(cast(@CustID as varchar(50)),space(1)) + '" ' 
+						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
 						+ 'MaxBet="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
 						+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
 
