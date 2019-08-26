@@ -1,6 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE CS_ProblemAccount_ReasonSel
+	@Mode TINYINT = 1
 AS
 /*
 	Created: Elodie
@@ -12,10 +13,23 @@ AS
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
 
 	Parameter's explaination: 
+		@Mode:	1: Get manual reason to mark new problem account
+				2: Get all reason
 	
 */
 BEGIN
+	IF @Mode = 1
+	BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
+		WHERE ReasonID < 26
+		ORDER BY ReasonName
+	END
+	ELSE
+	BEGIN
+		SELECT ReasonID, ReasonName
+		FROM dbo.ProblemAccountReason WITH(NOLOCK)
+		ORDER BY ReasonName
+	END
 END
 GO
