@@ -28,7 +28,7 @@ AS
 			1 - Invalid Currency.
 			2 - This Currency/Type has already exists in the Bet Restriction list.
 			3 - Invalid 8RM Account.
-			4- This record no longer exists in the Bet Restriction List.
+			4 - This record no longer exists in the Bet Restriction List.
 
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
@@ -59,6 +59,21 @@ BEGIN
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 
+	SELECT @LiveBetAccept_Old = LiveBetAccept, 
+		   @SeizeBetTicket_Old = SeizeBetTicket, 
+		   @FollowAccountID_Old = FollowAccount
+	FROM BetRestriction_Currency WITH(NOLOCK)
+	WHERE ExchangeID = @ExchangeID	
+		  ANd Type = @CurrentType
+		  AND SportType = @SportType;
+
+	IF @@ROWCOUNT = 0
+	BEGIN
+		SET @ErrCode = 4
+		SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
+		RETURN
+	END
+
 	EXEC NAP_BetRestriction_ValidateCurrency
 		@ExchangeID = @ExchangeID,  
 		@SportType = @SportType,
@@ -84,14 +99,6 @@ BEGIN
 		SELECT @ErrMsg = 'Invalid 8RM Account.' 
 		RETURN
 	END
-
-	SELECT @LiveBetAccept_Old = LiveBetAccept, 
-		   @SeizeBetTicket_Old = SeizeBetTicket, 
-		   @FollowAccountID_Old = FollowAccount
-	FROM BetRestriction_Currency WITH(NOLOCK)
-	WHERE ExchangeID = @ExchangeID	
-		  ANd Type = @CurrentType
-		  AND SportType = @SportType;
 	
 	IF	@LiveBetAccept_Old = @LiveBetAccept 
 		AND ISNULL(@SeizeBetTicket_Old,0) = ISNULL(@SeizeBetTicket,0)
@@ -121,14 +128,6 @@ BEGIN
 		WHERE ExchangeID = @ExchangeID 
 			  AND [Type] = @CurrentType
 			  AND SportType = @SportType 
-		
-		IF @@ROWCOUNT = 0
-		BEGIN
-			SET @ErrCode = 4
-			SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
-			RETURN
-		END
-		
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()

@@ -24,7 +24,7 @@ AS
 	@ErrCode = :
 			0 - succeed 
 			3 - Invalid 8RM Account.
-			4- This record no longer exists in the Bet Restriction List.
+			4 - This record no longer exists in the Bet Restriction List.
 
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
@@ -51,6 +51,20 @@ BEGIN
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 
+	SELECT @LiveBetAccept_Old = LiveBetAccept, 
+		   @SeizeBetTicket_Old = SeizeBetTicket,  
+		   @FollowAccountID_Old = FollowAccount
+	FROM BetRestriction_Site WITH(NOLOCK)
+	WHERE SiteID = @SiteID
+		  AND SportType = @SportType;
+
+	IF @@ROWCOUNT = 0
+	BEGIN
+		SET @ErrCode = 4
+		SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
+		RETURN
+	END
+
 	EXEC NAP_BetRestriction_ValidateFollowAccount
 		@FollowAccount = @FollowAccount,
 		@FollowAccountID  = @FollowAccountID OUTPUT
@@ -61,13 +75,6 @@ BEGIN
 		SELECT @ErrMsg = CASE WHEN @ErrCode = 3 THEN 'Invalid 8RM Account.'  END
 		RETURN
 	END
-
-	SELECT @LiveBetAccept_Old = LiveBetAccept, 
-		   @SeizeBetTicket_Old = SeizeBetTicket,  
-		   @FollowAccountID_Old = FollowAccount
-	FROM BetRestriction_Site WITH(NOLOCK)
-	WHERE SiteID = @SiteID
-		  AND SportType = @SportType;
 	
 	IF	@LiveBetAccept_Old = @LiveBetAccept 
 		AND ISNULL(@SeizeBetTicket_Old,0) = ISNULL(@SeizeBetTicket,0)
@@ -86,13 +93,6 @@ BEGIN
 			SeizeBetTicket = @SeizeBetTicket, 
 			FollowAccount = @FollowAccountID
 		WHERE SiteID = @SiteID AND SportType = @SportType
-
-		IF @@ROWCOUNT = 0
-		BEGIN
-			SET @ErrCode = 4
-			SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
-			RETURN
-		END
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
