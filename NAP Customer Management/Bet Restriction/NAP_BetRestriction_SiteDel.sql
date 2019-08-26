@@ -16,10 +16,15 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 
+	Parameter explanation:
+	@ErrCode = :
+			0 - succeed
+			4- This record no longer exists in the Bet Restriction List.
+
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SiteDel 
-		@SiteID = 329,
+		@SiteID = 5,
 		@UserID = 8,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
@@ -53,6 +58,13 @@ BEGIN
 		DELETE
 		FROM BetRestriction_Site WITH(UPDLOCK,ROWLOCK)
 		WHERE siteid = @SiteID AND SportType = @SportType
+
+		IF @@ROWCOUNT = 0
+		BEGIN
+			SET @ErrCode = 4
+			SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
+			RETURN
+		END
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()

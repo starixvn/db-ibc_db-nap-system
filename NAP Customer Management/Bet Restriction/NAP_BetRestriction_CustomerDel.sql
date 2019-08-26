@@ -19,6 +19,7 @@ AS
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed 
+			4- This record no longer exists in the Bet Restriction List.
 
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
@@ -63,6 +64,13 @@ BEGIN
 		DELETE
 		FROM BetRestriction_Customer WITH(UPDLOCK,ROWLOCK)
 		WHERE CustID = @CustID AND SportType = @SportType
+
+		IF @@ROWCOUNT = 0
+		BEGIN
+			SET @ErrCode = 4
+			SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
+			RETURN
+		END
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
