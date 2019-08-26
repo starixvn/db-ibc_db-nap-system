@@ -111,7 +111,7 @@ BEGIN
 	IF @RoleId <= 3
 	BEGIN
 		INSERT INTO #CustDetailList (CustId, CreateDate, UplineId, ReasonId, MaxBet)
-		SELECT c.CustId, pa.CreatedDate, 0, pa.ReasonId, pa.MaxBet
+		SELECT c.CustId, pa.CreatedDate, c.srecommend, pa.ReasonId, pa.MaxBet
 		FROM #CustList c
 			INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON c.srecommend = pa.CustId	
 	END
@@ -119,7 +119,7 @@ BEGIN
 	IF @RoleId <= 2
 	BEGIN
 		INSERT INTO #CustDetailList (CustId, CreateDate, UplineId, ReasonId, MaxBet)
-		SELECT c.CustId, pa.CreatedDate, 0, pa.ReasonId, pa.MaxBet
+		SELECT c.CustId, pa.CreatedDate, c.mrecommend, pa.ReasonId, pa.MaxBet
 		FROM #CustList c
 			INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON c.mrecommend = pa.CustId	
 	END
@@ -127,7 +127,7 @@ BEGIN
 	IF @RoleId = 1
 	BEGIN
 		INSERT INTO #CustDetailList (CustId, CreateDate, UplineId, ReasonId, MaxBet)
-		SELECT c.CustId, pa.CreatedDate, 0, pa.ReasonId, pa.MaxBet
+		SELECT c.CustId, pa.CreatedDate, c.recommend, pa.ReasonId, pa.MaxBet
 		FROM #CustList c
 			INNER JOIN dbo.CS_ProblemAccount pa WITH (NOLOCK) ON c.recommend = pa.CustId
 
@@ -258,7 +258,7 @@ BEGIN
 	SELECT cd.Custid, CreateDate, pr.ReasonName, ci.Username
 	FROM #CustDetailList cd
 		INNER JOIN #Result r ON cd.CustId = r.CustId
-		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = cd.CustId
+		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = cd.UplineId
 		INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = cd.ReasonId
 	WHERE RowNumber BETWEEN @RowStart AND @RowEnd 	
 
