@@ -23,13 +23,13 @@ BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
 		WHERE ReasonID < 26
-		ORDER BY ReasonName
+		ORDER BY ReasonID
 	END
 	ELSE
 	BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
-		ORDER BY ReasonName
+		ORDER BY ReasonID
 	END
 END
 GO
