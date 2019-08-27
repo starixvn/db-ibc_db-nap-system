@@ -23,27 +23,30 @@ BEGIN
 
 	SELECT @MaxId = MAX(Id) FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction WITH (NOLOCK)
 
-	INSERT INTO #tmpCust (CustId)
-	SELECT c.CustId
-	FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction v WITH (NOLOCK)
-		INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
-	WHERE v.Id > @MinId AND v.Id <= @MaxId
-		AND c.site = 'CN88'
+	IF @MaxId > @MinId
+	BEGIN
+		INSERT INTO #tmpCust (CustId)
+		SELECT c.CustId
+		FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction v WITH (NOLOCK)
+			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
+		WHERE v.Id > @MinId AND v.Id <= @MaxId
+			AND c.site = 'CN88'
 
-	UPDATE pa 
-	SET pa.ProblemStatus = ProblemStatus | 1,
-		pa.IsAbnormalMember = 1
-	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
-		INNER JOIN #tmpCust t ON t.CustId = pa.CustId
+		UPDATE pa 
+		SET pa.ProblemStatus = ProblemStatus | 1,
+			pa.IsAbnormalMember = 1
+		FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
+			INNER JOIN #tmpCust t ON t.CustId = pa.CustId
 
-	INSERT INTO dbo.CS_ProblemAccount (CustId, ProblemStatus, ReasonId, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)
-	SELECT CustId, 1, NULL, NULL, NULL, NULL, GETDATE(), 0, 1
-	FROM #tmpCust t
-	WHERE NOT EXISTS (SELECT 1 FROM CS_ProblemAccount WHERE CustId = t.CustId)
+		INSERT INTO dbo.CS_ProblemAccount (CustId, ProblemStatus, ReasonId, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)
+		SELECT CustId, 1, NULL, NULL, NULL, NULL, GETDATE(), 0, 1
+		FROM #tmpCust t
+		WHERE NOT EXISTS (SELECT 1 FROM CS_ProblemAccount WHERE CustId = t.CustId)
 
-	UPDATE s
-	SET s.VValue = CAST(@MaxID AS VARCHAR(10))
-	FROM DBACC.bodb02.dbo.SystemSettings s WITH (ROWLOCK) 
-	WHERE VName = 'ProblemAccount_MaxId'
+		UPDATE s
+		SET s.VValue = CAST(@MaxID AS VARCHAR(10))
+		FROM DBACC.bodb02.dbo.SystemSettings s WITH (ROWLOCK) 
+		WHERE VName = 'ProblemAccount_MaxId'
+	END
 END
 GO
