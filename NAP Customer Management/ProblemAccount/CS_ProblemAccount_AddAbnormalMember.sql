@@ -25,8 +25,10 @@ BEGIN
 
 	IF @MaxId > @MinId
 	BEGIN
+		SELECT @MaxId = CASE WHEN @MaxId - @MinId > 5000 THEN @MinId + 5000 ELSE @MaxId END
+
 		INSERT INTO #tmpCust (CustId)
-		SELECT c.CustId
+		SELECT DISTINCT c.CustId
 		FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction v WITH (NOLOCK)
 			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
 		WHERE v.Id > @MinId AND v.Id <= @MaxId
