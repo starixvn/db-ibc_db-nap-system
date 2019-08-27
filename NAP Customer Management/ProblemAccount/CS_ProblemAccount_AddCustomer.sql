@@ -41,6 +41,8 @@ BEGIN
 	SELECT ci.Username, ci.custid, ci.roleid
 	FROM @tmpList t
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON t.Username = ci.username
+		INNER JOIN dbo.customer c WITH (NOLOCK) ON ci.custid = c.custid
+	WHERE c.site = 'CN88' 
 
 	----START: Validattion-------------------------------------------------
 	SELECT @WrongUserName = STUFF((SELECT ','+ l.Username
