@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE CS_ProblemAccount_MonitorList
+ALTER PROCEDURE CS_ProblemAccount_MonitorList_xtest
 	@FromDate				DATETIME,
 	@ToDate					DATETIME,
 	@RoleId					TINYINT = 1,
@@ -41,7 +41,7 @@ BEGIN
 	CREATE TABLE #Result (CustId INT, username NVARCHAR(50), Headline NVARCHAR(50), Super NVARCHAR(50), Master NVARCHAR(50), Agent NVARCHAR(50), 
 			IsProblemAccSuper BIT, IsProblemAccMaster BIT, IsProblemAccAgent BIT, IsProblemAcc BIT,
 			SuperMaxBet MONEY, SuperMPM MONEY, MasterMaxBet MONEY, MasterMPM MONEY, AgentMaxBet MONEY, AgentMPM MONEY, MaxBet MONEY, MPM MONEY,
-			CustStatus TINYINT, MarkDate DATETIME, Comment NVARCHAR(100), AbnormalBetNumber BIT, RowNumber INT)	
+			CustStatus TINYINT, MarkDate DATETIME, Comment NVARCHAR(100), AbnormalBetNumber INT, RowNumber INT)	
 
 	INSERT INTO @Reason (ReasonId)	
 	SELECT CAST(f.val AS TINYINT)
@@ -264,6 +264,7 @@ BEGIN
 		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = cd.UplineId
 		INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = cd.ReasonId
 	WHERE RowNumber BETWEEN @RowStart AND @RowEnd 	
+	ORDER BY cd.CustId, cd.CreateDate DESC
 
 	DROP TABLE #CustDetailList
 	DROP TABLE #CustList
