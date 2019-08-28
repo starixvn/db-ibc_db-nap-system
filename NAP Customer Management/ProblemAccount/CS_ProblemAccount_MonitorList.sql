@@ -41,63 +41,66 @@ BEGIN
 	CREATE TABLE #Result (CustId INT, username NVARCHAR(50), Headline NVARCHAR(50), Super NVARCHAR(50), Master NVARCHAR(50), Agent NVARCHAR(50), 
 			IsProblemAccSuper BIT, IsProblemAccMaster BIT, IsProblemAccAgent BIT, IsProblemAcc BIT,
 			SuperMaxBet MONEY, SuperMPM MONEY, MasterMaxBet MONEY, MasterMPM MONEY, AgentMaxBet MONEY, AgentMPM MONEY, MaxBet MONEY, MPM MONEY,
-			CustStatus TINYINT, MarkDate DATETIME, Comment NVARCHAR(100), AbnormalBetNumber BIT, RowNumber INT)
-
-	SELECT @CustSearchId = CustId, @CustSearchRoleId = roleid FROM dbo.custInfo WITH (NOLOCK) WHERE username = @UserSearch
+			CustStatus TINYINT, MarkDate DATETIME, Comment NVARCHAR(100), AbnormalBetNumber BIT, RowNumber INT)	
 
 	INSERT INTO @Reason (ReasonId)	
 	SELECT CAST(f.val AS TINYINT)
 	FROM dbo.f_SplitString(@ReasonId, ',') f
 	OPTION (MAXRECURSION 0)	
 
-	IF @CustSearchId IS NOT NULL
+	IF ISNULL(@UserSearch,'') <> '' 
 	BEGIN
-		IF @IsSearchDownline = 0 --search by username
+		SELECT @CustSearchId = CustId, @CustSearchRoleId = roleid FROM dbo.custInfo WITH (NOLOCK) WHERE username = @UserSearch
+
+		IF @CustSearchId IS NOT NULL
 		BEGIN
-			IF @CustSearchRoleId = @RoleId
+			IF @IsSearchDownline = 0 --search by username
 			BEGIN
-				INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
-				SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
-				FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
-					CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
-				WHERE ci.custid = @CustSearchId
-					AND ci.roleid = @RoleId
-					AND ci.currency = @CurrencyId
-					AND pa.CreatedDate BETWEEN @FromDate AND @ToDate					
-					AND st.CustStatus = CASE WHEN @Status = 0 THEN st.CustStatus ELSE @Status END
+				IF @CustSearchRoleId = @RoleId
+				BEGIN
+					INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
+					SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
+					FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
+						INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
+						CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
+					WHERE ci.custid = @CustSearchId
+						AND ci.roleid = @RoleId
+						AND ci.currency = @CurrencyId
+						AND pa.CreatedDate BETWEEN @FromDate AND @ToDate					
+						AND st.CustStatus = CASE WHEN @Status = 0 THEN st.CustStatus ELSE @Status END
+				END
 			END
-		END
-		ELSE --search by username's downline
-		BEGIN
-			IF @CustSearchRoleId > @RoleId
+			ELSE --search by username's downline
 			BEGIN
-				INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
-				SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
-				FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
-					INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
-					CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
-				WHERE @CustSearchId = CASE WHEN @CustSearchRoleId = 4 THEN ci.srecommend
-											WHEN @CustSearchRoleId = 3 THEN ci.mrecommend
-											WHEN @CustSearchRoleId = 2 THEN ci.recommend END
-					AND ci.roleid = @RoleId
-					AND ci.currency = @CurrencyId
-					AND pa.CreatedDate BETWEEN @FromDate AND @ToDate					
-					AND st.CustStatus = CASE WHEN @Status = 0 THEN st.CustStatus ELSE @Status END
+				IF @CustSearchRoleId > @RoleId
+				BEGIN
+					INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
+					SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
+					FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
+						INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
+						CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
+					WHERE @CustSearchId = CASE WHEN @CustSearchRoleId = 4 THEN ci.srecommend
+												WHEN @CustSearchRoleId = 3 THEN ci.mrecommend
+												WHEN @CustSearchRoleId = 2 THEN ci.recommend END
+						AND ci.roleid = @RoleId
+						AND ci.currency = @CurrencyId
+						AND pa.CreatedDate BETWEEN @FromDate AND @ToDate					
+						AND st.CustStatus = CASE WHEN @Status = 0 THEN st.CustStatus ELSE @Status END
+				END
 			END
 		END
 	END 
 	ELSE
 	BEGIN
-			INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
-				SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
-			FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
-				INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
-				CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
-			WHERE ci.roleid = @RoleId
-				AND ci.currency = @CurrencyId
-				AND pa.CreatedDate BETWEEN @FromDate AND @ToDate					
-				AND st.CustStatus = CASE WHEN @Status = 0 THEN st.CustStatus ELSE @Status END
+		INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
+			SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
+		FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
+			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
+			CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
+		WHERE ci.roleid = @RoleId
+			AND ci.currency = @CurrencyId
+			AND pa.CreatedDate BETWEEN @FromDate AND @ToDate					
+			AND st.CustStatus = CASE WHEN @Status = 0 THEN st.CustStatus ELSE @Status END
 	END
 
 	IF @RoleId <= 4
