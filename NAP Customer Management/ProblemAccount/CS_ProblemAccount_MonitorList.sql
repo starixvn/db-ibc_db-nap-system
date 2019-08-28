@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE CS_ProblemAccount_MonitorList_xtest
+ALTER PROCEDURE CS_ProblemAccount_MonitorList
 	@FromDate				DATETIME,
 	@ToDate					DATETIME,
 	@RoleId					TINYINT = 1,
