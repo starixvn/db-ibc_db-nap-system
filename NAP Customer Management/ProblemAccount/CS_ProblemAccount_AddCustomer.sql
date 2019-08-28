@@ -28,20 +28,19 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
-	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName NVARCHAR(50), @ReasonName VARCHAR(100)
+	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName VARCHAR(30), @ReasonName VARCHAR(100)
 	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
-	DECLARE @tmpList TABLE (Username NVARCHAR(50))
-	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpList TABLE (Username VARCHAR(MAX))	
+	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))
 
 	INSERT INTO @tmpList(Username)
 	SELECT Val
 	FROM dbo.f_StringSplit(@CustomerList, ',') f
 
 	INSERT INTO @tmpCust(Username, CustID, RoleId)
-	SELECT ci.Username, ci.custid, ci.roleid
+	SELECT c.Username, c.custid, c.roleid
 	FROM @tmpList t
-		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON t.Username = ci.username
-		INNER JOIN dbo.customer c WITH (NOLOCK) ON ci.custid = c.custid
+		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username
 	WHERE c.site = 'CN88' 
 
 	----START: Validattion-------------------------------------------------
