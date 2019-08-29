@@ -17,34 +17,38 @@ AS
 	*/
 BEGIN
 	SELECT ci.CustID,
-		   CAST(CASE WHEN up.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
+		   CAST(CASE WHEN upCust.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
 		   [UplineLevel] = CASE WHEN upCust.roleid = 1 THEN 'Member'
 						  WHEN upCust.roleid = 2 THEN 'Agent'
 						  WHEN upCust.roleid = 3 THEN 'Master'
 						  WHEN upCust.roleid = 4 THEN 'Super'
 					END,
 		   upCust.username AS ExistingUplineUserName,
-		   up.SeizeBetTicket AS Upline_SeizeBetTicket,
+		   (SELECT MAX(SeizeBetTicket) FROM (VALUES (Aup.SeizeBetTicket), (Mup.SeizeBetTicket), (Sup.SeizeBetTicket)) AS value(SeizeBetTicket)) AS Upline_SeizeBetTicket,
 		   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists,
 		   down.Min_Downline_SeizeBetTicket
 	FROM custInfo ci WITH(NOLOCK) 
-		 LEFT JOIN BetRestriction_Customer Up WITH(NOLOCK) 
-			ON up.CustID = CASE WHEN ci.roleid = 1 THEN ci.recommend
-								WHEN ci.roleid = 2 THEN ci.mrecommend
-								WHEN ci.roleid = 3 THEN ci.srecommend
-						    END
-			AND up.SportType = @SportType
-		 LEFT JOIN custInfo upCust WITH(NOLOCK) ON up.CustID = upCust.custid
+		 LEFT JOIN BetRestriction_Customer AUp WITH(NOLOCK) 
+			ON AUp.CustID = ci.recommend AND AUp.SportType = @SportType AND ci.CustID  <> ci.recommend
+		 LEFT JOIN BetRestriction_Customer MUp WITH(NOLOCK) 
+			ON MUp.CustID = ci.mrecommend AND MUp.SportType = @SportType AND ci.CustID  <> ci.mrecommend
+		 LEFT JOIN BetRestriction_Customer SUp WITH(NOLOCK) 
+			ON SUp.CustID = ci.srecommend AND SUp.SportType = @SportType AND ci.CustID  <> ci.srecommend
+		 LEFT JOIN custInfo upCust WITH(NOLOCK) ON COALESCE(Aup.CustID,MUp.CustID,SUp.CustID) = upCust.custid
 		 OUTER APPLY (	SELECT MIN(b.SeizeBetTicket) AS Min_Downline_SeizeBetTicket  , MIN(b.CustID) AS ExistingDownLine
 						FROM BetRestriction_Customer b WITH(NOLOCK) 
 							JOIN custInfo ci1 WITH(NOLOCK) ON b.CustID = ci1.custid
-						WHERE ci.CustID = CASE WHEN ci.roleid = 4 THEN ci1.srecommend
+						WHERE ci.CustID = CASE WHEN ci.roleid = 4 THEN ci1.srecommend  
 											   WHEN ci.roleid = 3 THEN ci1.mrecommend
 											   WHEN ci.roleid = 2 THEN ci1.recommend 
 										END
 							AND b.SportType = @SportType
+							AND ci1.custid <> CASE WHEN ci.roleid = 4 THEN ci1.srecommend
+											   WHEN ci.roleid = 3 THEN ci1.mrecommend
+											   WHEN ci.roleid = 2 THEN ci1.recommend 
+										END
 					 ) down
-	WHERE ci.username = @Username 
+	WHERE ci.username = @Username
 		  
 END
 GO
