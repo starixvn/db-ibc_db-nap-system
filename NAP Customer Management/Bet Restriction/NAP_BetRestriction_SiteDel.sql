@@ -76,12 +76,12 @@ BEGIN
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
 	DECLARE @LogData VARCHAR(500)
-	SELECT  @LogData = '<R'
+	SELECT  @LogData = '<R '
 						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
-						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

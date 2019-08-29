@@ -104,7 +104,7 @@ BEGIN
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
 	DECLARE @LogDataNew VARCHAR(500)
-	SELECT  @LogDataNew = '<R'
+	SELECT  @LogDataNew = '<R '
 						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 

@@ -82,14 +82,14 @@ BEGIN
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
 	DECLARE @LogData VARCHAR(500)
-	SELECT  @LogData = '<R'
+	SELECT  @LogData = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
-						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
-						+ 'MaxBet="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
-						+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'MaxBet="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
+						--+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

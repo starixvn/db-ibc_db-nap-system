@@ -120,7 +120,7 @@ BEGIN
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
-	SELECT  @LogDataNew = '<R'
+	SELECT  @LogDataNew = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
@@ -130,7 +130,7 @@ BEGIN
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />',
-			@LogDataOld = '<R'
+			@LogDataOld = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 

@@ -139,7 +139,7 @@ BEGIN
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
-	SELECT  @LogDataNew = '<R'
+	SELECT  @LogDataNew = '<R '
 						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@vNewType as varchar(50)),space(1)) + '" ' 
@@ -148,7 +148,7 @@ BEGIN
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
-			@LogDataOld = '<R'
+			@LogDataOld = '<R '
 						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@vCurrentType as varchar(50)),space(1)) + '" ' 
