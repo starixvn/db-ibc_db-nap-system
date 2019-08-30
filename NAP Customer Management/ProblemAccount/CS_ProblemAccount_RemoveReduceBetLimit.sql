@@ -47,15 +47,23 @@ BEGIN
 
 	IF @IsConfirmed = 0
 	BEGIN
-		SELECT @WarningList= STUFF((SELECT ','+ t.Username
-									FROM @tmpCust t
-									WHERE t.MaxBet IS NULL
-									FOR XML PATH('')),1,1,'')
-
-		IF ISNULL(@WarningList,'') <> '' 
+		IF EXISTS (SELECT 1 FROM @tmpCust t WHERE MaxBet IS NOT NULL)
 		BEGIN
-		   SELECT @ErrCode = 101, @ErrMsg = @WarningList
-		   RETURN
+			SELECT @WarningList= STUFF((SELECT ','+ t.Username
+										FROM @tmpCust t
+										WHERE t.MaxBet IS NULL
+										FOR XML PATH('')),1,1,'')
+
+			IF ISNULL(@WarningList,'') <> '' 
+			BEGIN
+			   SELECT @ErrCode = 101, @ErrMsg = @WarningList
+			   RETURN
+			END
+		END
+		ELSE
+		BEGIN	
+			SELECT @ErrCode = 102, @ErrMsg = '' --All accounts don't reduce BL yet, return
+			RETURN
 		END
     END
 	ELSE

@@ -42,14 +42,22 @@ BEGIN
 
 	IF @IsConfirmed = 0
 	BEGIN
-		SELECT @WarningList= STUFF((SELECT ','+ t.Username
-									FROM @tmpCust t
-									WHERE t.StatusID = 1
-									FOR XML PATH('')),1,1,'')
-
-		IF ISNULL(@WarningList,'') <> '' 
+		IF EXISTS (SELECT 1 FROM @tmpCust t WHERE t.StatusID <> 1)
 		BEGIN
-			SELECT @ErrCode = 101, @ErrMsg = @WarningList
+			SELECT @WarningList= STUFF((SELECT ','+ t.Username
+										FROM @tmpCust t
+										WHERE t.StatusID = 1
+										FOR XML PATH('')),1,1,'')
+
+			IF ISNULL(@WarningList,'') <> '' 
+			BEGIN
+				SELECT @ErrCode = 101, @ErrMsg = @WarningList
+				RETURN
+			END
+		END
+		ELSE
+		BEGIN	
+			SELECT @ErrCode = 102, @ErrMsg = '' --All accounts are inactive, return
 			RETURN
 		END
 	END
