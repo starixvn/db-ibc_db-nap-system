@@ -2,10 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SettingUpd] (
 	  @UserId				INT
 	 ,@IP					VARCHAR(15) = ''
-	 ,@SettingID			SMALLINT
-	 ,@LiveBetAcceptStatus	BIT 
-	 ,@SeizeBetTicketStatus BIT
-	 ,@BetLimitStatus		BIT
+	 ,@SettingXML			XML
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT	
 	 ,@ErrCode				TINYINT = 0 OUTPUT
 )
@@ -25,20 +22,24 @@ AS
 			 <> 0 - specific error
 
 	Example: 
+	DECLARE @SettingXML XML =
+	N'<R>
+		<Setting SettingId="1" LiveBetAccept="0" SeizeBetTicket="0" BetLimit="0"/> 
+		<Setting SettingId="2" SeizeBetTicket="0" BetLimit="0"/> 
+		<Setting SettingId="3" LiveBetAccept="0" SeizeBetTicket="0" /> 
+	</R>'
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SettingUpd
-		@SettingID = 1,
-		@userid = 10,
-		@LiveBetAcceptStatus = 1,	
-		@SeizeBetTicketStatus = 1, 
-		@BetLimitStatus = 0,	
+		@userid = 8,
+		@SettingXML = @SettingXML,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
 	SELECT @ErrCode, @ErrMsg
 
 	*/
 BEGIN
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT 	
+	DECLARE @SettingID	SMALLINT, @LiveBetAcceptStatus BIT, @SeizeBetTicketStatus BIT, @BetLimitStatus BIT
+	, @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT 	
 	, @SportType SMALLINT, @RestrictionLevel VARCHAR(50)	
 	, @LiveBetAcceptStatus_Old BIT, @SeizeBetTicketStatus_Old BIT, @BetLimitStatus_Old BIT
 	, @Type VARCHAR(20)
@@ -46,41 +47,80 @@ BEGIN
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 
-	SELECT	@LiveBetAcceptStatus_Old = LiveBetAcceptStatus,
-			@SeizeBetTicketStatus_Old = SeizeBetTicketStatus,
-			@BetLimitStatus_Old = BetLimitStatus,
-			@SportType = SportType, 
-			@RestrictionLevel = RestrictionLevel,
-			@Type = CASE WHEN IsLicensee = 1 THEN 'Licensee' ELSE 'Credit' END
-	FROM	BetRestriction_Setting bs WITH(NOLOCK) 
-	WHERE   SettingID = @SettingID
-		
-	IF @LiveBetAcceptStatus = @LiveBetAcceptStatus_Old 
-		AND @SeizeBetTicketStatus = @SeizeBetTicketStatus_Old 
-		AND @BetLimitStatus = @BetLimitStatus_Old
-	BEGIN
-		SELECT @ErrMsg = N'No change'
-		RETURN
-	END
+	DECLARE @hDoc AS INT
 
-	BEGIN TRY
-		UPDATE	BetRestriction_Setting WITH(ROWLOCK)
-		SET		LiveBetAcceptStatus = @LiveBetAcceptStatus,
-				SeizeBetTicketStatus = @SeizeBetTicketStatus,
-				BetLimitStatus = @BetLimitStatus
+	EXEC sp_xml_preparedocument @hDoc OUTPUT, @SettingXML
+
+	SELECT  st.SettingId,
+			st.LiveBetAcceptStatus,
+			st.SeizeBetTicketStatus,
+			st.BetLimitStatus, 
+			CAST (0 AS BIT) AS IsProcessed,
+			CAST (NULL AS VARCHAR(500)) AS LogDataNew,
+			CAST (NULL AS VARCHAR(500)) AS LogDataOld,
+			CAST (0 AS BIT) AS IsProcessedLog
+	INTO #Setting
+	FROM OPENXML(@hDoc, 'R/Setting')
+	WITH 
+	(
+		 SettingId SMALLINT '@SettingId'
+		,LiveBetAcceptStatus BIT '@LiveBetAccept'
+		,SeizeBetTicketStatus BIT '@SeizeBetTicket'
+		,BetLimitStatus BIT '@BetLimit'
+	) st
+
+	WHILE 1 = 1 
+	BEGIN 
+		SELECT TOP 1 
+				@SettingID = SettingID,
+				@LiveBetAcceptStatus = LiveBetAcceptStatus,
+				@SeizeBetTicketStatus = SeizeBetTicketStatus,
+				@BetLimitStatus = BetLimitStatus
+		FROM  #Setting
+		WHERE IsProcessed = 0
+
+		IF @@ROWCOUNT = 0
+			BREAK;
+
+		SELECT	@LiveBetAcceptStatus_Old = LiveBetAcceptStatus,
+				@SeizeBetTicketStatus_Old = SeizeBetTicketStatus,
+				@BetLimitStatus_Old = BetLimitStatus,
+				@SportType = SportType, 
+				@RestrictionLevel = RestrictionLevel,
+				@Type = CASE WHEN IsLicensee = 1 THEN 'Licensee' ELSE 'Credit' END
+		FROM	BetRestriction_Setting bs WITH(NOLOCK) 
 		WHERE   SettingID = @SettingID
-	END TRY
-	BEGIN CATCH
-		SET @ErrCode = ERROR_NUMBER()
-		SELECT @ErrMsg = ERROR_MESSAGE()
-		RETURN
-	END CATCH
+		
+		SELECT  @LiveBetAcceptStatus = ISNULL(@LiveBetAcceptStatus, @LiveBetAcceptStatus_Old),
+				@SeizeBetTicketStatus = ISNULL(@SeizeBetTicketStatus, @SeizeBetTicketStatus_Old),
+				@BetLimitStatus = ISNULL(@BetLimitStatus, @BetLimitStatus_Old)
 
-	SET @EndRun = GETDATE()
-	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+		IF @LiveBetAcceptStatus = @LiveBetAcceptStatus_Old 
+			AND @SeizeBetTicketStatus = @SeizeBetTicketStatus_Old 
+			AND @BetLimitStatus = @BetLimitStatus_Old
+		BEGIN
+			DELETE FROM #Setting WHERE SettingID = @SettingID
 
-	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
-	SELECT  @LogDataNew = '<R '
+			GOTO NextStep; -- No change
+		END
+
+		BEGIN TRY
+			UPDATE	BetRestriction_Setting WITH(ROWLOCK)
+			SET		LiveBetAcceptStatus = @LiveBetAcceptStatus,
+					SeizeBetTicketStatus = @SeizeBetTicketStatus,
+					BetLimitStatus = @BetLimitStatus
+			WHERE   SettingID = @SettingID
+		END TRY
+		BEGIN CATCH
+			SET @ErrCode = ERROR_NUMBER()
+			SELECT @ErrMsg = ERROR_MESSAGE()
+			RETURN
+		END CATCH
+
+		--> mark IsProcessed
+		UPDATE #Setting 
+		SET IsProcessed = 1 ,
+			LogDataNew = '<R '
 						+ 'RestrictionLevel="'+ coalesce(cast(@RestrictionLevel as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@Type as varchar(50)),space(1)) + '" ' 
@@ -89,7 +129,7 @@ BEGIN
 						+ 'BetLimitStatus="'+ coalesce(cast(@BetLimitStatus as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
-			@LogDataOld = '<R '
+			LogDataOld = '<R '
 						+ 'RestrictionLevel="'+ coalesce(cast(@RestrictionLevel as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@Type as varchar(50)),space(1)) + '" ' 
@@ -98,12 +138,42 @@ BEGIN
 						+ 'BetLimitStatus="'+ coalesce(cast(@BetLimitStatus_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />'
+		WHERE SettingID = @SettingID
 
-	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-		@UserId				= @UserId,
-		@ActionId			= @ActionID,
-		@TrackingValue		= @LogDataNew,
-		@Duration			= @Duration 
+		NextStep:
+	END
+
+	SET @EndRun = GETDATE()
+	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+
+	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
+
+	select * from  #Setting
+	--> Write log
+	WHILE 1 = 1 
+	BEGIN 
+		SELECT TOP 1 
+				@LogDataNew = LogDataNew,
+				@LogDataOld = LogDataOld,
+				@SettingID = SettingID
+		FROM  #Setting
+		WHERE IsProcessedLog = 0
+
+		IF @@ROWCOUNT = 0
+			BREAK;
+
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			@UserId				= @UserId,
+			@ActionId			= @ActionID,
+			@TrackingValue		= @LogDataNew,
+			@Duration			= @Duration 
+
+		--> mark IsProcessedLog
+		UPDATE #Setting 
+		SET   IsProcessedLog = 1 
+		WHERE SettingID = @SettingID
+	END
+	
 END
 GO
 
