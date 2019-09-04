@@ -1,3 +1,4 @@
+/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_UserControl_GetDataBySiteId]
 	@SiteId INT
 	,@UserId INT = NULL
@@ -9,6 +10,7 @@ AS
  *  
  * Revisions:
 	- 20190828@Oliver: init - [Redmine:119340]
+      - 20190828@Oliver: add config db - [Redmine:119340]
 	     
  * Param's Explanation:
  */
@@ -147,5 +149,3 @@ END
 
 GO
 GRANT EXECUTE ON [dbo].[NAP_UserControl_GetDataBySiteId] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_UserControl_GetDataBySiteId] TO [vnteam] AS [dbo]
