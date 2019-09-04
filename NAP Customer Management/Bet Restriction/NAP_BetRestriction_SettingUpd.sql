@@ -2,9 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SettingUpd] (
 	  @UserId				INT
 	 ,@IP					VARCHAR(15) = ''
-	 ,@SportType			SMALLINT
-	 ,@RestrictionLevel		VARCHAR(50)
-	 ,@IsLicensee			BIT
+	 ,@SettingID			SMALLINT
 	 ,@LiveBetAcceptStatus	BIT 
 	 ,@SeizeBetTicketStatus BIT
 	 ,@BetLimitStatus		BIT
@@ -29,22 +27,21 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SettingUpd
-		@SportType = 1, 
-		@RestrictionLevel = 'BetRestriction_Customer',
-		@IsLicensee = 0,
+		@SettingID = 1,
 		@userid = 10,
 		@LiveBetAcceptStatus = 1,	
 		@SeizeBetTicketStatus = 1, 
-		@BetLimitStatus = 1,	
+		@BetLimitStatus = 0,	
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
 	SELECT @ErrCode, @ErrMsg
 
 	*/
 BEGIN
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT 		
-			, @LiveBetAcceptStatus_Old BIT, @SeizeBetTicketStatus_Old BIT, @BetLimitStatus_Old BIT
-			, @Type VARCHAR(20)
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT 	
+	, @SportType SMALLINT, @RestrictionLevel VARCHAR(50)	
+	, @LiveBetAcceptStatus_Old BIT, @SeizeBetTicketStatus_Old BIT, @BetLimitStatus_Old BIT
+	, @Type VARCHAR(20)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -52,12 +49,12 @@ BEGIN
 	SELECT	@LiveBetAcceptStatus_Old = LiveBetAcceptStatus,
 			@SeizeBetTicketStatus_Old = SeizeBetTicketStatus,
 			@BetLimitStatus_Old = BetLimitStatus,
-			@Type = CASE WHEN @IsLicensee = 1 THEN 'Licensee' ELSE 'Credit' END
+			@SportType = SportType, 
+			@RestrictionLevel = RestrictionLevel,
+			@Type = CASE WHEN IsLicensee = 1 THEN 'Licensee' ELSE 'Credit' END
 	FROM	BetRestriction_Setting bs WITH(NOLOCK) 
-	WHERE   SportType = @SportType 
-			AND RestrictionLevel = @RestrictionLevel
-			AND IsLicensee = @IsLicensee
-	
+	WHERE   SettingID = @SettingID
+		
 	IF @LiveBetAcceptStatus = @LiveBetAcceptStatus_Old 
 		AND @SeizeBetTicketStatus = @SeizeBetTicketStatus_Old 
 		AND @BetLimitStatus = @BetLimitStatus_Old
@@ -71,9 +68,7 @@ BEGIN
 		SET		LiveBetAcceptStatus = @LiveBetAcceptStatus,
 				SeizeBetTicketStatus = @SeizeBetTicketStatus,
 				BetLimitStatus = @BetLimitStatus
-		WHERE   SportType = @SportType 
-				AND RestrictionLevel = @RestrictionLevel
-				AND IsLicensee = @IsLicensee
+		WHERE   SettingID = @SettingID
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
@@ -86,8 +81,8 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 	SELECT  @LogDataNew = '<R '
-						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'RestrictionLevel="'+ coalesce(cast(@RestrictionLevel as varchar(50)),space(1)) + '" ' 
+						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@Type as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAcceptStatus="'+ coalesce(cast(@LiveBetAcceptStatus as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicketStatus="'+ coalesce(cast(@SeizeBetTicketStatus as varchar(50)),space(1)) + '" ' 
@@ -95,8 +90,8 @@ BEGIN
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@LogDataOld = '<R '
-						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'RestrictionLevel="'+ coalesce(cast(@RestrictionLevel as varchar(50)),space(1)) + '" ' 
+						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@Type as varchar(50)),space(1)) + '" ' 
 						+ 'LiveBetAcceptStatus="'+ coalesce(cast(@LiveBetAcceptStatus_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SeizeBetTicketStatus="'+ coalesce(cast(@SeizeBetTicketStatus_Old as varchar(50)),space(1)) + '" ' 
@@ -104,12 +99,11 @@ BEGIN
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />'
 
-	--EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-	--	@UserId				= @UserId,
-	--	--@CustId				= @CustId,
-	--	@ActionId			= @ActionID,
-	--	@TrackingValue		= @LogDataNew,
-	--	@Duration			= @Duration 
+	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+		@UserId				= @UserId,
+		@ActionId			= @ActionID,
+		@TrackingValue		= @LogDataNew,
+		@Duration			= @Duration 
 END
 GO
 
