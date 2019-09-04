@@ -24,9 +24,9 @@ AS
 	Example: 
 	DECLARE @SettingXML XML =
 	N'<R>
-		<Setting SettingId="1" LiveBetAccept="0" SeizeBetTicket="0" BetLimit="0"/> 
-		<Setting SettingId="2" SeizeBetTicket="0" BetLimit="0"/> 
-		<Setting SettingId="3" LiveBetAccept="0" SeizeBetTicket="0" /> 
+		<Setting SettingId="1" LiveBetAccept="1" SeizeBetTicket="0" BetLimit="0"/> 
+		<Setting SettingId="2" SeizeBetTicket="1" BetLimit="0"/> 
+		<Setting SettingId="3" LiveBetAccept="1" SeizeBetTicket="0" /> 
 	</R>'
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SettingUpd
@@ -39,7 +39,7 @@ AS
 	*/
 BEGIN
 	DECLARE @SettingID	SMALLINT, @LiveBetAcceptStatus BIT, @SeizeBetTicketStatus BIT, @BetLimitStatus BIT
-	, @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT 	
+	, @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31710	
 	, @SportType SMALLINT, @RestrictionLevel VARCHAR(50)	
 	, @LiveBetAcceptStatus_Old BIT, @SeizeBetTicketStatus_Old BIT, @BetLimitStatus_Old BIT
 	, @Type VARCHAR(20)
@@ -148,7 +148,6 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 
-	select * from  #Setting
 	--> Write log
 	WHILE 1 = 1 
 	BEGIN 
@@ -166,6 +165,7 @@ BEGIN
 			@UserId				= @UserId,
 			@ActionId			= @ActionID,
 			@TrackingValue		= @LogDataNew,
+			@TrackingValue2		= @LogDataOld,
 			@Duration			= @Duration 
 
 		--> mark IsProcessedLog
