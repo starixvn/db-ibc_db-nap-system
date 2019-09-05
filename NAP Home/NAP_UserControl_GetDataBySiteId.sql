@@ -11,7 +11,7 @@ AS
  * Revisions:
 	- 20190828@Oliver: init - [Redmine:119340]
       - 20190828@Oliver: add config db - [Redmine:119340]
-	     
+	- 20190905@Oliver: update condition get OnUser table - [Redmine:119340]
  * Param's Explanation:
  */
 BEGIN
@@ -83,8 +83,10 @@ BEGIN
       ,[IP]
       ,[NetSessionId]
 	FROM dbo.NAP_OnUser ou WITH (NOLOCK)
-	WHERE ou.SiteId = @SiteId
-		AND (@UserId IS NULL OR ou.UserId = @UserId)
+	WHERE ou.IsKickedOut = 0
+	AND ((@UserId IS NULL AND ou.SiteId = @SiteId)
+	OR
+	 (@UserId IS NOT NULL AND ou.UserId = @UserId))
 
 	SELECT [SiteId]
       ,[SiteName]
