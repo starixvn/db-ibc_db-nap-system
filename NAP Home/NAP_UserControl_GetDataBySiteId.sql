@@ -11,7 +11,7 @@ AS
  * Revisions:
 	- 20190828@Oliver: init - [Redmine:119340]
       - 20190828@Oliver: add config db - [Redmine:119340]
-	- 20190905@Oliver: update condition get OnUser table - [Redmine:119340]
+	- 20190905@Oliver: update condition get OnUser table and get more 2 tables- [Redmine:119340]
  * Param's Explanation:
  */
 BEGIN
@@ -147,6 +147,26 @@ BEGIN
 	FROM dbo.NAP_UserSite us WITH (NOLOCK)
 	WHERE us.SiteId = @SiteId
 	AND (@UserId IS NULL OR us.UserId = @UserId)
+
+     SELECT DISTINCT c.custid
+		  ,c.firstname
+		  ,c.lastname
+		  ,c.username
+		  ,c.userpwd
+		  ,c.email
+	FROM CustDB.dbo.Customer c WITH (NOLOCK)
+	INNER JOIN dbo.NAP_UserSite us WITH (NOLOCK)
+	ON c.custid = us.UserId
+	WHERE (@UserId IS NULL AND us.SiteId = @SiteId)
+		OR (@UserId IS NOT NULL AND c.custid = @UserId)
+
+	SELECT DISTINCT ci.custid
+		  ,username
+		  ,closed
+	FROM CustDB.dbo.custInfo ci WITH (NOLOCK)
+	INNER JOIN dbo.NAP_UserSite us WITH (NOLOCK) ON ci.custid = us.UserId
+	WHERE (@UserId IS NULL AND us.SiteId = @SiteId)
+		OR (@UserId IS NOT NULL AND ci.custid = @UserId)
 END
 
 GO
