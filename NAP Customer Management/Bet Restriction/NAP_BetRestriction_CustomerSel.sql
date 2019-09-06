@@ -97,8 +97,65 @@ BEGIN
 		  AND ci.currency = CASE WHEN ISNULL(@CurrencyID,0) <> 0 THEN @CurrencyID ELSE ci.currency END
 		  AND ci.roleid = CASE WHEN @RoleID IS NOT NULL THEN @RoleID ELSE ci.roleid END
 	
-	SELECT *, ROW_NUMBER() OVER (ORDER BY Headline, Account) AS RowNumber
-	INTO #BetRestriction_Customer2
+	CREATE TABLE #BetRestriction_Customer2(
+		CustID int,
+		SportType smallint,
+		Headline nvarchar(50),
+		Account nvarchar(50),
+		roleid tinyint,
+		[Level] varchar(7),
+		[Status] VARCHAR(20),
+		[Site] nvarchar(50),
+		SiteID int,
+		LiveBetAccept smallint,
+		SeizeBetTicket tinyint,
+		Currency nvarchar(50),
+		MaxBet money,
+		MaxPerMatch money,
+		ProblemAccount VARCHAR(3),
+		FollowAccountID int,
+		[FollowAccount] nvarchar(50),
+		RowNumber INT PRIMARY KEY CLUSTERED
+	)
+	
+	INSERT INTO #BetRestriction_Customer2(
+		CustID,
+		SportType,
+		Headline,
+		Account,
+		roleid,
+		[Level],
+		[Status],
+		Site,
+		SiteID,
+		LiveBetAccept,
+		SeizeBetTicket,
+		Currency,
+		MaxBet,
+		MaxPerMatch,
+		ProblemAccount,
+		FollowAccountID,
+		[FollowAccount],
+		RowNumber
+	)
+	SELECT CustID,
+		SportType,
+		Headline,
+		Account,
+		roleid,
+		[Level],
+		[Status],
+		Site,
+		SiteID,
+		LiveBetAccept,
+		SeizeBetTicket,
+		Currency,
+		MaxBet,
+		MaxPerMatch,
+		ProblemAccount,
+		FollowAccountID,
+		[FollowAccount], 
+		ROW_NUMBER() OVER (ORDER BY Headline, Account) AS RowNumber
 	FROM #BetRestriction_Customer tmp
 	WHERE tmp.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE tmp.SiteID END 
 		AND tmp.Status = CASE WHEN ISNULL(@Status,'All') <> 'All' THEN @Status ELSE tmp.Status END 

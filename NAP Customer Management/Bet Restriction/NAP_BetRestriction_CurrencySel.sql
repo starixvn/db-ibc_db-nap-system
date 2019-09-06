@@ -33,6 +33,29 @@ BEGIN
 	INTO  #Setting
 	FROM  dbo.f_BetRestrictionSettingSel('BetRestriction_Currency',@IsTest)
 
+	CREATE TABLE #BetRestriction_Currency(
+		Currency nvarchar(50),
+		ExchangeID int,
+		SportType smallint,
+		[Type] tinyint,
+		LiveBetAccept smallint,
+		SeizeBetTicket tinyint,
+		FollowAccountID int,
+		[FollowAccount] nvarchar(50),
+		RowNumber INT PRIMARY KEY CLUSTERED
+	)
+
+	INSERT INTO #BetRestriction_Currency(
+		currency,
+		ExchangeID,
+		SportType,
+		[Type],
+		LiveBetAccept,
+		SeizeBetTicket,
+		FollowAccountID,
+		FollowAccount,
+		RowNumber
+	)
 	SELECT e.currency, 
 		   bc.ExchangeID,
 		   bc.SportType,
@@ -42,7 +65,6 @@ BEGIN
 		   bc.FollowAccount AS FollowAccountID,
 		   ci.username AS FollowAccount,
 		   ROW_NUMBER() OVER (ORDER BY e.currency) AS RowNumber
-	INTO #BetRestriction_Currency
 	FROM BetRestriction_Currency bc WITH(NOLOCK)
 		 INNER JOIN exchange e WITH(NOLOCK) ON bc.ExchangeID = e.exchangeid
 		 LEFT JOIN CustInfo ci WITH(NOLOCK) ON ci.custid = bc.FollowAccount

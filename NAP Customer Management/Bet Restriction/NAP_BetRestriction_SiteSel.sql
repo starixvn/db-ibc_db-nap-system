@@ -33,6 +33,28 @@ BEGIN
 	INTO  #Setting
 	FROM  dbo.f_BetRestrictionSettingSel('BetRestriction_Site',@IsTest)
 
+	CREATE TABLE #BetRestriction_Site(
+		[site] nvarchar(50),
+		SiteID int,
+		SportType smallint,
+		LiveBetAccept smallint,
+		SeizeBetTicket tinyint,
+		FollowAccountID int,
+		[FollowAccount] nvarchar(50),
+		RowNumber INT PRIMARY KEY CLUSTERED
+	)
+
+	INSERT INTO #BetRestriction_Site(
+		[site],
+		SiteID,
+		SportType,
+		LiveBetAccept,
+		SeizeBetTicket,
+		FollowAccountID,
+		FollowAccount,
+		RowNumber
+	)
+
 	SELECT s.[site],
 		   bs.SiteID,
 		   bs.SportType,
@@ -41,7 +63,6 @@ BEGIN
 		   bs.FollowAccount AS FollowAccountID,
 		   ci.username AS FollowAccount,
 		   ROW_NUMBER() OVER (ORDER BY [Site]) AS RowNumber
-	INTO #BetRestriction_Site
 	FROM BetRestriction_Site bs WITH(NOLOCK)
 		 INNER JOIN [Site] s WITH(NOLOCK) ON bs.SiteID = s.siteid
 		 LEFT JOIN CustInfo ci WITH(NOLOCK) ON ci.custid = bs.FollowAccount
