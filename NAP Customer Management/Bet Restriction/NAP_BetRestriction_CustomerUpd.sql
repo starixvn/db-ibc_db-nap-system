@@ -85,6 +85,20 @@ BEGIN
 		RETURN
 	END
 
+	IF @MaxBet < 0 
+	BEGIN
+		SET @ErrCode = 5
+		SELECT @ErrMsg = 'Invalid Max Bet amount.' 
+		RETURN
+	END
+
+	IF @MaxPerMatch < 0
+	BEGIN
+		SET @ErrCode = 6
+		SELECT @ErrMsg = 'Invalid Max Per Match amount.' 
+		RETURN
+	END
+
 	SELECT @site = Site FROM Customer c WITH(NOLOCK) WHERE c.custid = @CustID
 	
 	IF	@LiveBetAccept_Old = @LiveBetAccept 
