@@ -59,9 +59,9 @@ BEGIN
 						  WHEN ci.roleid = 4 THEN 'Super'
 						  ELSE 'N/A'
 					END,
-		   CASE WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 0 AND ISNULL(ci.reject, 0) = 0 THEN 'Active'
+		   CASE WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 0 AND ISNULL(ci.reject, 0) = 0 THEN 'Open'
 				WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 0 AND ISNULL(ci.reject, 0) = 1 THEN 'Suspended'
-				WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 1 THEN 'Close'
+				WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 1 THEN 'Closed'
 				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 1 THEN 'Active'
 				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 2 THEN 'View Only'
 				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 3 THEN 'Suspended'
