@@ -18,13 +18,16 @@ AS
 BEGIN
 	SELECT ci.CustID,
 		   CAST(CASE WHEN upCust.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
-		   [UplineLevel] = CASE WHEN upCust.roleid = 1 THEN 'Member'
-						  WHEN upCust.roleid = 2 THEN 'Agent'
+		   UplineLevel = CASE WHEN upCust.roleid = 2 THEN 'Agent'
 						  WHEN upCust.roleid = 3 THEN 'Master'
 						  WHEN upCust.roleid = 4 THEN 'Super'
 					END,
 		   upCust.username AS ExistingUplineUserName,
-		   (SELECT MAX(SeizeBetTicket) FROM (VALUES (Aup.SeizeBetTicket), (Mup.SeizeBetTicket), (Sup.SeizeBetTicket)) AS value(SeizeBetTicket)) AS Upline_SeizeBetTicket,
+		   Upline_SeizeBetTicket = CASE COALESCE(Aup.CustID,MUp.CustID,SUp.CustID) 
+										 WHEN AUp.CustID THEN AUp.SeizeBetTicket
+										 WHEN MUp.CustID THEN MUp.SeizeBetTicket
+										 WHEN SUp.CustID THEN SUp.SeizeBetTicket
+									END,
 		   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists,
 		   down.Min_Downline_SeizeBetTicket
 	FROM custInfo ci WITH(NOLOCK) 
