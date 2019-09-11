@@ -66,7 +66,7 @@ BEGIN
 		BEGIN
 			SELECT  @LogDataOld = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' MPE="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
@@ -74,7 +74,7 @@ BEGIN
 
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' MPE="' + dbo.f_CS_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
 							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'		
