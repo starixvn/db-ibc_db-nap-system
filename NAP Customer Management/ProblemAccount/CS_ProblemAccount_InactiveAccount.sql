@@ -44,10 +44,10 @@ BEGIN
 	BEGIN
 		IF EXISTS (SELECT 1 FROM @tmpCust t WHERE t.StatusID <> 1)
 		BEGIN
-			SELECT @WarningList= STUFF((SELECT ','+ t.Username
+			SELECT @WarningList= STUFF((SELECT ', '+ t.Username
 										FROM @tmpCust t
 										WHERE t.StatusID = 1
-										FOR XML PATH('')),1,1,'')
+										FOR XML PATH('')),1,2,'')
 
 			IF ISNULL(@WarningList,'') <> '' 
 			BEGIN

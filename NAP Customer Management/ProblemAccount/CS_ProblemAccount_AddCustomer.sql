@@ -44,11 +44,11 @@ BEGIN
 	WHERE c.site = 'CN88' 
 
 	----START: Validattion-------------------------------------------------
-	SELECT @WrongUserName = STUFF((SELECT ','+ l.Username
+	SELECT @WrongUserName = STUFF((SELECT ', '+ l.Username
 									FROM @tmpList l
 										LEFT JOIN @tmpCust c ON c.Username = l.Username
 									WHERE c.CustId IS NULL
-									FOR XML PATH('')),1,1,'')
+									FOR XML PATH('')),1,2,'')
 
 	IF ISNULL(@WrongUserName,'') <> ''
     BEGIN
@@ -56,10 +56,10 @@ BEGIN
 	   RETURN
     END	
 
-	SELECT @WrongUserName = STUFF((SELECT ','+ Username
+	SELECT @WrongUserName = STUFF((SELECT ', '+ Username
 									FROM @tmpCust
 									WHERE RoleId <> @RoleId
-									FOR XML PATH('')),1,1,'')
+									FOR XML PATH('')),1,2,'')
 
 	IF ISNULL(@WrongUserName,'') <> ''
     BEGIN
@@ -67,11 +67,11 @@ BEGIN
 	   RETURN
     END	
 
-	SELECT @WrongUserName = STUFF((SELECT ','+ c.Username
+	SELECT @WrongUserName = STUFF((SELECT ', '+ c.Username
 									FROM @tmpCust c
 										INNER JOIN dbo.CS_ProblemAccount pa ON pa.CustId = c.CustId
 									WHERE pa.ReasonId IS NOT NULL
-									FOR XML PATH('')),1,1,'')
+									FOR XML PATH('')),1,2,'')
 
 	IF ISNULL(@WrongUserName,'') <> ''
     BEGIN
@@ -111,9 +111,9 @@ BEGIN
 			@SuccessDownlineList = @SuccessDownlineList OUTPUT
 	
 		IF @IsSuccess = 1
-			SELECT @SuccessList = @SuccessList + ',' + @UserName
+			SELECT @SuccessList = @SuccessList + ', ' + @UserName
 		ELSE
-			SELECT @FailList = @FailList + ',' + @UserName
+			SELECT @FailList = @FailList + ', ' + @UserName
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
@@ -137,12 +137,12 @@ BEGIN
 
 	IF ISNULL(@SuccessList,'') <> ''
     BEGIN
-	   SELECT @SuccessList = STUFF(@SuccessList,1,1,'')
+	   SELECT @SuccessList = STUFF(@SuccessList,1,2,'')
     END
 
 	IF ISNULL(@FailList,'') <> ''
     BEGIN
-	   SELECT @ErrCode = 500, @FailList = STUFF(@FailList,1,1,'')
+	   SELECT @ErrCode = 500, @FailList = STUFF(@FailList,1,2,'')
     END
 END
 GO

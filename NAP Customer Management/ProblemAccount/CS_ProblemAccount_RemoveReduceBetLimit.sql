@@ -49,10 +49,10 @@ BEGIN
 	BEGIN
 		IF EXISTS (SELECT 1 FROM @tmpCust t WHERE MaxBet IS NOT NULL)
 		BEGIN
-			SELECT @WarningList= STUFF((SELECT ','+ t.Username
+			SELECT @WarningList= STUFF((SELECT ', '+ t.Username
 										FROM @tmpCust t
 										WHERE t.MaxBet IS NULL
-										FOR XML PATH('')),1,1,'')
+										FOR XML PATH('')),1,2,'')
 
 			IF ISNULL(@WarningList,'') <> '' 
 			BEGIN
