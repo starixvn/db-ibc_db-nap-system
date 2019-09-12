@@ -139,7 +139,7 @@ BEGIN
 		IF @RoleId = 1
 		BEGIN
 			SELECT  @LogDataNew = '<R'
-								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+								+ ' MPE="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 								+ ' />'				
@@ -148,7 +148,7 @@ BEGIN
 		BEGIN
 			SELECT  @LogDataNew = '<R'
 								+ ' Username="' + @UserName + '"'								
-								+ ' MPM="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+								+ ' MPE="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 								+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 								+ ' AllDownline="' + CAST (@IsAllDownline AS VARCHAR(1)) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
