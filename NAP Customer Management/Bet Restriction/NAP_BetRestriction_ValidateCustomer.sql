@@ -37,6 +37,7 @@ BEGIN
 	SELECT @CustID = CustID 
 	FROM  CustInfo WITH(NOLOCK)
 	WHERE UserName = @UserName 
+		  AND roleid IN (1,2,3,4)
 
 	SET @ErrCode = 0
 
