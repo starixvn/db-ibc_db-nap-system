@@ -58,6 +58,8 @@ BEGIN
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 
+	SELECT @UserName = username FROM Customer WITH(NOLOCK) WHERE custid = @CustID
+
 	SELECT @LiveBetAccept_Old = LiveBetAccept, 
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
 		   @MaxBet_Old = MaxBet, 
@@ -76,7 +78,8 @@ BEGIN
 
 	EXEC NAP_BetRestriction_ValidateFollowAccount
 		@FollowAccount = @FollowAccount,
-		@FollowAccountID  = @FollowAccountID OUTPUT
+		@FollowAccountID  = @FollowAccountID OUTPUT,
+		@Username = @UserName
 
 	IF @FollowAccount IS NOT NULL AND @FollowAccountID IS NULL
 	BEGIN
@@ -111,7 +114,6 @@ BEGIN
 		RETURN
 	END
 
-	SELECT @UserName = username FROM Customer WITH(NOLOCK) WHERE custid = @CustID
 	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
 	
 	BEGIN TRY

@@ -70,7 +70,8 @@ BEGIN
 
 	EXEC NAP_BetRestriction_ValidateFollowAccount
 		@FollowAccount = @FollowAccount,
-		@FollowAccountID  = @FollowAccountID OUTPUT
+		@FollowAccountID  = @FollowAccountID OUTPUT,
+		@Username = @UserName
 
 	IF @FollowAccount IS NOT NULL AND @FollowAccountID IS NULL
 	BEGIN
