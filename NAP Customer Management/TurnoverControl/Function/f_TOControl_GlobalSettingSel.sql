@@ -17,6 +17,7 @@ AS
     - 20180706@Kan: Rollback new global setting to old value after World Cup event [Redmine: 97774]
 	- 20190604@Helen: Implement Turnover Control for CN88 site [Redmine: 113233]
 	- 20190712@Helen: Implement Turnover Control for CN88 site - Change Request [Redmine: 113233]
+	- 20190913@Helen: Change Global setting [Redmine: 113472]
 	
     Parameters Explanation:  
     
@@ -39,9 +40,9 @@ RETURN (
    
     --- For CN88
    UNION ALL
-   SELECT 1 AS sporttype,'CN88' site,0 ExchangeID, 2500000 MaxTurnOver, 2 TOCurrency --RM
+   SELECT 1 AS sporttype,'CN88' site,0 ExchangeID, 1200000 MaxTurnOver, 2 TOCurrency --RM
    UNION ALL
-   SELECT 99 AS sporttype,'CN88' site,0 ExchangeID, 1200000 MaxTurnOver, 2 TOCurrency --RM
+   SELECT 99 AS sporttype,'CN88' site,0 ExchangeID, 600000 MaxTurnOver, 2 TOCurrency --RM
    
    -------------------------CONFIG FOR TEST CURRENCY -----------------------------------------
    -- for UUS
@@ -54,9 +55,9 @@ RETURN (
    
    -- for UUS of CN88 site
    UNION ALL
-   SELECT 1 sporttype, 'CN88' AS site,20 ExchangeID, 2500000 MaxTurnOver, 20 TOCurrency -- UUS
+   SELECT 1 sporttype, 'CN88' AS site,20 ExchangeID, 1200000 MaxTurnOver, 20 TOCurrency -- UUS
    UNION ALL  
-   SELECT 99 AS sporttype,'CN88' site,20 ExchangeID, 1200000 MaxTurnOver, 20 TOCurrency --UUS   
+   SELECT 99 AS sporttype,'CN88' site,20 ExchangeID, 600000 MaxTurnOver, 20 TOCurrency --UUS   
    -- for H
    UNION ALL
    SELECT 1 sporttype, '789y' AS site,27 ExchangeID, 200000 MaxTurnOver, 27 TOCurrency -- H
