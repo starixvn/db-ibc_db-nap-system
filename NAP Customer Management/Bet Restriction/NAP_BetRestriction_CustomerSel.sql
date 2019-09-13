@@ -83,7 +83,14 @@ BEGIN
 		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
 		 INNER JOIN Customer c WITH(NOLOCK) ON bc.custid = c.custid
 		 INNER JOIN exchange e WITH(NOLOCK) ON ci.currency = e.exchangeid
-		 LEFT JOIN custAccount ca WITH(NOLOCK) ON bc.CustID = ca.CustID
+		 OUTER APPLY (	SELECT ca1.groupID 
+						FROM custAccount ca1 WITH(NOLOCK)
+						WHERE c.CustID = ca1.CustID  AND c.site <> 'CN88' 
+						UNION ALL 
+						SELECT ca2.groupID 
+						FROM custAccount ca2 WITH(NOLOCK) 
+						WHERE c.srecommend = ca2.CustID  AND c.site = 'CN88' 
+					) ca
 		 LEFT JOIN custAccount head WITH(NOLOCK) ON ca.groupID = head.groupID AND head.IsGroupHeadLine = 1
 		 LEFT JOIN custInfo headname WITH(NOLOCK) ON headname.custid = head.custid
 		 LEFT JOIN CS_ProblemAccount cp  WITH(NOLOCK) ON cp.CustId = bc.CustID  
