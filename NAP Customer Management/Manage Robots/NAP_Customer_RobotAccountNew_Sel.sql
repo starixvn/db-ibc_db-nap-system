@@ -21,6 +21,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
+	DECLARE @tmpCust TABLE (custid INT)	
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 	
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
