@@ -1,5 +1,4 @@
 /*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
-
 ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
@@ -32,7 +31,7 @@ BEGIN
 		INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 	WHERE roleid = ISNULL(@level,roleid)
 		AND username LIKE ISNULL(@username,username)
-		AND site = ISNULL(@site,site)
+		AND r.site = ISNULL(@site,r.site)
 	
 	SELECT @totalItems = @@rowcount
 	
