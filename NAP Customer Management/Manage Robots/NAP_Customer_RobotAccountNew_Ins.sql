@@ -1,4 +1,5 @@
 /*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Ins]
 	@usernames VARCHAR(MAX),	
 	@remark NVARCHAR(500) = '',
@@ -86,6 +87,7 @@ BEGIN
 						WHERE custid IN (SELECT srecommend FROM @tmpUser WHERE roleid < 4
 										UNION SELECT mrecommend FROM @tmpUser WHERE roleid < 3
 										UNION SELECT recommend FROM @tmpUser WHERE roleid < 2)
+						)				
 		
 		RETURN
 	END
@@ -103,8 +105,8 @@ BEGIN
 			)
 	BEGIN
 		UPDATE RobotUsers WITH(UPDLOCK,ROWLOCK)
-		OUTPUT DELETED.custid, DELETE.remark INTO @tmpCust(custid,remark)
 		SET remark = @remark
+		OUTPUT DELETED.custid, DELETED.remark INTO @tmpCust(custid,remark)		
 		WHERE custid IN (SELECT custid FROM @tmpUser)
 		
 		UPDATE u
@@ -134,7 +136,8 @@ BEGIN
 			@LogData_Old VARCHAR(4000),	
 			@custid INT,			
 			@isExisting BIT,
-			@ActionID INT			
+			@ActionID INT,
+			@old_remark NVARCHAR(500)			
 			
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)	
@@ -143,7 +146,8 @@ BEGIN
 	WHILE (1=1)
 	BEGIN
 		SELECT @LogData = NULL,
-			@LogData_Old = NULL
+			@LogData_Old = NULL,
+			@old_remark = ''
 			
 		UPDATE TOP (1) u
 		SET @custid = custid,
