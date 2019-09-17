@@ -70,7 +70,7 @@ BEGIN
       ,[IsActive]
       ,[CreatedBy]
       ,[CreatedDate]
-      ,[ModifiedBy]
+      ,[ModifiedBy] 
       ,[ModifiedDate]
       ,[Environment]
 	FROM dbo.NAP_MenuItems m WITH (NOLOCK)
