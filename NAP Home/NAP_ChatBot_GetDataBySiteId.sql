@@ -1,5 +1,5 @@
 /*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_UserControl_GetDataBySiteId]
+ALTER PROCEDURE [dbo].[NAP_ChatBot_GetDataBySiteId]
 	@SiteId INT
 	,@UserId INT = NULL
 AS
@@ -12,6 +12,7 @@ AS
 	- 20190828@Oliver: init - [Redmine:119340]
       - 20190828@Oliver: add config db - [Redmine:119340]
 	- 20190905@Oliver: update condition get OnUser table and get more 2 tables- [Redmine:119340]
+	- 20190917@Oliver: Update SP Name - [Redmine:119340]
  * Param's Explanation:
  */
 BEGIN
@@ -170,4 +171,4 @@ BEGIN
 END
 
 GO
-GRANT EXECUTE ON [dbo].[NAP_UserControl_GetDataBySiteId] TO [bodbAdminNet] AS [dbo]
+GRANT EXECUTE ON [dbo].[NAP_ChatBot_GetDataBySiteId] TO [bodbAdminNet] AS [dbo]
