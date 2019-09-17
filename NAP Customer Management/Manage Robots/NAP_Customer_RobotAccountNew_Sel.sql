@@ -2,7 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
-	@site VARCHAR(10)= NULL,
+	@site VARCHAR(MAX)= '',
 	@pageIndex	INT = 1,
 	@pageSize	INT = 50,
 	@totalItems INT = 0 OUTPUT	
@@ -21,9 +21,14 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @tmpCust TABLE (custid INT)	
+	DECLARE @tmpSite TABLE(site VARCHAR(15))
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 	
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
+	
+	INSERT INTO @tmpSite(site)
+	SELECT val
+	FROM bodb02.dbo.strSplit(@site,',')
 	
 	INSERT INTO @tmpCust(custid)	
 	SELECT r.custid
@@ -31,7 +36,7 @@ BEGIN
 		INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 	WHERE roleid = ISNULL(@level,roleid)
 		AND username LIKE ISNULL(@username,username)
-		AND r.site = ISNULL(@site,r.site)
+		AND r.site IN (SELECT site FROM @tmpSite)
 	
 	SELECT @totalItems = @@rowcount
 	

@@ -15,8 +15,10 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	SELECT siteid, site
+	SELECT siteid, site, isDeposit
 	FROM site WITH(NOLOCK)
+	WHERE isActive = 1
+	ORDER BY isDeposit asc, site ASC
 END	
 GO
 	
