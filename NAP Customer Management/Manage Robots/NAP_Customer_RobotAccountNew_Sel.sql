@@ -40,7 +40,7 @@ BEGIN
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid, username, level, site, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
+	SELECT custid, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
 	FROM (
 		SELECT ROW_NUMBER() OVER (ORDER BY username ASC, roleid DESC, c.custid ASC) rn,
 			c.custid, c.username, CASE c.roleid WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' WHEN 1 THEN 'Member' END level,

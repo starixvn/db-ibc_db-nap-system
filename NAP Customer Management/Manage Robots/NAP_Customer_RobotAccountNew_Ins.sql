@@ -44,9 +44,12 @@ BEGIN
 	FROM strSplit (@usernames,',')
 	
 	UPDATE t
-	SET t.custid = c.custid,
-		t.roleid = c.roleid,
-		t.site = c.site
+	SET custid = c.custid,
+		roleid = c.roleid,
+		site = c.site,
+		srecommend = c.srecommend,
+		mrecommend = c.mrecommend,
+		recommend = c.recommend
 	FROM @tmpUser t
 		LEFT JOIN bodb02.dbo.customer c WITH(NOLOCK) ON t.username = c.username
 		
