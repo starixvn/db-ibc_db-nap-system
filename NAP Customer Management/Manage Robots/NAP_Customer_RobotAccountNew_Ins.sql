@@ -126,7 +126,7 @@ BEGIN
            ,[serverip]
            ,[RobotDate]
            ,[remark])
-	SELECT t.custid, @IP, NULL, t.site, 0, NULL, GETDATE(), @remark
+	SELECT t.custid, @IP, GETDATE(), t.site, 0, NULL, GETDATE(), @remark
 	FROM @tmpUser t
 		LEFT JOIN RobotUsers r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.custid IS NULL
