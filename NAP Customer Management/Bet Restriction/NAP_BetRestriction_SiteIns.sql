@@ -30,15 +30,14 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SiteIns
-		@SiteID = 334, 
+		@SiteID = 2, 
 		@UserId =8,
-		@LiveBetAccept = 5 , 
-		@SeizeBetTicket = 20 , 
-		@FollowAccount = '8RM888',
+		@LiveBetAccept = NULL , 
+		@SeizeBetTicket = 0 , 
+		@FollowAccount = NULL,--'8RM888',
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
 	SELECT @ErrCode, @ErrMsg
-	
 	
 	*/
 BEGIN
@@ -107,8 +106,8 @@ BEGIN
 	SELECT  @LogDataNew = '<R '
 						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'NULL') + '" ' 
-						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),'NULL') + '" '  
+						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
+						+ 'SeizeBetTicket="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '  
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
