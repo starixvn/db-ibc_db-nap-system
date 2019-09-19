@@ -106,9 +106,9 @@ BEGIN
 	SELECT  @LogDataNew = '<R '
 						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
-						+ 'SeizeBetTicket="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '  
-						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
+						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '  
+						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 
