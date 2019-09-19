@@ -102,7 +102,7 @@ BEGIN
 	END
 	
 	IF	@LiveBetAccept_Old = @LiveBetAccept 
-		AND ISNULL(@SeizeBetTicket_Old,0) = ISNULL(@SeizeBetTicket,0)
+		AND ISNULL(@SeizeBetTicket_Old,-999) = ISNULL(@SeizeBetTicket,-999)
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 		AND ISNULL(@CurrentType,-1) = ISNULL(@NewType,-1)
 	BEGIN
@@ -144,8 +144,8 @@ BEGIN
 						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@vNewType as varchar(50)),space(1)) + '" ' 
-						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),space(1)) + '" ' 
-						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),space(1)) + '" ' 
+						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'NULL') + '" ' 
+						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket as varchar(50)),'NULL') + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
@@ -153,8 +153,8 @@ BEGIN
 						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@vCurrentType as varchar(50)),space(1)) + '" ' 
-						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
-						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
+						+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),'NULL') + '" ' 
+						+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),'NULL') + '" ' 
 						+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'

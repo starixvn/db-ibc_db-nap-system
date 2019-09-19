@@ -16,6 +16,10 @@ AS
 		
 	*/
 BEGIN
+	DECLARE @CustID INT
+
+	SELECT @CustID = CustID FROM custinfo WITH(NOLOCK) WHERE username = @Username
+
 	SELECT ci.CustID,
 		   CAST(CASE WHEN upCust.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
 		   UplineLevel = CASE WHEN upCust.roleid = 2 THEN 'Agent'
@@ -23,14 +27,10 @@ BEGIN
 						  WHEN upCust.roleid = 4 THEN 'Super'
 					END,
 		   upCust.username AS ExistingUplineUserName,
-		   Upline_SeizeBetTicket = CASE COALESCE(Aup.CustID,MUp.CustID,SUp.CustID) 
-										 WHEN AUp.CustID THEN AUp.SeizeBetTicket
-										 WHEN MUp.CustID THEN MUp.SeizeBetTicket
-										 WHEN SUp.CustID THEN SUp.SeizeBetTicket
-									END,
+		   Upline_SeizeBetTicket = COALESCE(Aup.SeizeBetTicket,MUp.SeizeBetTicket,SUp.SeizeBetTicket,bcu.SeizeBetTicket,bs.SeizeBetTicket),
 		   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists,
 		   down.Min_Downline_SeizeBetTicket
-	FROM custInfo ci WITH(NOLOCK) 
+	FROM customer ci WITH(NOLOCK) 
 		 LEFT JOIN BetRestriction_Customer AUp WITH(NOLOCK) 
 			ON AUp.CustID = ci.recommend AND AUp.SportType = @SportType AND ci.CustID  <> ci.recommend
 		 LEFT JOIN BetRestriction_Customer MUp WITH(NOLOCK) 
@@ -38,7 +38,12 @@ BEGIN
 		 LEFT JOIN BetRestriction_Customer SUp WITH(NOLOCK) 
 			ON SUp.CustID = ci.srecommend AND SUp.SportType = @SportType AND ci.CustID  <> ci.srecommend
 		 LEFT JOIN custInfo upCust WITH(NOLOCK) ON COALESCE(Aup.CustID,MUp.CustID,SUp.CustID) = upCust.custid
-		 OUTER APPLY (	SELECT MIN(b.SeizeBetTicket) AS Min_Downline_SeizeBetTicket  , MIN(b.CustID) AS ExistingDownLine
+		 LEFT JOIN Site s WITH(NOLOCK) ON s.site = ci.site
+		 LEFT JOIN Customer Agent WITH(NOLOCK) ON agent.custid = ci.recommend
+		 LEFT JOIN Site AgentSite WITH(NOLOCK) ON AgentSite.site = agent.site
+		 LEFT JOIN BetRestriction_Site  bs WITH(NOLOCK) ON bs.SiteID = ISNULL(s.SiteID,AgentSite.siteid)
+		 LEFT JOIN BetRestriction_Currency bcu WITH(NOLOCK) ON ci.currency = bcu.ExchangeID
+		 OUTER APPLY (	SELECT MIN(NULLIF(b.SeizeBetTicket,0)) AS Min_Downline_SeizeBetTicket  , MIN(b.CustID) AS ExistingDownLine
 						FROM BetRestriction_Customer b WITH(NOLOCK) 
 							JOIN custInfo ci1 WITH(NOLOCK) ON b.CustID = ci1.custid
 						WHERE ci.CustID = CASE WHEN ci.roleid = 4 THEN ci1.srecommend  
@@ -51,7 +56,7 @@ BEGIN
 											   WHEN ci.roleid = 2 THEN ci1.recommend 
 										END
 					 ) down
-	WHERE ci.username = @Username
+	WHERE ci.custid = @CustID
 		  
 END
 GO
