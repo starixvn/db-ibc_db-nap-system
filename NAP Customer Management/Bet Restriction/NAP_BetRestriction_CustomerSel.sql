@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSel] (
 	,@RoleID		TINYINT = NULL
 	,@Status		VARCHAR(10) = NULL
 	,@SiteID		INT = NULL
-	,@CurrencyID	TINYINT = NULL
+	,@CurrencyIDs	VARCHAR(MAX) = NULL
 	,@PageSize		INT = 50
 	,@PageIndex		INT = 1
 	,@TotalItems	INT = 0 OUTPUT
@@ -31,7 +31,7 @@ AS
 		--@RoleID    = 4,
 		@Status	= 'All',
 		@SiteID		= 0,
-		@CurrencyID = 0,
+		@CurrencyIDs = '1,2',
 		@PageSize	= 50,
 		@PageIndex	= 1,
 		@TotalItems = @TotalItems OUTPUT,
@@ -101,8 +101,9 @@ BEGIN
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.FollowAccount
 		 INNER JOIN #Setting st WITH(NOLOCK) ON bc.SportType = st.SportType AND st.IsShowData = 1
 	WHERE ci.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE ci.username END
-		  AND ci.currency = CASE WHEN ISNULL(@CurrencyID,0) <> 0 THEN @CurrencyID ELSE ci.currency END
 		  AND ci.roleid = CASE WHEN @RoleID IS NOT NULL THEN @RoleID ELSE ci.roleid END
+		  AND ci.currency IN (SELECT val FROM dbo.f_SplitString(@CurrencyIDs,','))
+	OPTION (maxrecursion 0)
 	
 	CREATE TABLE #BetRestriction_Customer2(
 		CustID int,

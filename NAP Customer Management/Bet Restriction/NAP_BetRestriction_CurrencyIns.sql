@@ -57,7 +57,7 @@ BEGIN
 	IF @ErrCode > 0
 	BEGIN
 		SELECT @ErrMsg = CASE WHEN @ErrCode = 1 THEN 'Invalid Currency.' 
-							  WHEN @ErrCode = 2 THEN 'This currency has already exists in the Bet Restriction list.' 
+							  WHEN @ErrCode = 2 THEN 'This currency has already existed in the Bet Restriction list.' 
 						 END
 		RETURN
 	END
