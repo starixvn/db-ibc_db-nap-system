@@ -35,32 +35,21 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31709
-	DECLARE @LiveBetAccept_Old  SMALLINT, 
-			@SeizeBetTicket_Old TINYINT, 
-			@FollowAccountID_Old  INT,
-			@FollowAccount_Old	NVARCHAR(50),
-			@Currency	NVARCHAR(50),
+	DECLARE @Currency	NVARCHAR(50),
 			@vType VARCHAR(10)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 
-	SELECT @LiveBetAccept_Old = LiveBetAccept, 
-		   @SeizeBetTicket_Old = SeizeBetTicket, 
-		   @FollowAccountID_Old = FollowAccount
-	FROM BetRestriction_Currency WITH(NOLOCK)
-	WHERE ExchangeID = @ExchangeID	
-		  ANd Type = @Type
-		  AND SportType = @SportType;
-
-	IF @@ROWCOUNT = 0
+	IF NOT EXISTS ( SELECT TOP 1 1 
+					FROM  BetRestriction_Currency WITH(NOLOCK)
+					WHERE ExchangeID = @ExchangeID AND [Type] = @Type AND SportType = @SportType )
 	BEGIN
 		SET @ErrCode = 4
 		SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
 		RETURN
 	END
-	
-	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
+
 	SELECT @Currency = Currency FROM exchange WITH(NOLOCK) WHERE exchangeid = @ExchangeID
 	SELECT @vType = CASE WHEN @Type = 0 THEN 'All' 
 						 WHEN @Type = 1 THEN 'Credit'
@@ -85,9 +74,6 @@ BEGIN
 						+ 'Currency="'+ coalesce(cast(@Currency as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'Type="'+ coalesce(cast(@vType as varchar(50)),space(1)) + '" ' 
-						--+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

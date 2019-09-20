@@ -34,13 +34,7 @@ AS
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31703
 	DECLARE @site  NVARCHAR(50)
-	DECLARE @LiveBetAccept_Old  SMALLINT, 
-			@SeizeBetTicket_Old TINYINT, 
-			@MaxBet_Old         MONEY, 
-			@MaxPerMatch_Old    MONEY, 
-			@FollowAccountID_Old  INT,
-			@UserName	NVARCHAR(50),
-			@FollowAccount_Old	NVARCHAR(50)
+	DECLARE @UserName	NVARCHAR(50)
 
 	SET @ErrCode = 0
 
@@ -48,16 +42,9 @@ BEGIN
 
 	SELECT @site = Site FROM Customer c WITH(NOLOCK) WHERE c.custid = @CustID
 	
-	SELECT @LiveBetAccept_Old = LiveBetAccept, 
-		   @SeizeBetTicket_Old = SeizeBetTicket, 
-		   @MaxBet_Old = MaxBet, 
-		   @MaxPerMatch_Old = MaxPerMatch, 
-		   @FollowAccountID_Old = FollowAccount
-	FROM BetRestriction_Customer WITH(NOLOCK)
-	WHERE CustID = @CustID
-		  AND SportType = @SportType;
-	
-	IF @@ROWCOUNT = 0
+	IF NOT EXISTS ( SELECT TOP 1 1 
+					FROM BetRestriction_Customer WITH(NOLOCK)
+					WHERE CustID = @CustID AND SportType = @SportType )
 	BEGIN
 		SET @ErrCode = 4
 		SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
@@ -65,7 +52,6 @@ BEGIN
 	END
 
 	SELECT @UserName = username FROM Customer WITH(NOLOCK) WHERE custid = @CustID
-	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
 	
 	BEGIN TRY
 		DELETE
@@ -85,11 +71,6 @@ BEGIN
 	SELECT  @LogData = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						--+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'MaxBet="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'MaxPerMatch="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

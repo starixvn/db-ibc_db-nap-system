@@ -104,8 +104,8 @@ BEGIN
 
 	SELECT @site = Site FROM Customer c WITH(NOLOCK) WHERE c.custid = @CustID
 	
-	IF	@LiveBetAccept_Old = @LiveBetAccept 
-		AND ISNULL(@SeizeBetTicket_Old,-999) = ISNULL(@SeizeBetTicket,-999)
+	IF	ISNULL(@LiveBetAccept_Old,-99) = ISNULL(@LiveBetAccept,-99)
+		AND ISNULL(@SeizeBetTicket_Old,200) = ISNULL(@SeizeBetTicket,200)
 		AND ISNULL(@MaxBet_Old,-1) = ISNULL(@MaxBet,-1)
 		AND ISNULL(@MaxPerMatch_Old,-1) = ISNULL(@MaxPerMatch,-1)
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)

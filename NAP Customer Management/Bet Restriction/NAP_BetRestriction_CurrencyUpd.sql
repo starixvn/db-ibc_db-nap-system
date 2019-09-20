@@ -101,8 +101,8 @@ BEGIN
 		RETURN
 	END
 	
-	IF	@LiveBetAccept_Old = @LiveBetAccept 
-		AND ISNULL(@SeizeBetTicket_Old,-999) = ISNULL(@SeizeBetTicket,-999)
+	IF	ISNULL(@LiveBetAccept_Old,-99) = ISNULL(@LiveBetAccept,-99) 
+		AND ISNULL(@SeizeBetTicket_Old,200) = ISNULL(@SeizeBetTicket,200)
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 		AND ISNULL(@CurrentType,-1) = ISNULL(@NewType,-1)
 	BEGIN

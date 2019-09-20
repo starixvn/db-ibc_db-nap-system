@@ -24,7 +24,7 @@ AS
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
 	EXEC NAP_BetRestriction_SiteDel 
-		@SiteID = 5,
+		@SiteID = 1,
 		@UserID = 8,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
@@ -34,31 +34,20 @@ AS
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31706
 	DECLARE @site NVARCHAR(50)
-	DECLARE @LiveBetAccept_Old  SMALLINT, 
-			@SeizeBetTicket_Old TINYINT, 
-			@MaxBet_Old         MONEY, 
-			@MaxPerMatch_Old    MONEY, 
-			@FollowAccountID_Old  INT,
-			@FollowAccount_Old	NVARCHAR(50)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
-	
-	SELECT @LiveBetAccept_Old = LiveBetAccept, 
-		   @SeizeBetTicket_Old = SeizeBetTicket, 
-		   @FollowAccountID_Old = FollowAccount
-	FROM BetRestriction_Site WITH(NOLOCK)
-	WHERE SiteID = @SiteID
-		  AND SportType = @SportType;
 
-	IF @@ROWCOUNT = 0
+	IF NOT EXISTS ( SELECT TOP 1 1 
+					FROM BetRestriction_Site WITH(NOLOCK)
+					WHERE SiteID = @SiteID
+						  AND SportType = @SportType)
 	BEGIN
 		SET @ErrCode = 4
 		SELECT @ErrMsg = 'This record no longer exists in the Bet Restriction List.'
 		RETURN
 	END
 	
-	SELECT @FollowAccount_Old = username FROM Customer WITH(NOLOCK) WHERE custid = @FollowAccountID_Old
 	SELECT @Site = Site FROM Site WITH(NOLOCK) WHERE siteid = @SiteID
 
 	BEGIN TRY
@@ -79,9 +68,6 @@ BEGIN
 	SELECT  @LogData = '<R '
 						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						--+ 'LiveBetAccept="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'SeizeBetTicket="'+ coalesce(cast(@SeizeBetTicket_Old as varchar(50)),space(1)) + '" ' 
-						--+ 'FollowAccount="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
