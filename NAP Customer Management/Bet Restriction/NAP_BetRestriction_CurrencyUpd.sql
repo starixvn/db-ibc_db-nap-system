@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CurrencyUpd] (
 	 ,@CurrentType		TINYINT
 	 ,@NewType			TINYINT
 	 ,@SportType		SMALLINT = 1
-	 ,@LiveBetAccept	SMALLINT
+	 ,@LiveBetAccept	SMALLINT = NULL
 	 ,@SeizeBetTicket	TINYINT = NULL
 	 ,@FollowAccount	NVARCHAR(50) = NULL
 	 ,@ErrMsg			NVARCHAR(MAX) = '' OUTPUT

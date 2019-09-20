@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	 ,@UserId			INT
 	 ,@IP				VARCHAR(15) = ''
 	 ,@SportType		SMALLINT = 1
-	 ,@LiveBetAccept	SMALLINT
+	 ,@LiveBetAccept	SMALLINT = NULL
 	 ,@SeizeBetTicket	TINYINT = NULL
 	 ,@MaxBet			MONEY = NULL
 	 ,@MaxPerMatch		MONEY = NULL
