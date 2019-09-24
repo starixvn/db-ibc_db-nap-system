@@ -112,7 +112,7 @@ BEGIN
 		SELECT @ErrCode = 104, @ErrMsg = 'Account(s) belongs to licensee sites: '
 		
 		SELECT TOP (100) @ErrMsg = @ErrMsg + username + ','
-		FROM @tmpUser
+		FROM @tmpUser t
 			INNER JOIN bodb02.dbo.site s WITH(NOLOCK) ON t.site = s.site
 				WHERE s.isLicensee = 1		
 		
