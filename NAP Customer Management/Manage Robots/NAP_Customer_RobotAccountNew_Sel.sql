@@ -47,7 +47,7 @@ BEGIN
 			r.site, r.IP, r.LastChangeTime,	r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
 		FROM RobotUsers r WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
-			LEFT JOIN bodb02.dbo.customer c2 WITH(NOLOCK) ON c2.custid = r.AddedBy
+			LEFT JOIN bodb02.dbo.customer c2 WITH(NOLOCK) ON c2.custid = r.creator
 		WHERE r.custid IN (SELECT custid FROM @tmpCust)
 	) t
 	WHERE rn BETWEEN @rowStart AND @rowEnd

@@ -103,6 +103,22 @@ BEGIN
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON t.recommend = c.custid		
 	END
 	
+	IF EXISTS (SELECT TOP 1 1 
+				FROM @tmpUser t
+					INNER JOIN bodb02.dbo.site s WITH(NOLOCK) ON t.site = s.site
+				WHERE s.isLicensee = 1
+			)
+	BEGIN
+		SELECT @ErrCode = 104, @ErrMsg = 'Account(s) belongs to licensee sites: '
+		
+		SELECT TOP (100) @ErrMsg = @ErrMsg + username + ','
+		FROM @tmpUser
+			INNER JOIN bodb02.dbo.site s WITH(NOLOCK) ON t.site = s.site
+				WHERE s.isLicensee = 1		
+		
+		RETURN
+	END
+	
 	IF EXISTS(SELECT 1 FROM RobotUsers WITH(NOLOCK) 
 			WHERE custid IN (SELECT custid FROM @tmpUser)
 			)
@@ -129,8 +145,8 @@ BEGIN
            ,[serverip]
            ,[RobotDate]
            ,[remark]
-		   ,[addedBy])
-	SELECT t.custid, @IP, GETDATE(), t.site, 0, NULL, GETDATE(), @remark, @userid
+		   ,[Creator])
+	SELECT t.custid, @IP, GETDATE(), t.site, 10, NULL, GETDATE(), @remark, @userid
 	FROM @tmpUser t
 		LEFT JOIN RobotUsers r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.custid IS NULL

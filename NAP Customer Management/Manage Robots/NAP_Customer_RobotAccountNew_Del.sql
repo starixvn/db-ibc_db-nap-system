@@ -35,7 +35,7 @@ BEGIN
 	END
 	
 	DELETE RobotUsers with (ROWLOCK) 
-	OUTPUT getdate(), deleted.custid, deleted.[IP], deleted.LastChangeTime, deleted.[site], deleted.[counter], deleted.[serverip], deleted.[RobotDate], deleted.remark, deleted.AddedBy 
+	OUTPUT getdate(), deleted.custid, deleted.[IP], deleted.LastChangeTime, deleted.[site], deleted.[counter], deleted.[serverip], deleted.[RobotDate], deleted.remark, deleted.creator 
 	INTO RobotUsers_DelLog
 	WHERE custid=@custid
 	
