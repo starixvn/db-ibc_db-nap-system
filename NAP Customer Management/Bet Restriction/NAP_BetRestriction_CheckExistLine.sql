@@ -43,6 +43,9 @@ BEGIN
 		 LEFT JOIN Site AgentSite WITH(NOLOCK) ON AgentSite.site = agent.site
 		 LEFT JOIN BetRestriction_Site  bs WITH(NOLOCK) ON bs.SiteID = ISNULL(s.SiteID,AgentSite.siteid)
 		 LEFT JOIN BetRestriction_Currency bcu WITH(NOLOCK) ON ci.currency = bcu.ExchangeID
+			  AND 1 = CASE WHEN ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND  bcu.Type IN (0, 1) THEN 1 
+						  WHEN ISNULL(s.isLicensee,AgentSite.isLicensee) = 1 AND  bcu.Type IN (0, 2) THEN 1
+					  ELSE 0 END
 		 OUTER APPLY (	SELECT MIN(NULLIF(b.SeizeBetTicket,0)) AS Min_Downline_SeizeBetTicket  , MIN(b.CustID) AS ExistingDownLine
 						FROM BetRestriction_Customer b WITH(NOLOCK) 
 							JOIN custInfo ci1 WITH(NOLOCK) ON b.CustID = ci1.custid
