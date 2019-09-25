@@ -22,7 +22,7 @@ BEGIN
 	BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
-		WHERE ReasonID < 26
+		WHERE ReasonID > 100
 		ORDER BY ReasonID
 	END
 	ELSE
