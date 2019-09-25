@@ -20,8 +20,7 @@ AS
 BEGIN
 	DECLARE @ReasonId TINYINT, @ReasonIdManual TINYINT
 
-	INSERT INTO DBTXN.bodb02.dbo.TicketVoiding_SubIssueType (IssueTypeId, SubIssueTypeName)	
-	SELECT 11, @ReasonName
+	EXEC DBTXN.bodb02.dbo.DBA_CS_ProblemAccount_AddSubIssueType @SubIssueType = @ReasonName
 
 	SELECT @ReasonId = SubIssueTypeId 
 	FROM DBTXN.bodb02.dbo.TicketVoiding_SubIssueType WITH (NOLOCK) 
