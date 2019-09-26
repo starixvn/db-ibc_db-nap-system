@@ -17,6 +17,13 @@ AS
 	
 */
 BEGIN
+	DECLARE @SubIssueTypeId SMALLINT
+
 	INSERT INTO dbo.TicketVoiding_SubIssueType (IssueTypeId, SubIssueTypeName)	
 	SELECT 11, @SubIssueType
+
+	SELECT @SubIssueTypeId = @@IDENTITY
+
+	INSERT INTO TicketVoiding_MessageTemplateSetting (TemplateId, SubIssueTypeId)
+	SELECT 34, @SubIssueTypeId
 END
