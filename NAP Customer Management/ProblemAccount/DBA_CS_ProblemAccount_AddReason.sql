@@ -35,4 +35,8 @@ BEGIN
 		UNION ALL
 		SELECT @ReasonId, @ReasonName
 	END
+	ELSE
+	BEGIN
+		SELECT 'Insert fail'
+	END
 END
