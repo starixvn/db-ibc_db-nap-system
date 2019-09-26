@@ -26,10 +26,13 @@ BEGIN
 	FROM DBTXN.bodb02.dbo.TicketVoiding_SubIssueType WITH (NOLOCK) 
 	WHERE SubIssueTypeName = @ReasonName
 
-	SELECT @ReasonIdManual = MAX(ReasonID) + 1 FROM ProblemAccountReason WITH (NOLOCK) WHERE ReasonID <> 255
+	IF @ReasonId IS NOT NULL
+	BEGIN
+		SELECT @ReasonIdManual = MAX(ReasonID) + 1 FROM ProblemAccountReason WITH (NOLOCK) WHERE ReasonID <> 255
 
-	INSERT INTO ProblemAccountReason (ReasonID, ReasonName)	
-	SELECT @ReasonIdManual, @ReasonName +'(M)'
-	UNION ALL
-	SELECT @ReasonId, @ReasonName
+		INSERT INTO ProblemAccountReason (ReasonID, ReasonName)	
+		SELECT @ReasonIdManual, @ReasonName +'(M)'
+		UNION ALL
+		SELECT @ReasonId, @ReasonName
+	END
 END
