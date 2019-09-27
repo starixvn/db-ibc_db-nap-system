@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
 	@site VARCHAR(MAX)= '',
+	@currency INT = NULL,
 	@pageIndex	INT = 1,
 	@pageSize	INT = 50,
 	@totalItems INT = 0 OUTPUT	
@@ -15,7 +16,8 @@ AS
 		
 		Revision:
 			- 20190912@Johnson: Initial sp [redmine:#119714]
-		Parameter's Explanation:			
+		Parameter's Explanation:	
+			-@currency = NULL : all currency
 */ 
 BEGIN
 	SET NOCOUNT ON
@@ -36,11 +38,13 @@ BEGIN
 		INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 	WHERE roleid = ISNULL(@level,roleid)
 		AND username LIKE ISNULL(@username,username)
+		AND currency = ISNULL(@currency, currency)
 		AND r.site IN (SELECT site FROM @tmpSite)
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
+	SELECT custid,c.currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
+	INTO #Result
 	FROM (
 		SELECT ROW_NUMBER() OVER (ORDER BY c.username ASC, c.roleid DESC, c.custid ASC) rn,
 			c.custid, c.username, CASE c.roleid WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' WHEN 1 THEN 'Member' END level,
@@ -52,5 +56,9 @@ BEGIN
 	) t
 	WHERE rn BETWEEN @rowStart AND @rowEnd
 	
+	SELECT custid,e.currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
+	FROM #Result rs
+		INNER JOIN bodb02.dbo.Exchange e ON rs.currency = e.exchangeid
+		
 END
 GO
