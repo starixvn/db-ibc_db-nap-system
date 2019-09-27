@@ -17,5 +17,6 @@ BEGIN
 	SELECT exchangeid, currency
 	FROM dbo.Exchange WITH(NOLOCK)
 	WHERE currency NOT IN ('C','H')
+	ORDER BY currency ASC
 END	
 GO
