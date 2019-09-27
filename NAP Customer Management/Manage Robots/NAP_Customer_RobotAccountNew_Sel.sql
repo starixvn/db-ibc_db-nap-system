@@ -43,11 +43,11 @@ BEGIN
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid,c.currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
+	SELECT custid,currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
 	INTO #Result
 	FROM (
 		SELECT ROW_NUMBER() OVER (ORDER BY c.username ASC, c.roleid DESC, c.custid ASC) rn,
-			c.custid, c.username, CASE c.roleid WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' WHEN 1 THEN 'Member' END level,
+			c.custid, c.currency, c.username, CASE c.roleid WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' WHEN 1 THEN 'Member' END level,
 			r.site, r.IP, r.LastChangeTime,	r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
 		FROM RobotUsers r WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
