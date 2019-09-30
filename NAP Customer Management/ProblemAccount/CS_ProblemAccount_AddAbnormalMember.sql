@@ -10,6 +10,7 @@ AS
 
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
+		- 20190930@Elodie: Only add the member that is voided ticket abnormal into CS_ProblemAccount [Redmine:#121104]
 
 	Parameter's explaination: 
 	
@@ -31,7 +32,7 @@ BEGIN
 		SELECT DISTINCT c.CustId
 		FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction v WITH (NOLOCK)
 			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
-		WHERE v.Id > @MinId AND v.Id <= @MaxId
+		WHERE v.Id > @MinId AND v.Id <= @MaxId AND v.IssueTypeID = 11
 			AND c.site = 'CN88'
 
 		UPDATE pa 
