@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 USE CustDB
 GO
 ALTER PROCEDURE [dbo].[NAP_TOControl_TurnoverNotificationSelect]
@@ -11,6 +11,8 @@ AS
 
 	Revisions:
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
+		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
+		
 	Parameter's explaination: 
 	Hardcode:
 			CROSS APPLY (SELECT CASE 
@@ -36,14 +38,24 @@ BEGIN
 		SELECT t.custid, t.matchid, t.totalturnover, t.MaxTurnover, t.houseturnover, t.IsNotified
 				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.houseturnover*100/t.MaxTurnover END AS PercentageUsed
 				, t.IsGroupHeadline
+				, st.siteid
 		FROM dbo.TOControl_Setting t WITH(NOLOCK)
+			CROSS APPLY (SELECT TOP 1 ISNULL(ls.SiteID,0) AS SiteID
+						FROM dbo.Customer c WITH (NOLOCK) 
+							INNER JOIN dbo.Site s WITH (NOLOCK) ON c.site = s.site
+							LEFT JOIN dbo.TOControl_LevelSetting ls WITH (NOLOCK) ON ls.SiteID =  s.siteid
+						WHERE custid = t.CustID 
+						) AS st
 		WHERE t.PercentLevel >= @NotifiedLevel
 	)
 	
 	INSERT INTO @temp_(custid, matchid, totalturnover, MaxTurnover, houseturnover, nlevel,IsGroupHeadline)
 	SELECT cte_.custid, cte_.matchid, cte_.totalturnover, cte_.MaxTurnover, cte_.houseturnover, nlevel,cte_.IsGroupHeadline
 	FROM cte_
-		CROSS APPLY (SELECT MAX(PercentValue) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentageUsed >= PercentValue AND IsNotified = 1) _(nlevel)
+		CROSS APPLY (SELECT MAX(PercentValue) 
+					FROM dbo.TOControl_LevelSetting lst WITH (NOLOCK) 
+					WHERE cte_.PercentageUsed >= lst.PercentValue AND lst.IsNotified = 1
+							AND lst.SiteID = cte_.SiteID) _(nlevel)
 		
 	WHERE nlevel > cte_.IsNotified
 
@@ -68,9 +80,10 @@ BEGIN
 		, c.roleid
 		, t.totalturnover, t.maxturnover, t.houseturnover, t.nlevel 
 		, t.IsGroupHeadline
+		, c.site AS SiteName 
 	FROM @temp_ t
 		INNER JOIN @MatchList m ON t.matchid = m.matchid
-		INNER JOIN dbo.custInfo c WITH(NOLOCK) ON t.custID = c.custid
+		INNER JOIN dbo.Customer c WITH(NOLOCK) ON t.custID = c.custid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
 
 END

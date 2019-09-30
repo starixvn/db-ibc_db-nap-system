@@ -13,14 +13,18 @@ Original:
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 	- 20190708@Patrick: Move to DB052 [Redmine: #112219]
+	- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
+	
 
 Param explanation:
 */
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @PercentageUsed MONEY
-
+	DECLARE @PercentageUsed MONEY, @MaxLevel TINYINT
+	
+	SET @MaxLevel = (SELECT TOP 1 PercentLevel FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentValue = 100)
+	
 	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT)
 	
 	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT)
@@ -65,7 +69,7 @@ BEGIN
 							TARGET.TotalTurnOver = TARGET.TotalTurnOver + SOURCE.adjusted_TurnOver,
 							TARGET.HouseTurnover = TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver,
 							
-							TARGET.PercentLevel = CASE WHEN TARGET.MaxTurnOver = 0 THEN	10 
+							TARGET.PercentLevel = CASE WHEN TARGET.MaxTurnOver = 0 THEN	@MaxLevel 
 														ELSE ISNULL((SELECT MAX(PercentLevel) 
 																	FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
 																	WHERE (TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver) * 100 / TARGET.MaxTurnOver >= PercentValue
@@ -76,7 +80,7 @@ BEGIN
 			WHEN NOT MATCHED THEN	
 				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel)
 				VALUES (SOURCE.CustID, SOURCE.matchid,SOURCE.IsGroupHeadLine, SOURCE.MaxTurnOver, SOURCE.adjusted_TurnOver, SOURCE.adjusted_HouseTurnOver, 0, 
-						CASE WHEN SOURCE.MaxTurnOver = 0 THEN 10 
+						CASE WHEN SOURCE.MaxTurnOver = 0 THEN @MaxLevel 
 							ELSE ISNULL((SELECT MAX(PercentLevel) 
 										FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
 										WHERE (SOURCE.adjusted_HouseTurnOver) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)

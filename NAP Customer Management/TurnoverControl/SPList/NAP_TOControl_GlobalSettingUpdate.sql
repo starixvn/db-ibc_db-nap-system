@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingUpdate]
 	@CustID INT,
 	@MaxTurnover MONEY,
@@ -21,6 +21,7 @@ AS
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		
 	Parameter's explaination:
 	 
@@ -37,6 +38,9 @@ BEGIN
 			@endRun		DATETIME,
 			@duration	INT,
 			@FunctionKey NVARCHAR(50)
+	
+	DECLARE @MaxLevel TINYINT	
+			, @SiteID INT
 			
 	SET	@startRun = GETDATE()
 
@@ -51,6 +55,17 @@ BEGIN
 	IF @ErrCode <> 0
 		RETURN
 	
+			
+	SET @MaxLevel = (SELECT TOP 1 PercentLevel FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentValue = 100)
+	
+	SET @SiteID = (SELECT TOP 1 s.siteid
+					FROM dbo.Customer c WITH (NOLOCK) 
+						INNER JOIN dbo.Site s WITH (NOLOCK) ON c.site = s.site
+					WHERE custid = @CustID
+					)
+	
+	SET @siteID = ISNULL((SELECT TOP 1 SiteID FROM dbo.TOControl_LevelSetting (NOLOCK) WHERE SiteID = @SiteID),0)
+		
 	INSERT INTO @MatchList(matchid, homeid, awayid, eventdate, sporttype, leagueid)
 	SELECT m.matchid, m.homeid, m.awayid, m.eventdate, m.sporttype, m.leagueid
 	FROM DBAGE.bodb02.dbo.match m WITH(NOLOCK)
@@ -97,12 +112,13 @@ BEGIN
 	UPDATE t
 		SET 
 			t.MaxTurnover = @MaxTurnover,
-			t.IsNotified = 	CASE WHEN @MaxTurnover = 0 THEN 10 
+			t.IsNotified = 	CASE WHEN @MaxTurnover = 0 THEN @MaxLevel 
 								  ELSE ISNULL((SELECT MAX(PercentValue) 
-												FROM dbo.TOControl_LevelSetting (NOLOCK) 
-												WHERE t.HouseTurnOver*100/@MaxTurnover >= PercentValue AND IsNotified = 1),0)
+												FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
+												WHERE t.HouseTurnOver*100/@MaxTurnover >= PercentValue AND IsNotified = 1
+													AND SiteID = @SiteID
+												),0)
 								END				
-						
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
 	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadLine
