@@ -146,7 +146,7 @@ BEGIN
            ,[RobotDate]
            ,[remark]
 		   ,[Creator])
-	SELECT t.custid, NULL, GETDATE(), t.site, 10, NULL, NULL, @remark, @userid
+	SELECT t.custid, '127.0.0.1', GETDATE(), t.site, 10, NULL, NULL, @remark, @userid
 	FROM @tmpUser t
 		LEFT JOIN RobotUsers r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.custid IS NULL
