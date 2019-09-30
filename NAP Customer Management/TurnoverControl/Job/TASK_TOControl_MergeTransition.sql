@@ -21,22 +21,30 @@ BEGIN
 
 	DECLARE @PercentageUsed MONEY
 
-	CREATE TABLE #TmpTableRaw(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT)
+	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT)
 	
 	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT)
 	
-	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid,IsGroupHeadline,sporttype)
-	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid,IsGroupHeadline,sporttype)
+	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype)
+	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid, IsGroupHeadline, sporttype)
 
-	INSERT INTO #TmpTableRaw(CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadline,sporttype)
-	EXEC DBEXT.bodb02.dbo.TASK_TOControl_GetTransition
+	--get rowversion
+	DECLARE @__lastRowId BIGINT, @__maxRowId BIGINT
+	SELECT @__lastRowId = CONVERT(BIGINT, VValue)
+	FROM dbo.TOConTrol_GlobalVariables WITH (ROWLOCK)
+	WHERE VName = 'MaxID'
+
+	INSERT INTO #TmpTableRaw(RowId, CustID, matchid, adjusted_TurnOver
+		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype)
+	EXEC DBEXT.bodb02.dbo.TASK_TOControl_GetTransition @RowId = @__lastRowId
+
+	IF @@ROWCOUNT = 0
+		RETURN
 
 	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, adjusted_TurnOver, adjusted_HouseTurnOver)
-	SELECT CustID, matchid,IsGroupHeadline, sporttype,  SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
+	SELECT CustID, matchid,IsGroupHeadline, sporttype, SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
 	FROM #TmpTableRaw
-	GROUP BY CustID, matchid,IsGroupHeadline, sporttype 
-
-	DROP TABLE #TmpTableRaw
+	GROUP BY CustID, matchid, IsGroupHeadline, sporttype
 
 	UPDATE t 
 		SET MaxTurnOver = gl.MaxTurnOver
@@ -75,7 +83,17 @@ BEGIN
 						END				
 										);
 						
-						
+	IF @@ERROR = 0
+	BEGIN
+		
+		SELECT @__maxRowId = MAX(RowId) FROM #TmpTableRaw
 
+		UPDATE dbo.TOConTrol_GlobalVariables WITH (UPDLOCK, ROWLOCK)
+		SET VValue = CONVERT(VARCHAR(200), @__maxRowId)
+		WHERE VName = 'MaxID'
+	END
+
+	DROP TABLE #TmpTableRaw
 	DROP TABLE #TmpTable
 END
+GO
