@@ -152,8 +152,8 @@ BEGIN
 	WHERE r.custid IS NULL
 	
 	-- write log
-	DECLARE @LogData VARCHAR(4000),	
-			@LogData_Old VARCHAR(4000),	
+	DECLARE @LogData NVARCHAR(4000),	
+			@LogData_Old NVARCHAR(4000),	
 			@custid INT,			
 			@isExisting BIT,
 			@ActionID INT,

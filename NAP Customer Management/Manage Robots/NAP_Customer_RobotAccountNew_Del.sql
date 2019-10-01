@@ -40,7 +40,7 @@ BEGIN
 	WHERE custid=@custid
 	
 	-- write log
-	DECLARE @LogData VARCHAR(4000),	
+	DECLARE @LogData NVARCHAR(4000),	
 			@ActionID INT
 			
 	SET @endRun = GETDATE()
