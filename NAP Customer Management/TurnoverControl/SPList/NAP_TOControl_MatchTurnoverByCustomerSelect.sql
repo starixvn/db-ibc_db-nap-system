@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_MatchTurnoverByCustomerSelect]
 	@CustID INT,
 	@RoleID TINYINT,
@@ -380,6 +380,4 @@ BEGIN
 		END
 	END
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_MatchTurnoverByCustomerSelect] TO [bodbAdminNet]
 GO
