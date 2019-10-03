@@ -16,6 +16,7 @@ ALTER PROCEDURE [dbo].[CS_Customer_MonitorPT_Upd]
 			- 20191002@Johnson: Initial sp [redmine:#117714]
 		Parameter's Explanation:					
 */ 
+AS
 BEGIN
 	SET NOCOUNT ON
 		
@@ -67,7 +68,7 @@ BEGIN
 			,@LogData_Old = '<R remark="' + COALESCE(CAST(@isMonitorPT_Old as VARCHAR(10)),SPACE(1)) + '" '									
 							+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'	
 	
-	EXEC dbo.WriteLog_UserLog_RunSP_Wrapper
+	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 		@UserID = @userid,
 		@CustID = @CustID,
 		@ActionID = 1171,
