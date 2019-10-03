@@ -32,14 +32,27 @@ BEGIN
 	SELECT val
 	FROM bodb02.dbo.strSplit(@site,',')
 	
-	INSERT INTO @tmpCust(custid)	
-	SELECT r.custid
-	FROM RobotUsers r WITH(NOLOCK)
-		INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
-	WHERE roleid = ISNULL(@level,roleid)
-		AND username LIKE ISNULL(@username,username)
-		AND currency = ISNULL(@currency, currency)
-		AND r.site IN (SELECT site FROM @tmpSite)
+	IF ISNULL(@username,'')= ''
+	BEGIN 	
+		INSERT INTO @tmpCust(custid)	
+		SELECT r.custid
+		FROM RobotUsers r WITH(NOLOCK)
+			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
+		WHERE roleid = ISNULL(@level,roleid)			
+			AND currency = ISNULL(@currency, currency)
+			AND r.site IN (SELECT site FROM @tmpSite)
+	END
+	ELSE 
+	BEGIN
+		INSERT INTO @tmpCust(custid)	
+		SELECT r.custid
+		FROM RobotUsers r WITH(NOLOCK)
+			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
+		WHERE roleid = ISNULL(@level,roleid)
+			AND username = @username
+			AND currency = ISNULL(@currency, currency)
+			AND r.site IN (SELECT site FROM @tmpSite)
+	END
 	
 	SELECT @totalItems = @@rowcount
 	
