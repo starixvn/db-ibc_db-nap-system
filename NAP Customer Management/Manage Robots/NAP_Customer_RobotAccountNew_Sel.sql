@@ -58,7 +58,7 @@ BEGIN
 	
 	SELECT custid,e.currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
 	FROM #Result rs
-		INNER JOIN bodb02.dbo.Exchange e ON rs.currency = e.exchangeid
+		INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON rs.currency = e.exchangeid
 		
 END
 GO

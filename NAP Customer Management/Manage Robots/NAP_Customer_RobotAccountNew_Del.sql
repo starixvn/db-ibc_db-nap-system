@@ -28,7 +28,7 @@ BEGIN
 	IF @ErrCode <> 0
 		RETURN
 	
-	IF NOT EXISTS (SELECT top (1) 1 FROM RobotUsers WHERE custid = @custid)
+	IF NOT EXISTS (SELECT top (1) 1 FROM RobotUsers WITH(NOLOCK) WHERE custid = @custid)
 	BEGIN
 		SELECT @ErrCode = 100, @ErrMsg = 'Invalid account.'
 		RETURN
@@ -36,7 +36,7 @@ BEGIN
 	
 	DELETE RobotUsers with (ROWLOCK) 
 	OUTPUT getdate(), deleted.custid, deleted.[IP], deleted.LastChangeTime, deleted.[site], deleted.[counter], deleted.[serverip], deleted.[RobotDate], deleted.remark, deleted.creator 
-	INTO RobotUsers_DelLog
+	INTO RobotUsers_DelLog ([DelLogDate],[custid],[IP],[LastChangeTime],[site],[counter],[serverip],[RobotDate],[remark],[Creator])
 	WHERE custid=@custid
 	
 	-- write log
