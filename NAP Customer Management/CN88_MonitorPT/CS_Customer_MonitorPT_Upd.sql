@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[CS_Customer_MonitorPT_Upd]
-	@custid INT,
+	@custidList VARCHAR(max),
 	@isMonitorPT BIT = 0,
 	@userid INT,	
 	@IP	VARCHAR(15)='',
@@ -30,25 +30,25 @@ BEGIN
 	IF @ErrCode <> 0
 		RETURN
 	
-	DECLARE @isMonitorPT_Old BIT
+	DECLARE @tmpCust TABLE (custid INT, isMonitorPT_Old BIT, isLog BIT DEFAULT 0)
 	
-	SELECT @isMonitorPT_Old = ISNULL(isMonitorPT,0)
-	FROM custAgent WITH(NOLOCK)
-	WHERE custid = @custid
+	INSERT INTO @tmpCust(custid)
+	SELECT val
+	FROM dbo.strSplit(@custidList,',')
+		
+	UPDATE t
+	SET isMonitorPT_Old = ISNULL(isMonitorPT,0)
+	FROM @tmpCust t 
+		INNER JOIN custAgent c WITH(NOLOCK) t.custid = c.custid		
 	
-	IF @@ROWCOUNT = 0
-	BEGIN
-		SELECT @ErrCode = 100,
-				@ErrMsg = 'Invalid customer.'
+	DELETE @tmpCust WHERE isMonitorPT_Old IS NULL
+	
+	IF NOT EXISTS(SELECT top(1) 1 FROM @tmpCust WHERE isMonitorPT_old <> @isMonitorPT)
 		RETURN;
-	END
-	
-	IF @isMonitorPT = @isMonitorPT_Old 
-		RETURN;
-	
+		
 	UPDATE custAgent WITH(UPDLOCK,ROWLOCK)
 	SET isMonitorPT = @isMonitorPT
-	WHERE custid = @custid
+	WHERE custid IN (SELECT custid FROM @tmpCust WHERE isMonitorPT_old <> @isMonitorPT)
 	
 	IF @@ERROR > 0
 	BEGIN
@@ -58,22 +58,36 @@ BEGIN
 	END
 	
 	DECLARE @LogData NVARCHAR(4000),	
-			@LogData_Old NVARCHAR(4000)
-	
+			@LogData_Old NVARCHAR(4000),
+			@isMonitorPT_Old BIT,
+			@custid INT
+			
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)
 	
-	SELECT @LogData = '<R remark="' + COALESCE(CAST(@isMonitorPT as VARCHAR(10)),SPACE(1)) + '" '									
-							+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'
-			,@LogData_Old = '<R remark="' + COALESCE(CAST(@isMonitorPT_Old as VARCHAR(10)),SPACE(1)) + '" '									
-							+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'	
-	
-	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-		@UserID = @userid,
-		@CustID = @CustID,
-		@ActionID = 1171,
-		@TrackingValue = @LogData,
-		@TrackingValue2 = @LogData_Old,
-		@duration = @duration
+	WHILE (1=1)
+	BEGIN
+		UPDATE TOP (1) @tmpCust
+		SET isLog = 1,
+			@isMonitorPT_Old = isMonitorPT_Old,
+			@custid = custid
+		WHERE isLog = 0 
+			AND isMonitorPT_Old <> @isMonitorPT
+		
+		IF @@rowcount = 0 BREAK;
+		
+		SELECT @LogData = '<R remark="' + COALESCE(CAST(@isMonitorPT as VARCHAR(10)),SPACE(1)) + '" '									
+								+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'
+				,@LogData_Old = '<R remark="' + COALESCE(CAST(@isMonitorPT_Old as VARCHAR(10)),SPACE(1)) + '" '									
+								+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'	
+		
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			@UserID = @userid,
+			@CustID = @CustID,
+			@ActionID = 1171,
+			@TrackingValue = @LogData,
+			@TrackingValue2 = @LogData_Old,
+			@duration = @duration
+	END		
 END
 GO
