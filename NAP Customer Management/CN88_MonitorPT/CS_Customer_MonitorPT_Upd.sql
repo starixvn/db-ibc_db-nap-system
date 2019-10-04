@@ -1,4 +1,5 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+
 ALTER PROCEDURE [dbo].[CS_Customer_MonitorPT_Upd]
 	@custidList VARCHAR(max),
 	@isMonitorPT BIT = 0,
@@ -37,9 +38,9 @@ BEGIN
 	FROM dbo.strSplit(@custidList,',')
 		
 	UPDATE t
-	SET isMonitorPT_Old = ISNULL(isMonitorPT,0)
+	SET isMonitorPT_Old = ISNULL(c.isMonitorPT,0)
 	FROM @tmpCust t 
-		INNER JOIN custAgent c WITH(NOLOCK) t.custid = c.custid		
+		INNER JOIN custAgent c WITH(NOLOCK) ON t.custid = c.custid		
 	
 	DELETE @tmpCust WHERE isMonitorPT_Old IS NULL
 	
