@@ -1,7 +1,5 @@
-/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE bodb02
+/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 GO
-
 ALTER PROCEDURE [dbo].[NAP_TOControl_MatchSelect]
 	@LeagueID INT = 0,
 	@FromDate DATETIME = NULL,
@@ -28,6 +26,4 @@ BEGIN
 	ORDER BY m.eventdate
 
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_MatchSelect] TO [bodbAdminNet]
 GO
