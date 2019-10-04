@@ -124,10 +124,10 @@ BEGIN
 	END
 	
 	SELECT @sql = 'UPDATE ag
-	SET ag.Danger = ci.Danger,
+	SET ag.Danger = ci.Danger2,
 		ag.status = s.CustStatus
 	FROM #AgentList ag
-		INNER JOIN custinfo ci WITH(NOLOCK) ON ag.custid = ci.custid AND ci.Danger ' + @FilterDanger + CAST(@DangerLevel AS VARCHAR(10)) +'
+		INNER JOIN custinfo ci WITH(NOLOCK) ON ag.custid = ci.custid AND ci.Danger2 ' + @FilterDanger + CAST(@DangerLevel AS VARCHAR(10)) +'
 		CROSS APPLY (SELECT TOP 1 CustStatus FROM dbo.f_CS_GetCustomerStatus(ag.custid)) s 
 	WHERE s.CustStatus IN (' + @AgentStatus + ')' 
 	
