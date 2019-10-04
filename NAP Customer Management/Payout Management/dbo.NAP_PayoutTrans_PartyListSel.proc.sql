@@ -11,7 +11,7 @@ AS
 	Original: bodb_Licensee.dbo.LA_PartyListSel
 
 	Revisions:     
-	
+	-20151118@Bobby
 
 	Params:
 	+ UserID : 
