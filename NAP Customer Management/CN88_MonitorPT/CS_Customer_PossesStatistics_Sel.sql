@@ -38,9 +38,9 @@ BEGIN
 			@custid INT,
 			@roleid TINYINT,
 			@IsEditablePT BIT,
-			@RowCount INT, 
-			@RowStart INT, 
-			@RowEnd INT
+			@RowCount BIGINT, 
+			@RowStart BIGINT, 
+			@RowEnd BIGINT
 	
 	IF @MonitorPT = 2 SET @MonitorPT = NULL
 	
