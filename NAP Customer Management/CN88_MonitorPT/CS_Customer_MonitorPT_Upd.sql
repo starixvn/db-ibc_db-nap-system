@@ -77,9 +77,9 @@ BEGIN
 		
 		IF @@rowcount = 0 BREAK;
 		
-		SELECT @LogData = '<R remark="' + COALESCE(CAST(@isMonitorPT as VARCHAR(10)),SPACE(1)) + '" '									
+		SELECT @LogData = '<R MonitorPT="' + COALESCE(CAST(@isMonitorPT as VARCHAR(10)),SPACE(1)) + '" '									
 								+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'
-				,@LogData_Old = '<R remark="' + COALESCE(CAST(@isMonitorPT_Old as VARCHAR(10)),SPACE(1)) + '" '									
+				,@LogData_Old = '<R MonitorPT="' + COALESCE(CAST(@isMonitorPT_Old as VARCHAR(10)),SPACE(1)) + '" '									
 								+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'	
 		
 		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
