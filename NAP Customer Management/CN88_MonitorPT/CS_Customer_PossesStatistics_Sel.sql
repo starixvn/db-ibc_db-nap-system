@@ -175,10 +175,10 @@ BEGIN
 	SELECT @sql = '
 	;WITH t as (
 	SELECT ROW_NUMBER () OVER (ORDER BY ' + 
-		CASE @SortBy WHEN 1 THEN 'SuperPT_SB+MasterPT_SB+AgentPT_SB DESC'
-					WHEN 2 THEN 'SuperPT_SB+MasterPT_SB+AgentPT_SB ASC'
-					WHEN 3 THEN 'SuperPT_NS+MasterPT_NS+AgentPT_NS DESC'
-					WHEN 4 THEN 'SuperPT_NS+MasterPT_NS+AgentPT_NS ASC'
+		CASE @SortBy WHEN 1 THEN 'SuperPT_SB+MasterPT_SB+AgentPT_SB ASC, SuperPT_SB ASC, MasterPT_SB ASC, AgentPT_SB ASC, s.username ASC, m.username ASC, ag.username ASC'
+					WHEN 2 THEN 'SuperPT_SB+MasterPT_SB+AgentPT_SB DESC, SuperPT_SB DESC, MasterPT_SB DESC, AgentPT_SB DESC,s.username DESC, m.username DESC, ag.username DESC'
+					WHEN 3 THEN 'SuperPT_NS+MasterPT_NS+AgentPT_NS ASC, SuperPT_NS ASC, MasterPT_NS ASC, AgentPT_NS ASC, s.username ASC, m.username ASC, ag.username ASC'
+					WHEN 4 THEN 'SuperPT_NS+MasterPT_NS+AgentPT_NS DESC,SuperPT_NS DESC, MasterPT_NS DESC, AgentPT_NS DESC,s.username DESC, m.username DESC, ag.username DESC'
 					WHEN 5 THEN 's.username ASC, m.username ASC, ag.username ASC'
 					WHEN 6 THEN 's.username DESC, m.username DESC, ag.username DESC' 
 					ELSE 'ag.username ASC' END +') rn,
