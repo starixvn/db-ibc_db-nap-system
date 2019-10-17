@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingInsert]
 	@UserName NVARCHAR(30),
 	@MaxTurnover MONEY,
@@ -21,6 +21,7 @@ AS
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		
 	Parameter's explaination:
 */
@@ -47,6 +48,8 @@ BEGIN
 		RETURN
 	
 	DECLARE @CustID INT, @GroupHeadlineID INT
+	DECLARE @MaxLevel TINYINT
+	
 	SELECT @CustID = CustID, @roleid = RoleID FROM dbo.CustInfo WITH(NOLOCK) WHERE UserName = @UserName
 
 	IF (@CustID IS NULL OR @roleid = 1) AND @IsGroupHeadline = 0
@@ -71,7 +74,9 @@ BEGIN
 			SELECT @ErrCode = 102, @ErrMsg = 'The setting of this customer already existed!'
 			RETURN
 	END
-
+			
+	SET @MaxLevel = (SELECT TOP 1 PercentLevel FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentValue = 100)
+	
 	CREATE TABLE #tmpTurnover(MatchId INT, SumOfStake MONEY, HouseTurnover MONEY)
 	
 	INSERT INTO #tmpTurnover(MatchId, SumOfStake, HouseTurnover)
@@ -81,7 +86,7 @@ BEGIN
 	INSERT INTO dbo.TOControl_Setting(CustID, matchid, MaxTurnOver, TotalTurnOver, HouseTurnover, PercentLevel, IsNotified,IsGroupHeadline)
 	SELECT
 		@CustID, t.MatchId, @MaxTurnover AS MaxTurnOver, t.SumOfStake AS TotalTurnOver, t.HouseTurnover
-		,	CASE	WHEN @MaxTurnover = 0 THEN 10 
+		,	CASE	WHEN @MaxTurnover = 0 THEN @MaxLevel 
 					ELSE ISNULL((SELECT MAX(PercentLevel) FROM dbo.TOControl_LevelSetting (NOLOCK) WHERE ((HouseTurnover*100)/@MaxTurnover) >= PercentValue),0)
 			END AS PercentLevel
 			
