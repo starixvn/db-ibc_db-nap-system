@@ -40,7 +40,7 @@ BEGIN
 	DECLARE @tmpCust TABLE (custid INT, remark NVARCHAR(500))
 	
 	INSERT INTO @tmpUser(username)
-	SELECT LTRIM(RTRIM(val))
+	SELECT DISTINCT LTRIM(RTRIM(val))
 	FROM strSplit (@usernames,',')
 	
 	UPDATE t
