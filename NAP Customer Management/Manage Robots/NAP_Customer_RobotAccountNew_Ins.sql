@@ -85,12 +85,12 @@ BEGIN
 		SELECT @ErrCode = 103, @ErrMsg = 'Uplines of the following accounts have already been added in the robot list: '
 		
 		SELECT TOP (100) @ErrMsg = @ErrMsg + username + ','
-		FROM @tmpUser
+		FROM @tmpUser t1
 		WHERE EXISTS (SELECT 1 FROM RobotUsers WITH(NOLOCK) 
-						WHERE custid IN (SELECT srecommend FROM @tmpUser WHERE roleid < 4
-										UNION SELECT mrecommend FROM @tmpUser WHERE roleid < 3
-										UNION SELECT recommend FROM @tmpUser WHERE roleid < 2)
-						)				
+						WHERE custid IN (SELECT srecommend FROM @tmpUser t2 WHERE t1.custid = t2.custid AND t2.roleid < 4
+										UNION SELECT mrecommend FROM @tmpUser t2 WHERE t1.custid = t2.custid AND t2.roleid < 3
+										UNION SELECT recommend FROM @tmpUser t2 WHERE t1.custid = t2.custid AND t2.roleid < 2)
+						)			
 		
 		RETURN
 	END
