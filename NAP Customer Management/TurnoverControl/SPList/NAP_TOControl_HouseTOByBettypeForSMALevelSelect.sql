@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_HouseTOByBettypeForSMALevelSelect]
 (
 	@CustID INT,
@@ -393,5 +393,3 @@ BEGIN
 	
 END
 GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_HouseTOByBettypeForSMALevelSelect] TO [bodbAdminNet]
-go

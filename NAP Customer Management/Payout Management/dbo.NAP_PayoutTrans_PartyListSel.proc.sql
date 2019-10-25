@@ -1,11 +1,5 @@
-USE [bodb_licensee]
+/*<info serverAlias="DBLIC-bodb_Licensee" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
 GO
-/****** Object:  StoredProcedure [dbo].[LA_PartyListSel]    Script Date: 11/18/2015 11:41:57 AM ******/
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-
 ALTER PROCEDURE [dbo].[NAP_PayoutTrans_PartyListSel]
 	 @UserID		INT	   = 0
 	,@FunctionID	INT	   = 0
@@ -17,7 +11,7 @@ AS
 	Original: bodb_Licensee.dbo.LA_PartyListSel
 
 	Revisions:     
-	
+	-20151118@Bobby
 
 	Params:
 	+ UserID : 
@@ -222,8 +216,4 @@ BEGIN
 	DROP TABLE #data
 	DROP TABLE #ListParty
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_PayoutTrans_PartyListSel] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_PayoutTrans_PartyListSel] TO [vnteam]
 GO
