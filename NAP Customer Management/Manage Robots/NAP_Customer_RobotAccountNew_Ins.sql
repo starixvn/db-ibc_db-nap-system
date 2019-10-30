@@ -18,6 +18,7 @@ AS
 		
 		Revision:
 			- 20190912@Johnson: Initial sp [redmine:#119714]
+			- 20191030@Johnson: change request to allow add licensee [redmine:#122642]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -102,23 +103,7 @@ BEGIN
 		FROM @tmpUser t
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON t.recommend = c.custid		
 	END
-	
-	IF EXISTS (SELECT TOP 1 1 
-				FROM @tmpUser t
-					INNER JOIN bodb02.dbo.site s WITH(NOLOCK) ON t.site = s.site
-				WHERE s.isLicensee = 1
-			)
-	BEGIN
-		SELECT @ErrCode = 104, @ErrMsg = 'Account(s) belongs to licensee sites: '
 		
-		SELECT TOP (100) @ErrMsg = @ErrMsg + username + ','
-		FROM @tmpUser t
-			INNER JOIN bodb02.dbo.site s WITH(NOLOCK) ON t.site = s.site
-				WHERE s.isLicensee = 1		
-		
-		RETURN
-	END
-	
 	IF EXISTS(SELECT 1 FROM RobotUsers WITH(NOLOCK) 
 			WHERE custid IN (SELECT custid FROM @tmpUser)
 			)
