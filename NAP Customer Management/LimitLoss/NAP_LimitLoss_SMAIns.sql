@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/
+/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LimitLoss_SMAIns]
     @Username			NVARCHAR(50),
     @MaxLoss			MONEY,

@@ -1,7 +1,4 @@
-/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/
-USE [bodb_AGE]
-GO
-
+/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LimitLoss_MonitorGroupHeadline]
 	@GroupHeadlineID INT
 AS
@@ -16,7 +13,7 @@ AS
 
 	Parameter's explaination: 
 	
-	Example:  EXEC NAP_LimitLoss_MonitorGroupHeadline @GroupHeadlineID = 5
+	Example:    EXEC NAP_LimitLoss_MonitorGroupHeadline @GroupHeadlineID = 5
 	
 */
 BEGIN
@@ -43,4 +40,4 @@ BEGIN
 		LEFT JOIN LimitLoss_Setting t WITH(NOLOCK) ON t.CustID = gl.custid
 	ORDER BY NoSetting, PercentageLoss DESC, t.TotalBalance, c.username
 END
-
+GO
