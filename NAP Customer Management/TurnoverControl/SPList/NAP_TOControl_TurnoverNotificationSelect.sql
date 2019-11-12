@@ -12,6 +12,7 @@ AS
 	Revisions:
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
+		- 20191112@Helen: Ignore closed matches notification & SP Enhancement [Redmine: #122236]
 		
 	Parameter's explaination: 
 	Hardcode:
@@ -39,7 +40,7 @@ BEGIN
 				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.houseturnover*100/t.MaxTurnover END AS PercentageUsed
 				, t.IsGroupHeadline
 				, st.siteid
-		FROM dbo.TOControl_Setting t WITH(NOLOCK)
+		FROM dbo.TOControl_Setting t WITH(NOLOCK, INDEX = IX_PercentLevel)
 			CROSS APPLY (SELECT TOP 1 ISNULL(ls.SiteID,0) AS SiteID
 						FROM dbo.Customer c WITH (NOLOCK) 
 							INNER JOIN dbo.Site s WITH (NOLOCK) ON c.site = s.site
@@ -63,7 +64,7 @@ BEGIN
 	INSERT INTO @MatchList(matchid, homeid, awayid, eventdate, sporttype, leagueid)
 	SELECT m.matchid, m.homeid, m.awayid, m.eventdate, m.sporttype, m.leagueid
 	FROM DBAGE.bodb02.dbo.match m WITH(NOLOCK)
-	WHERE EXISTS(SELECT tmp.matchid FROM @temp_ tmp WHERE m.matchid = tmp.matchid)
+	WHERE m.eventstatus = 'running' AND EXISTS(SELECT tmp.matchid FROM @temp_ tmp WHERE m.matchid = tmp.matchid)
 
 	-- return result
 	SELECT 
