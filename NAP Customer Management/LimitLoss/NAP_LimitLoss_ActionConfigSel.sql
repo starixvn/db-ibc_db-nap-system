@@ -1,4 +1,5 @@
-﻿ALTER PROCEDURE [dbo].[NAP_LimitLoss_ActionConfigSel]
+/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[NAP_LimitLoss_ActionConfigSel]
 AS
 /*
 	Created: Elodie
@@ -7,20 +8,15 @@ AS
 	DB: DBAGE/bodb_Age
 
 	Revisions:
+		- 20140526@Elodie: Initialize SP
 
 	Parameter's explaination: 
 	
-	Example: EXEC NAP_LimitLoss_ActionConfigSel
+	Example:  EXEC NAP_LimitLoss_ActionConfigSel
 	
 */
 SET NOCOUNT ON
 
 SELECT a.LevelID, a.ActionID, a.Value
 FROM dbo.LimitLoss_ActionConfig a WITH (NOLOCK)
-
 GO
-GRANT EXECUTE ON [dbo].[NAP_LimitLoss_ActionConfigSel] TO [bodbAdminNet]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_LimitLoss_ActionConfigSel] TO [vnteam]
-
- 

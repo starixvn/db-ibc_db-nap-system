@@ -1,7 +1,4 @@
-﻿/*<info serverAlias="DBAGE-bodb_age" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-USE [bodb_AGE]
-GO
-
+/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Task_LimitLoss_Setting_TotalBalanceUpd_Job]
 AS
 /*
@@ -219,6 +216,9 @@ BEGIN
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.mrecommend = b.custid THEN b.winlost-b.actual_stake ELSE b.mwinlost+b.acomm-b.comm END ELSE 0 END) AS yesterdayMasterCash,
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.recommend = b.custid THEN b.winlost-b.actual_stake ELSE b.awinlost+b.comm-b.playercomm END ELSE 0 END) AS yesterdayAgentCash,
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.srecommend <> b.custid AND b.mrecommend <> b.custid AND b.recommend <> b.custid THEN b.winlost-b.actual_stake+b.playercomm ELSE 0 END ELSE 0 END) AS yesterdayMemberCash,
+
+
+
 			-- convert to RM
 			-- total
 			SUM((CASE WHEN b.srecommend = b.custid THEN b.winlost-b.actual_stake ELSE b.swinlost+b.scomm-b.acomm END)*b.actualrate) AS totalSuperCashRMB,
@@ -346,6 +346,9 @@ BEGIN
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.mrecommend = b.custid THEN b.winlost-b.actual_stake ELSE b.mwinlost+b.acomm-b.comm END ELSE 0 END) AS yesterdayMasterCash,
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.recommend = b.custid THEN b.winlost-b.actual_stake ELSE b.awinlost+b.comm-b.playercomm END ELSE 0 END) AS yesterdayAgentCash,
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.srecommend <> b.custid AND b.mrecommend <> b.custid AND b.recommend <> b.custid THEN b.winlost-b.actual_stake+b.playercomm ELSE 0 END ELSE 0 END) AS yesterdayMemberCash,
+
+
+
 			-- convert to RM
 			-- total
 			0 AS totalSuperCashRMB,
@@ -517,6 +520,9 @@ BEGIN
 			0 AS yesterdayMasterCash,
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.recommend = b.custid THEN b.winlost-b.actual_stake ELSE b.awinlost+b.comm-b.playercomm END ELSE 0 END) AS yesterdayAgentCash,
 			SUM(CASE WHEN (b.winlostdate <= @yesterday OR b.bettype > 20000) THEN CASE WHEN b.srecommend <> b.custid AND b.mrecommend <> b.custid AND b.recommend <> b.custid THEN b.winlost-b.actual_stake+b.playercomm ELSE 0 END ELSE 0 END) AS yesterdayMemberCash,
+
+
+
 			-- convert to RM
 			-- total
 			0 AS totalSuperCashRMB,

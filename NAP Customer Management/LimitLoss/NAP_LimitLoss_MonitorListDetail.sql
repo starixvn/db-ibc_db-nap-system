@@ -1,7 +1,4 @@
-/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" viewers="vnteam" isFunction="0"></info>*/
-USE [bodb_AGE]
-GO
-
+/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LimitLoss_MonitorListDetail]
 	@ActionID TINYINT = 1
 AS
@@ -19,7 +16,7 @@ AS
 					2	Send email notification to recipient
 					3	Send lettalk notification to recipient
 
-	Example:  EXEC NAP_LimitLoss_MonitorListDetail @ActionID = 1
+	Example:    EXEC NAP_LimitLoss_MonitorListDetail @ActionID = 1
 	
 */
 BEGIN
