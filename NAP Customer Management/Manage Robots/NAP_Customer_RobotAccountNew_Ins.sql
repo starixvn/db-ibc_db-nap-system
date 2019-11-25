@@ -19,6 +19,7 @@ AS
 		Revision:
 			- 20190912@Johnson: Initial sp [redmine:#119714]
 			- 20191030@Johnson: change request to allow add licensee [redmine:#122642]
+			- 20191125@Johnson: set counter = 10 when update robot [redmine:#122642]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -109,7 +110,8 @@ BEGIN
 			)
 	BEGIN
 		UPDATE RobotUsers WITH(UPDLOCK,ROWLOCK)
-		SET remark = @remark
+		SET remark = @remark,
+			counter = CASE WHEN ISNULL(counter,0) < 10 THEN 10 ELSE counter END
 		OUTPUT DELETED.custid, DELETED.remark INTO @tmpCust(custid,remark)		
 		WHERE custid IN (SELECT custid FROM @tmpUser)
 		
