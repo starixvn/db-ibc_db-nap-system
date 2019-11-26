@@ -81,16 +81,16 @@ BEGIN
 	FROM (
 		SELECT ROW_NUMBER() OVER (' 
 		+ CASE @OrderOption 
-				WHEN 1 THEN 'ORDER BY ISNULL(r.site,'''') ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
-				WHEN 2 THEN 'ORDER BY e.currency  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
-				WHEN 3 THEN 'ORDER BY r.country  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
-				WHEN 4 THEN 'ORDER BY r.region  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 1 THEN 'ORDER BY e.currency ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 2 THEN 'ORDER BY ISNULL(r.site,'''')  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 3 THEN 'ORDER BY r.countryLong  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 4 THEN 'ORDER BY r.ipRegion  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 5 THEN 'ORDER BY r.LastChangeTime  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 6 THEN 'ORDER BY r.counter  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				ELSE ' ORDER BY c.username ASC, c.roleid DESC, c.custid ASC'  END
 		+') rn,
 			c.custid, e.currency, c.username, CASE c.roleid WHEN 4 THEN ''Super'' WHEN 3 THEN ''Master'' WHEN 2 THEN ''Agent'' WHEN 1 THEN ''Member'' END level,
-			ISNULL(r.site,'''') site, r.IP, r.Country, r.Region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
+			ISNULL(r.site,'''') site, r.IP, r.CountryLong as country, r.ipRegion as region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
 		FROM RobotUsers r WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
 			INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
