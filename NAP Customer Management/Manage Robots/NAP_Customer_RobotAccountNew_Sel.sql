@@ -2,7 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
-	@site VARCHAR(MAX)= '',
+	@site VARCHAR(MAX)= NULL,
 	@currency INT = NULL,
 	@counter TINYINT = 0,
 	@OrderOption TINYINT = 0,
