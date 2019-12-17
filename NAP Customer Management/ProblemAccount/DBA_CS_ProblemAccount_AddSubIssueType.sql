@@ -2,7 +2,8 @@
 
 ALTER PROCEDURE DBA_CS_ProblemAccount_AddSubIssueType	
 	@SubIssueTypeId SMALLINT,
-	@SubIssueType VARCHAR(100)
+	@SubIssueType VARCHAR(100),
+	@SubIssueTypeCS NVARCHAR(100)
 AS
 /*
 	Created: Elodie
@@ -21,8 +22,8 @@ AS
 BEGIN
 	SET IDENTITY_INSERT TicketVoiding_SubIssueType ON
 
-	INSERT INTO dbo.TicketVoiding_SubIssueType (SubIssueTypeId, IssueTypeId, SubIssueTypeName)	
-	SELECT @SubIssueTypeId, 11, @SubIssueType
+	INSERT INTO dbo.TicketVoiding_SubIssueType (SubIssueTypeId, IssueTypeId, SubIssueTypeName, SubIssueTypeNameCS)	
+	SELECT @SubIssueTypeId, 11, @SubIssueType, @SubIssueTypeCS
 
 	INSERT INTO TicketVoiding_MessageTemplateSetting (TemplateId, SubIssueTypeId)
 	SELECT 34, @SubIssueTypeId
