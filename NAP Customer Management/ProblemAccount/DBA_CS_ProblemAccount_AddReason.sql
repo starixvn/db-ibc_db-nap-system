@@ -18,7 +18,7 @@ AS
 
 	Parameter's explaination: 
 	
-	Example: EXEC DBA_CS_ProblemAccount_AddReason @SubIssueTypeId = 37, @ReasonName = 'Irrigation Bet', @ReasonNameCS = '灌水投注'
+	Example: EXEC DBA_CS_ProblemAccount_AddReason @SubIssueTypeId = 37, @ReasonName = 'Irrigation Bet', @ReasonNameCS = N'灌水投注'
 	
 */
 BEGIN
