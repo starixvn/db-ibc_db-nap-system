@@ -1,6 +1,5 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
-
-ALTER PROCEDURE CS_ProblemAccount_AddCustomer
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[CS_ProblemAccount_AddCustomer]
 	@CustomerList	VARCHAR(MAX),
 	@RoleId			TINYINT,
 	@ReasonId		TINYINT,
@@ -21,6 +20,7 @@ AS
 
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
+		- 20191218@Percy: Change using SP CS_DynamicCustSetting_01 to CS_DynamicCustomerInfo_02 [RedmineID: #125186]
 
 	Parameter's explaination: 
 	
@@ -101,7 +101,7 @@ BEGIN
 	
 		IF @@ROWCOUNT = 0 BREAK
 
-		EXEC dbo.CS_DynamicCustSetting_01
+		EXEC dbo.CS_DynamicCustomerInfo_02
 			@CustId = @CustId,
 			@RoleId = @RoleId,
 			@ReasonId = @ReasonId,
