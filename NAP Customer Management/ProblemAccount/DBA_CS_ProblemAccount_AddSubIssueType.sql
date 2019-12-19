@@ -28,5 +28,8 @@ BEGIN
 	INSERT INTO TicketVoiding_MessageTemplateSetting (TemplateId, SubIssueTypeId)
 	SELECT 34, @SubIssueTypeId
 
+	INSERT INTO TicketVoiding_ReasonTemplate (Sporttype, SubIssueTypeId, ReasonEnglish, ReasonChineseSimplified)
+	SELECT 0, @SubIssueTypeId, @SubIssueType, @SubIssueTypeCS
+
 	SET IDENTITY_INSERT TicketVoiding_SubIssueType OFF
 END
