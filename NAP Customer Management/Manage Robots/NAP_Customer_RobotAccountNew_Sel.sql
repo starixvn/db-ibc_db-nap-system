@@ -2,8 +2,11 @@
 ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
-	@site VARCHAR(MAX)= '',
+	@site VARCHAR(MAX)= NULL,
 	@currency INT = NULL,
+	@counter TINYINT = 0,
+	@OrderOption TINYINT = 0,
+	@OrderType VARCHAR(10)= 'ASC',
 	@pageIndex	INT = 1,
 	@pageSize	INT = 50,
 	@totalItems INT = 0 OUTPUT	
@@ -16,13 +19,20 @@ AS
 		
 		Revision:
 			- 20190912@Johnson: Initial sp [redmine:#119714]
+			- 20191125@Johnson: change request [redmine:]
 		Parameter's Explanation:	
 			-@currency = NULL : all currency
+			-@counter = 0: all values
+					 1: >=10, 2: <10
+			-@orderOption: 0 : default 
+						1: Currency, 2: Site, 3:Country
+						4:Region,5:Last Change Time, 6: Counter	
+			-@OrderType = ASC, DESC			
 */ 
 BEGIN
 	SET NOCOUNT ON
 	
-	DECLARE @tmpCust TABLE (custid INT)	
+	CREATE TABLE #tmpCust (custid INT)	
 	DECLARE @tmpSite TABLE(site VARCHAR(15))
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 	
@@ -34,44 +44,61 @@ BEGIN
 	
 	IF ISNULL(@username,'')= ''
 	BEGIN 	
-		INSERT INTO @tmpCust(custid)	
+		INSERT INTO #tmpCust(custid)	
 		SELECT r.custid
 		FROM RobotUsers r WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 		WHERE roleid = ISNULL(@level,roleid)			
 			AND currency = ISNULL(@currency, currency)
-			AND r.site IN (SELECT site FROM @tmpSite)
+			AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
+			AND 1 = CASE WHEN @counter = 0 THEN 1
+						WHEN @counter = 1 AND counter >= 10 THEN 1
+						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+					ELSE 0 END
 	END
 	ELSE 
 	BEGIN
-		INSERT INTO @tmpCust(custid)	
+		INSERT INTO #tmpCust(custid)	
 		SELECT r.custid
 		FROM RobotUsers r WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 		WHERE roleid = ISNULL(@level,roleid)
 			AND username = @username
 			AND currency = ISNULL(@currency, currency)
-			AND r.site IN (SELECT site FROM @tmpSite)
+			AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
+			AND 1 = CASE WHEN @counter = 0 THEN 1
+						WHEN @counter = 1 AND counter >= 10 THEN 1
+						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+					ELSE 0 END
 	END
 	
 	SELECT @totalItems = @@rowcount
 	
-	SELECT custid,currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
-	INTO #Result
+	DECLARE @sql NVARCHAR(MAX)
+						
+	SELECT @sql = '
+	SELECT custid,currency, username, level, site, IP, country, region, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
 	FROM (
-		SELECT ROW_NUMBER() OVER (ORDER BY c.username ASC, c.roleid DESC, c.custid ASC) rn,
-			c.custid, c.currency, c.username, CASE c.roleid WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' WHEN 1 THEN 'Member' END level,
-			r.site, r.IP, r.LastChangeTime,	r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
+		SELECT ROW_NUMBER() OVER (' 
+		+ CASE @OrderOption 
+				WHEN 1 THEN 'ORDER BY e.currency ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 2 THEN 'ORDER BY ISNULL(r.site,'''')  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 3 THEN 'ORDER BY r.countryLong  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 4 THEN 'ORDER BY r.ipRegion  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 5 THEN 'ORDER BY r.LastChangeTime  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 6 THEN 'ORDER BY r.counter  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				ELSE ' ORDER BY c.username ASC, c.roleid DESC, c.custid ASC'  END
+		+') rn,
+			c.custid, e.currency, c.username, CASE c.roleid WHEN 4 THEN ''Super'' WHEN 3 THEN ''Master'' WHEN 2 THEN ''Agent'' WHEN 1 THEN ''Member'' END level,
+			ISNULL(r.site,'''') site, r.IP, r.CountryLong as country, r.ipRegion as region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
 		FROM RobotUsers r WITH(NOLOCK)
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
+			INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
 			LEFT JOIN bodb02.dbo.customer c2 WITH(NOLOCK) ON c2.custid = r.creator
-		WHERE r.custid IN (SELECT custid FROM @tmpCust)
+		WHERE r.custid IN (SELECT custid FROM #tmpCust)
 	) t
-	WHERE rn BETWEEN @rowStart AND @rowEnd
+	WHERE rn BETWEEN '+ CAST(@rowStart AS VARCHAR(10)) +' AND ' + CAST (@rowEnd AS VARCHAR(10)) 
 	
-	SELECT custid,e.currency, username, level, site, IP, LastChangeTime, counter, serverIP, AddedBy, AddedDate, remark
-	FROM #Result rs
-		INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON rs.currency = e.exchangeid
-		
+	EXEC sys.sp_executesql @sql
 END
 GO

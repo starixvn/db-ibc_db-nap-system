@@ -15,6 +15,7 @@ AS
 		
 		Revision:
 			- 20190913@Johnson: Initial sp [redmine:#119714]
+			- 20191125@Johnson: add country,region [redmine:#122642]
 		Parameter's Explanation:			
 */ 
 BEGIN
@@ -35,8 +36,8 @@ BEGIN
 	END
 	
 	DELETE RobotUsers with (ROWLOCK) 
-	OUTPUT getdate(), deleted.custid, deleted.[IP], deleted.LastChangeTime, deleted.[site], deleted.[counter], deleted.[serverip], deleted.[RobotDate], deleted.remark, deleted.creator 
-	INTO RobotUsers_DelLog ([DelLogDate],[custid],[IP],[LastChangeTime],[site],[counter],[serverip],[RobotDate],[remark],[Creator])
+	OUTPUT getdate(), deleted.custid, deleted.[IP], deleted.countryLong,deleted.ipRegion, deleted.LastChangeTime, deleted.[site], deleted.[counter], deleted.[serverip], deleted.[RobotDate], deleted.remark, deleted.creator 
+	INTO RobotUsers_DelLog ([DelLogDate],[custid],[IP],countryLong,ipRegion,[LastChangeTime],[site],[counter],[serverip],[RobotDate],[remark],[Creator])
 	WHERE custid=@custid
 	
 	-- write log
