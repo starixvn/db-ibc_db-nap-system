@@ -1,4 +1,4 @@
-/*<info serverAlias="DBTXN-bodb02" executers="vnteam" viewers="" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBTXN-bodb02" executers="vnteam" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE DBA_CS_ProblemAccount_AddSubIssueType	
 	@SubIssueTypeId SMALLINT,
@@ -29,7 +29,7 @@ BEGIN
 	SELECT 34, @SubIssueTypeId
 
 	INSERT INTO TicketVoiding_ReasonTemplate (Sporttype, SubIssueTypeId, ReasonEnglish, ReasonChineseSimplified)
-	SELECT 0, @SubIssueTypeId, @SubIssueType, @SubIssueTypeCS
+	SELECT 0, @SubIssueTypeId, 'Abnormal bet', N'由于非正常投注'
 
 	SET IDENTITY_INSERT TicketVoiding_SubIssueType OFF
 END
