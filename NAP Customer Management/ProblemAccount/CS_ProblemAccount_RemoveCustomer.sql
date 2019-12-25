@@ -1,6 +1,5 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
-
-ALTER PROCEDURE CS_ProblemAccount_RemoveCustomer
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[CS_ProblemAccount_RemoveCustomer]
 	@CustomerList				VARCHAR(MAX),
 	@RoleId						TINYINT,
 	@ExcludeAbnormalMember		BIT,
@@ -19,6 +18,7 @@ AS
 
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
+		- 20191218@Percy: Change using SP CS_DynamicCustSetting_01 to CS_DynamicCustomerInfo_02 [RedmineID: #125186]
 
 	Parameter's explaination: 
 	
@@ -53,7 +53,7 @@ BEGIN
 		
 		IF @RoleId <> 1
 		BEGIN
-			EXEC dbo.CS_DynamicCustSetting_01
+			EXEC dbo.CS_DynamicCustomerInfo_02
 				@CustId = @CustId,
 				@RoleId = @RoleId,
 				@Action = 'UnmarkProblem',
