@@ -4,10 +4,10 @@ ALTER PROCEDURE CS_ProblemAccount_MonitorList
 	@FromDate				DATETIME,
 	@ToDate					DATETIME,
 	@RoleId					TINYINT = 1,
-	@CurrencyId			INT = 81,
+	@CurrencyId				INT = 81,
 	@Status					TINYINT = 0,
 	@IsReduce				TINYINT = 0,
-	@ReasonId				VARCHAR(50),
+	@ReasonId				VARCHAR(MAX),
 	@UserSearch				NVARCHAR(50) = '',
 	@IsSearchDownline		BIT = 0,
 	@OrderType				TINYINT = 1,
@@ -20,10 +20,11 @@ AS
 	Created: Elodie
 	Date: 20190808
 	Task : Manage problem account
-	DB: DBCUST/CustDB
+	DB: DBACC/bodb02
 
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
+		- 20190808@Elodie: Change datatype of @ReasonId parameter [Redmine:#126080]
 
 	Parameter's explaination: 
 		@IsReduce: 0:All, 1:No, 2:Yes
