@@ -31,7 +31,7 @@ AS
 		@IsReduce: 0:All, 1:No, 2:Yes
 		@OrderType: 1:SMA line, 2:MarkDate, 3:Account Status
 		@Status: 0:All, 1:Inactive, 2:Suspended, 3:View Only, 4:Active
-		@IsDirectlyMarked: 0: All, 1: Yes, 2: No
+		@IsDirectlyMarked: 0: All, 1: No, 2: Yes
 	
 */
 BEGIN
@@ -165,8 +165,9 @@ BEGIN
 							FROM #CustDetailList cd 
 							WHERE cd.MaxBet IS NOT NULL) AND @IsReduce = 2								
 				)
-		OR (1= CASE WHEN @IsDirectlyMarked = 1 AND (IsDirectlyMarked = 0 AND IsAbnormalMember = 0) THEN 1
-					WHEN @IsDirectlyMarked = 0 AND (IsDirectlyMarked = 1 OR IsAbnormalMember = 1) THEN 1 ELSE 0 END)
+		OR (1= CASE WHEN @IsDirectlyMarked = 1 AND (IsDirectlyMarked = 1 OR IsAbnormalMember = 1) THEN 1
+					WHEN @IsDirectlyMarked = 2 AND (IsDirectlyMarked = 0 AND IsAbnormalMember = 0) THEN 1 ELSE 0 END)
+					
 	DELETE cd 
 	FROM #CustDetailList cd
 	WHERE NOT EXISTS (SELECT 1 FROM #CustList WHERE CustId = cd.CustId)
