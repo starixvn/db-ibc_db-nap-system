@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE CS_ProblemAccount_InformStatusUpd	
+ALTER PROCEDURE CS_ProblemAccount_InformStatusUpd
 	@customerList 	VARCHAR(MAX),
 	@roleid 		TINYINT,
 	@isApplyDownlines BIT = 0,
@@ -128,7 +128,7 @@ BEGIN
 												WHEN 1 THEN '1st week' 
 												WHEN 2 THEN '2nd week' 
 												WHEN 3 THEN 'Both weeks' END+ '"'
-							+ 'ApplyDownlines="' +  COALESCE(@isApplyDownlines, SPACE(1)) + '"'
+							+ 'ApplyDownlines="' +  COALESCE(CAST(@isApplyDownlines AS VARCHAR(10)), SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'		
 
