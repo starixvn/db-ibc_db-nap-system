@@ -135,7 +135,7 @@ BEGIN
 		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
-			@ActionId			= 31611,
+			@ActionId			= 31612,
 			@TrackingValue		= @LogData,			
 			@Duration			= @Duration
 	END
