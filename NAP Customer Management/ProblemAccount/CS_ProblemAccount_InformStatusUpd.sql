@@ -128,7 +128,7 @@ BEGIN
 												WHEN 1 THEN '1st week' 
 												WHEN 2 THEN '2nd week' 
 												WHEN 3 THEN 'Both weeks' END+ '"'
-							+ 'ApplyDownlines="' +  COALESCE(CAST(@isApplyDownlines AS VARCHAR(10)), SPACE(1)) + '"'
+							+ ' ApplyDownlines="' +  COALESCE(CAST(@isApplyDownlines AS VARCHAR(10)), SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'		
 
