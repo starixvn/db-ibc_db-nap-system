@@ -13,6 +13,7 @@ AS
 		- 20170919@Helen: TO Control Phase 3 - [redmine:75557]
 		- 20171110@Helen: Enhance performance for TO - [Redmine: 86052]
 		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
+		- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
 
 	Param explanation:
 
@@ -37,6 +38,8 @@ BEGIN
 								, adjusted_TurnOver_RM MONEY,adjusted_TurnOver_withABS_RM MONEY, adjusted_HTOWithoutExtraPT_RM MONEY
 								, IsInsert BIT
 								, IsMemberGroupHeadline BIT
+								, bettype SMALLINT
+								, liveindicator BIT
 								)
 	
 	DECLARE @EventDate_min DATETIME
@@ -49,7 +52,7 @@ BEGIN
 	
 	BEGIN TRY
 		INSERT INTO @TmpTable(srecommend, mrecommend, recommend,player, matchid, winlostdate, adjusted_TurnOver,adjusted_TurnOver_withABS, adjusted_HTOWithoutExtraPT
-								, adjusted_TurnOver_RM,adjusted_TurnOver_withABS_RM, adjusted_HTOWithoutExtraPT_RM,IsInsert)
+								, adjusted_TurnOver_RM,adjusted_TurnOver_withABS_RM, adjusted_HTOWithoutExtraPT_RM,IsInsert, bettype, liveindicator)
 								
 		SELECT x.v.value('(super/text())[1]','INT') AS srecommend,
 			   x.v.value('(master/text())[1]','INT') AS mrecommend,
@@ -63,7 +66,9 @@ BEGIN
 			   x.v.value('(adjTO_RM/text())[1]','MONEY') AS adjusted_TurnOver_RM,
 			   x.v.value('(adjTOwithABS_RM/text())[1]','MONEY') AS adjusted_TurnOver_withABS_RM,
 			   x.v.value('(adjHTONoExtraPT_RM/text())[1]','MONEY') AS adjusted_HTOWithoutExtraPT_RM,
-			   x.v.value('(IsInsert/text())[1]','BIT') AS IsInsert
+			   x.v.value('(IsInsert/text())[1]','BIT') AS IsInsert,
+			   x.v.value('(bettype/text())[1]','SMALLINT') as bettype,
+			   x.v.value('(liveindicator/text())[1]','BIT') as liveindicator
 			   
 		FROM @XMLString.nodes('/root/r') AS x(v)
 		OPTION (OPTIMIZE FOR (@XMLString = NULL))
@@ -72,10 +77,10 @@ BEGIN
 		IF EXISTS (SELECT 1 FROM @TmpTable WHERE IsInsert = 1)
 		BEGIN
 			INSERT INTO @TmpTable (srecommend, mrecommend, recommend,player, matchid, winlostdate, adjusted_TurnOver,adjusted_TurnOver_withABS, adjusted_HTOWithoutExtraPT
-									, adjusted_TurnOver_RM,adjusted_TurnOver_withABS_RM, adjusted_HTOWithoutExtraPT_RM,IsInsert,IsMemberGroupHeadline)
+									, adjusted_TurnOver_RM,adjusted_TurnOver_withABS_RM, adjusted_HTOWithoutExtraPT_RM,IsInsert,IsMemberGroupHeadline,bettype, liveindicator)
 			SELECT srecommend, mrecommend, recommend,player, matchid, winlostdate, adjusted_TurnOver,adjusted_TurnOver_withABS, adjusted_HTOWithoutExtraPT
 					, adjusted_TurnOver_RM,adjusted_TurnOver_withABS_RM, adjusted_HTOWithoutExtraPT_RM,IsInsert
-					, 1 AS IsMemberGroupHeadline
+					, 1 AS IsMemberGroupHeadline, bettype, liveindicator
 			FROM @TmpTable tmp
 			WHERE IsInsert = 1
 				AND EXISTS (SELECT 1 FROM bodb02.dbo.custAccount ca WITH (NOLOCK) 
@@ -113,7 +118,7 @@ BEGIN
 		WHERE EXISTS (SELECT 1 FROM @TmpTable tmp  WHERE tmp.srecommend = ca1.CustID OR tmp.mrecommend = ca1.CustID OR tmp.recommend = ca1.CustID OR tmp.player = ca1.CustID) 
 					
 		-- Inserting data into TOControl_Transition
-		INSERT INTO dbo.TOControl_Transition (CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine)
+		INSERT INTO dbo.TOControl_Transition (CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine,liveindicator,bettypeID)
 		-- For SMA Setting Level
 		SELECT gl.CustID, t.matchid
 		
@@ -121,7 +126,9 @@ BEGIN
 				
 				, SUM (t.adjusted_HTOWithoutExtraPT - t.adjusted_TurnOver_withABS * ISNULL(ExtraPT_tmp.ExtraPT,0))	AS adjusted_HouseTurnOver
 				
-				, 0
+				, 0 AS IsGroupHeadLine
+				, t.liveindicator AS  liveindicator
+				, t.bettype 'bettypeID'
 		FROM @TmpTable t
 			INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid
 			INNER JOIN bodb02.dbo.TOControl_GlobalSetting gl WITH (NOLOCK) ON (t.srecommend = gl.CustID OR t.mrecommend = gl.CustID OR t.recommend = gl.CustID) 
@@ -131,7 +138,7 @@ BEGIN
 						 FROM #ExtraPTInfo s WITH(NOLOCK) 
 						 WHERE t.srecommend = s.SuperId AND t.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 		WHERE gl.MaxTurnOver <> 0
-		GROUP BY gl.CustID, t.matchid 
+		GROUP BY gl.CustID, t.matchid, t.liveindicator, t.bettype
 		
 		-- For Headline Setting Level
 		UNION ALL
@@ -142,7 +149,9 @@ BEGIN
 				
 				, SUM (t.adjusted_HTOWithoutExtraPT_RM - t.adjusted_TurnOver_withABS_RM * ISNULL(ExtraPT_tmp.ExtraPT,0))	AS adjusted_HouseTurnOver
 				
-				, 1
+				, 1  AS IsGroupHeadLine
+				, t.liveindicator AS  liveindicator
+				, t.bettype AS 'bettypeID'
 		FROM #GroupHeadline gh
 			INNER JOIN bodb02.dbo.custAccount CA WITH (NOLOCK) ON CA.groupID = gh.GroupID
 			INNER JOIN @TmpTable t ON 
@@ -164,7 +173,7 @@ BEGIN
 						 
 		WHERE ((gh.Sporttype = 1 AND M.sporttype = 1) OR (gh.Sporttype = 99 AND m.sporttype > 1 AND m.sporttype <= 99))				 
 		
-		GROUP BY gh.CustID, t.matchid
+		GROUP BY gh.CustID, t.matchid, t.liveindicator, t.bettype
 		
 			 
 	END TRY

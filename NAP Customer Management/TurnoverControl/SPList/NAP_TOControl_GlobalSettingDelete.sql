@@ -1,5 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingDelete]
+(
 	@CustID INT,
 	@UserID INT,
 	@SportType SMALLINT = 1,
@@ -7,6 +8,7 @@ ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingDelete]
 	@IP	VARCHAR(40),
 	@ErrCode int = 0 OUTPUT,
 	@ErrMsg nvarchar(200) = '' OUTPUT
+)
 AS
 	
 /*
@@ -21,6 +23,7 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190521@Helen: store the same TrackingValue for both old and new TrackingValue - [Redmine:113472]
+		- 20200110@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		
 	Parameter's explaination:
 	
@@ -64,12 +67,12 @@ BEGIN
 	SELECT @MaxTurnover_Old = t.MaxTurnover 
 	FROM dbo.TOControl_Setting t WITH(NOLOCK) 
 		INNER JOIN @MatchList m ON t.matchid = m.matchid
-	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline
+	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
 	
 	SELECT @AffectedMatch = @AffectedMatch + CAST(t.MatchID AS VARCHAR(20)) + ',' 
 	FROM dbo.TOControl_Setting t WITH(NOLOCK) 
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
-	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline
+	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
 
 	IF(LEN(ISNULL(@AffectedMatch,'')) > 0)
 	BEGIN
@@ -82,7 +85,7 @@ BEGIN
 	DELETE t
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
-	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadline
+	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
 
 	DECLARE @TrackingValue2 NVARCHAR(4000)
 

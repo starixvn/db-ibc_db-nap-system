@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingInsert]
 	@UserName NVARCHAR(30),
-	@MaxTurnover MONEY,
+	@GlobalSetting VARCHAR(MAX) = '',
 	@IsGroupHeadline BIT = 0,
 	@SportType SMALLINT = 1,
 	@UserID INT,
@@ -22,8 +22,14 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
+		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		
 	Parameter's explaination:
+		Sample data for @GlobalSetting: 
+			'<ROOT>
+				<GlobalSetting MaxTurnover="100" ProfileId  = "1" />
+				<GlobalSetting MaxTurnover="1" ProfileId  = "1"/>
+			</ROOT>'
 */
 BEGIN 
 	SET NOCOUNT ON
@@ -33,7 +39,7 @@ BEGIN
 			@duration	INT,
 			@FunctionKey NVARCHAR(50)
 			
-	DECLARE @roleid INT
+	DECLARE @roleid INT, @iDoc INT
 	SET	@startRun = GETDATE()
 	
 	IF @SportType = 1 
@@ -76,23 +82,34 @@ BEGIN
 	END
 			
 	SET @MaxLevel = (SELECT TOP 1 PercentLevel FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentValue = 100)
+
+	--#tmpMaxTurnover
+	CREATE TABLE #tmpMaxTurnover(ProfileID SMALLINT, MaxTurnover MONEY)
+
+	EXEC sp_xml_preparedocument @iDoc OUTPUT, @GlobalSetting
+	INSERT INTO #tmpMaxTurnover(MaxTurnover, ProfileID)
+	SELECT MaxTurnover, ProfileID 
+	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileID SMALLINT)
+	EXEC sp_xml_removedocument @iDoc
 	
-	CREATE TABLE #tmpTurnover(MatchId INT, SumOfStake MONEY, HouseTurnover MONEY)
+	CREATE TABLE #tmpTurnover(MatchId INT, ProfileID SMALLINT, SumOfStake MONEY, HouseTurnover MONEY)
 	
-	INSERT INTO #tmpTurnover(MatchId, SumOfStake, HouseTurnover)
+	INSERT INTO #tmpTurnover(MatchId, ProfileID, SumOfStake, HouseTurnover)
 	EXECUTE DBAGE.bodb02.dbo.NAP_TOControl_MatchTurnoverByCustomerSelect @CustID = @CustID, @RoleID = @roleid, @IsGroupHeadline = @IsGroupHeadline, @SportType = @SportType
 	
 	
 	INSERT INTO dbo.TOControl_Setting(CustID, matchid, MaxTurnOver, TotalTurnOver, HouseTurnover, PercentLevel, IsNotified,IsGroupHeadline)
 	SELECT
-		@CustID, t.MatchId, @MaxTurnover AS MaxTurnOver, t.SumOfStake AS TotalTurnOver, t.HouseTurnover
-		,	CASE	WHEN @MaxTurnover = 0 THEN @MaxLevel 
-					ELSE ISNULL((SELECT MAX(PercentLevel) FROM dbo.TOControl_LevelSetting (NOLOCK) WHERE ((HouseTurnover*100)/@MaxTurnover) >= PercentValue),0)
+		@CustID, t.MatchId, m.MaxTurnover AS MaxTurnOver, t.SumOfStake AS TotalTurnOver, t.HouseTurnover
+		,	CASE	WHEN m.MaxTurnover = 0 THEN @MaxLevel 
+					ELSE ISNULL((SELECT MAX(PercentLevel) FROM dbo.TOControl_LevelSetting (NOLOCK) WHERE ((HouseTurnover*100)/m.MaxTurnover) >= PercentValue),0)
 			END AS PercentLevel
 			
 		, 0 AS IsNotified
 		, @IsGroupHeadline AS IsGroupHeadline
 	FROM #tmpTurnover t WITH (NOLOCK)
+		INNER JOIN #tmpMaxTurnover m WITH(NOLOCK)
+		 ON m.ProfileID = t.ProfileID
 		
 	IF @@ERROR > 0 
 	BEGIN
@@ -101,8 +118,10 @@ BEGIN
 		
 	END
 	
-	INSERT INTO dbo.TOControl_GlobalSetting(CustID, MaxTurnOver,SportType,IsGroupHeadLine) 
-	VALUES(@CustID, @MaxTurnover, @SportType,@IsGroupHeadline)
+	INSERT INTO dbo.TOControl_GlobalSetting(CustID, ProfileID, MaxTurnOver,SportType,IsGroupHeadLine) 
+	SELECT @CustID, m.ProfileID, m.MaxTurnover,@SportType, @IsGroupHeadline
+	FROM #tmpMaxTurnover m WITH (NOLOCK)
+
 
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond, @startRun, @endRun)
@@ -110,7 +129,7 @@ BEGIN
 	DECLARE @LogData NVARCHAR(4000)
 	SELECT @LogData = '<NAP_TOControl_GlobalSettingInsert CustID="' + COALESCE(CAST(@CustID as varchar(50)),space(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'MaxTuronver="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(50)), SPACE(1)) + '" ' 
+					+ 'MaxTuronver="' + COALESCE(CAST(@GlobalSetting AS VARCHAR(MAX)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(50)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
