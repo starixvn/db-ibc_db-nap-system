@@ -22,7 +22,7 @@ BEGIN
 	SELECT TOP (4500) t.ID AS RowId, t.CustID, t.matchid
 		, t.adjusted_TurnOver, t.adjusted_HouseTurnOver
 		,t.IsGroupHeadline, m.sporttype
-		,t.liveindicator, t.bettypeID
+		,t.liveindicator, t.bettype
 	FROM dbo.TOControl_Transition t WITH (ROWLOCK)
 		INNER JOIN dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid
 	WHERE t.ID > @RowId
