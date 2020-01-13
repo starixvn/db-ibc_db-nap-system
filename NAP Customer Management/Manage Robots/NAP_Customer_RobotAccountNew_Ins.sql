@@ -20,6 +20,7 @@ AS
 			- 20190912@Johnson: Initial sp [redmine:#119714]
 			- 20191030@Johnson: change request to allow add licensee [redmine:#122642]
 			- 20191125@Johnson: set counter = 10 when update robot [redmine:#122642]
+			- 20200113@Johnson: add default for robotdate [redmine:#126998]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -133,7 +134,7 @@ BEGIN
            ,[RobotDate]
            ,[remark]
 		   ,[Creator])
-	SELECT t.custid, 'N/A', GETDATE(), t.site, 10, NULL, NULL, @remark, @userid
+	SELECT t.custid, 'N/A', GETDATE(), t.site, 10, NULL, GETDATE(), @remark, @userid
 	FROM @tmpUser t
 		LEFT JOIN RobotUsers r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.custid IS NULL
