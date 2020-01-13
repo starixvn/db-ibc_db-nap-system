@@ -1,6 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="" viewers="" isFunction="0"></info>*/
-USE [CustDB]
-GO
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[TASK_TOControl_MergeTransition]
 AS 
 /*
