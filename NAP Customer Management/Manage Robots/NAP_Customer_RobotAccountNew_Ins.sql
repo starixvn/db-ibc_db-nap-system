@@ -113,7 +113,7 @@ BEGIN
 		UPDATE RobotUsers WITH(UPDLOCK,ROWLOCK)
 		SET remark = @remark,
 			counter = CASE WHEN ISNULL(counter,0) < 10 THEN 10 ELSE counter END,
-			RobotDate = GETDATE()
+			RobotDate = CASE WHEN ISNULL(counter,0) <= 10 THEN GETDATE() ELSE RobotDate END
 		OUTPUT DELETED.custid, DELETED.remark INTO @tmpCust(custid,remark)		
 		WHERE custid IN (SELECT custid FROM @tmpUser)
 		
