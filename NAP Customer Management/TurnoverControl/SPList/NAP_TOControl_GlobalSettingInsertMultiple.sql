@@ -73,7 +73,7 @@ BEGIN
 					)
 	GROUP BY GS_tmp.Username, GS_tmp.IsGroupHeadline, GS_tmp.SportType
 	
-	INSERT #ExistingGlobalSettingTbl (CustID,IsGroupHeadline,MaxTurnover,SportType)
+	INSERT #ExistingGlobalSettingTbl (CustID,IsGroupHeadline,MaxTurnover,SportType, ProfileID)
 	SELECT ci.custid,IsGroupHeadline,MaxTurnover,SportType,ProfileID
 	FROM #GlobalSettingTbl GS_tmp WITH (NOLOCK)
 		INNER JOIN custInfo CI WITH (NOLOCK) ON GS_tmp.Username = CI.username
