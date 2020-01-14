@@ -5,6 +5,7 @@ ALTER PROCEDURE [dbo].[NAP_TOControl_MatchTurnoverUpdate]
 	@SportType SMALLINT = 1,
 	@IsGroupHeadline BIT = 0,
 	@MaxTurnover MONEY,
+	@ProfileID SMALLINT,
 	@UserID INT,
 	@IP	VARCHAR(40),
 	@ErrCode INT = 0 OUTPUT,
@@ -22,6 +23,7 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
+		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		
 	Parameter's explaination:
 		
@@ -60,7 +62,7 @@ BEGIN
 
 	SELECT @MaxTurnover_old = MaxTurnover
 	FROM dbo.TOControl_Setting WITH (NOLOCK)
-	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
+	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
 	
 	SET @SiteID = (SELECT TOP 1 s.siteid
 					FROM dbo.Customer c WITH (NOLOCK) 
@@ -76,7 +78,7 @@ BEGIN
 		SET 
 			MaxTurnover = @MaxTurnover,
 			IsNotified = 0
-		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
+		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
 	END
 	ELSE
 	BEGIN
@@ -93,7 +95,7 @@ BEGIN
 										WHERE (HouseTurnOver*100/@MaxTurnover) >= PercentValue
 										),0) 
 						
-		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
+		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
 		
 	END
 
@@ -129,7 +131,5 @@ BEGIN
 		@Duration = @duration					
 						
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_MatchTurnoverUpdate] TO [bodbAdminNet]
 GO
 

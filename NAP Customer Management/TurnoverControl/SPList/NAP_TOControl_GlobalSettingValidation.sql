@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingValidation]
 	 @GlobalSetting VARCHAR(MAX) = ''
 	 , @SportType SMALLINT = 1
@@ -10,19 +10,20 @@ AS
 	DB: DBCUST.CustDB
 
 	Revisions:
+		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 
 	Parameter's explaination:
 	Sample data for @GlobalSetting: 
 		'<ROOT>
-			<GlobalSetting Username="super01" Headline="0" MaxTurnover="100" SportType = "1" />
-			<GlobalSetting Username="super02" Headline="1" MaxTurnover="1" SportType = "1"/>
+			<gs us="super01" isGH="x" maxTO="100" spt = "1" pfID = "1" rowID = "1"/>
+			<gs us="super02" isGH="" maxTO="1" spt = "1" pfID = "2" rowID = "2"/>
 		</ROOT>'
 */
 BEGIN
 	
-	CREATE TABLE #GlobalSettingTbl (ID INT IDENTITY(1,1) PRIMARY KEY, Username NVARCHAR(50), IsGroupHeadline VARCHAR(50), MaxTurnover VARCHAR(50), SportType SMALLINT)
+	CREATE TABLE #GlobalSettingTbl (ID INT IDENTITY(1,1) PRIMARY KEY, Username NVARCHAR(50), IsGroupHeadline VARCHAR(50), MaxTurnover VARCHAR(50), SportType SMALLINT, ProfileID SMALLINT, rowID INT)
 	
-	CREATE TABLE #GlobalSettingTblError (ID INT, Username NVARCHAR(50), IsGroupHeadline VARCHAR(50), MaxTurnover VARCHAR(50), SportType SMALLINT, ErrorID TINYINT)		
+	CREATE TABLE #GlobalSettingTblError (ID INT, Username NVARCHAR(50), IsGroupHeadline VARCHAR(50), MaxTurnover VARCHAR(50), SportType SMALLINT, ProfileID SMALLINT, rowID INT, ErrorID TINYINT)		
 	
 	CREATE TABLE #ErrorList (ErrorID TINYINT, Reason VARCHAR(200))
 	INSERT INTO #ErrorList (ErrorID,Reason)
@@ -36,21 +37,21 @@ BEGIN
 
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @GlobalSetting
 
-	INSERT #GlobalSettingTbl (Username,IsGroupHeadline,MaxTurnover,SportType)
-	SELECT Username,ISNULL(IsGroupHeadline,'') AS IsGroupHeadline,MaxTurnover,SportType
-	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (Username NVARCHAR(50), IsGroupHeadline	VARCHAR(50), MaxTurnover VARCHAR(50), SportType SMALLINT)
+	INSERT #GlobalSettingTbl (Username,IsGroupHeadline,MaxTurnover,SportType,ProfileID,rowID)
+	SELECT us,ISNULL(isGH,'') AS IsGroupHeadline,maxTO,spt,pfID,rowID
+	FROM OPENXML(@iDoc, '/ROOT/gs', 1) WITH (us NVARCHAR(50), isGH VARCHAR(50), maxTO VARCHAR(50), spt SMALLINT, pfID SMALLINT, rowID INT)
 
 	EXEC sp_xml_removedocument @iDoc		
 		
-	INSERT INTO #GlobalSettingTblError (ID,Username,IsGroupHeadline,MaxTurnover,SportType, ErrorID)
-	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType, 1
+	INSERT INTO #GlobalSettingTblError (ID,Username,IsGroupHeadline,MaxTurnover,SportType,ProfileID,rowID,ErrorID)
+	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType,GS.ProfileID, GS.rowID, 1
 	FROM #GlobalSettingTbl GS WITH (NOLOCK)
 		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON gs.username = ci.username
 	WHERE ci.custid IS NULL
 	
 	UNION ALL		
 	
-	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType, 2
+	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType,GS.ProfileID, GS.rowID, 2
 	FROM #GlobalSettingTbl GS WITH (NOLOCK)
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON gs.username = ci.username
 		LEFT JOIN dbo.CustGroupHeadline CA WITH (NOLOCK) ON CA.custid = ci.custid
@@ -58,13 +59,13 @@ BEGIN
 	
 	UNION ALL
 	
-	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType, 3
+	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType,GS.ProfileID, GS.rowID, 3
 	FROM #GlobalSettingTbl GS WITH (NOLOCK)
 	WHERE GS.IsGroupHeadline NOT IN ('x','X') AND GS.IsGroupHeadline <> ''
 	
 	UNION ALL
 	
-	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType, 4
+	SELECT GS.ID, GS.Username,GS.IsGroupHeadline,GS.MaxTurnover,GS.SportType,GS.ProfileID, GS.rowID, 4
 	FROM #GlobalSettingTbl GS WITH (NOLOCK)
 	WHERE (ISNUMERIC (GS.MaxTurnover) = 1 AND CONVERT(MONEY,GS.MaxTurnover) <= 0)
 		 OR ISNUMERIC (GS.MaxTurnover) = 0
@@ -81,33 +82,39 @@ BEGIN
 				END AS Level
 			 , CASE WHEN CA.custid IS NOT NULL THEN 'RM' ELSE e.currency END AS Currency
 			 , CONVERT(MONEY,GS.MaxTurnover) AS MaxTurnover
+			 , GS.ProfileID
+			 , PS.ProfileName
 	FROM #GlobalSettingTbl GS WITH (NOLOCK)
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON gs.username = ci.username
 		INNER JOIN dbo.exchange e WITH (NOLOCK) ON e.exchangeid = ci.currency
 		LEFT JOIN dbo.custAccount CA WITH (NOLOCK) ON CA.custid = ci.custid AND GS.IsGroupHeadline in ('x','X')
-	WHERE NOT EXISTS (SELECT 1 FROM #GlobalSettingTblError GSE WITH (NOLOCK) WHERE GSE.ID = GS.ID)
+		INNER JOIN TOControl_Profile PS WITH (NOLOCK) ON PS.ProfileID = GS.ProfileID
+	WHERE NOT EXISTS (SELECT 1 FROM #GlobalSettingTblError GSE WITH (NOLOCK) WHERE GSE.rowID = GS.rowID)
 	
 	-- ERROR DATASET
 	
-	SELECT GS.Username, GS.IsGroupHeadline,GS.MaxTurnover, STUFF (GlobalSetting.Reason, 1,1, '') AS Reason
-	FROM #GlobalSettingTbl GS WITH (NOLOCK)
-		CROSS APPLY (SELECT ',' + ErrorRef.Reason
-					 FROM #GlobalSettingTblError GS_error WITH (NOLOCK)
-						INNER JOIN #ErrorList ErrorRef WITH (NOLOCK) ON GS_error.ErrorID = ErrorRef.ErrorID
-					 WHERE GS_error.ID = GS.ID
-					 FOR XML PATH ('')
-					 )AS GlobalSetting(Reason)
-	
-	WHERE GS.ID IN (SELECT ID FROM #GlobalSettingTblError WITH (NOLOCK))
+	SELECT GS.rowID ,
+		   GS.Username, 
+		   CASE GS.ErrorID  WHEN 1 THEN 'Username'
+							WHEN 2 THEN 'Headline'
+							WHEN 3 THEN 'Headline'
+							WHEN 4 THEN pf.ProfileName 
+		   END AS Field,
+		   CASE GS.ErrorID  WHEN 1 THEN GS.Username
+							WHEN 2 THEN GS.IsGroupHeadline
+							WHEN 3 THEN GS.IsGroupHeadline
+							WHEN 4 THEN GS.MaxTurnover 
+		   END AS 'Value',
+		   ErrorRef.Reason AS Reason	  
+	FROM #GlobalSettingTblError GS WITH (NOLOCK)
+		INNER JOIN #ErrorList ErrorRef WITH(NOLOCK) ON GS.ErrorID = ErrorRef.ErrorID
+		INNER JOIN TOControl_Profile pf WITH (NOLOCK) ON pf.ProfileID = GS.ProfileID
+
 	
 	DROP TABLE #ErrorList
 	DROP TABLE #GlobalSettingTbl
 	DROP TABLE #GlobalSettingTblError
 		
 END
-GO
-
-GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_GlobalSettingValidation] TO [bodbAdminNet]
 GO
 
