@@ -89,12 +89,12 @@ BEGIN
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @GlobalSetting
 	INSERT INTO #tmpMaxTurnover(MaxTurnover, ProfileID)
 	SELECT MaxTurnover, ProfileID 
-	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileID SMALLINT)
+	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileId SMALLINT)
 	EXEC sp_xml_removedocument @iDoc
 	
-	CREATE TABLE #tmpTurnover(MatchId INT, ProfileID SMALLINT, SumOfStake MONEY, HouseTurnover MONEY)
+	CREATE TABLE #tmpTurnover(MatchId INT, bettype SMALLINT, liveindicator bit, SumOfStake MONEY, HouseTurnover MONEY)
 	
-	INSERT INTO #tmpTurnover(MatchId, ProfileID, SumOfStake, HouseTurnover)
+	INSERT INTO #tmpTurnover(MatchId, bettype, liveindicator, SumOfStake, HouseTurnover)
 	EXECUTE DBAGE.bodb02.dbo.NAP_TOControl_MatchTurnoverByCustomerSelect @CustID = @CustID, @RoleID = @roleid, @IsGroupHeadline = @IsGroupHeadline, @SportType = @SportType
 	
 	
@@ -107,9 +107,23 @@ BEGIN
 			
 		, 0 AS IsNotified
 		, @IsGroupHeadline AS IsGroupHeadline
-	FROM #tmpTurnover t WITH (NOLOCK)
-		INNER JOIN #tmpMaxTurnover m WITH(NOLOCK)
-		 ON m.ProfileID = t.ProfileID
+	FROM #tmpMaxTurnover m WITH (NOLOCK)
+		INNER JOIN (
+						SELECT pf.ProfileID, t_tmp. MatchId, SUM(t_tmp.SumOfStake) AS SumOfStake, SUM(t_tmp. HouseTurnover) AS HouseTurnover
+						FROM #tmpTurnover t_tmp
+							INNER JOIN DBCUST.CUSTDB.dbo.TOControl_ProfileSetting pf ON  pf.Sporttype = @SportType 
+											AND t_tmp.liveindicator = pf.liveindicator 
+											AND (t_tmp.bettype = pf.Bettype 
+													OR ( NOT EXISTS ( SELECT 1 
+																		FROM TOControl_ProfileSetting p WITH (NOLOCK)
+																		WHERE p.Sporttype = @SportType 
+																			AND p.Bettype = t_tmp.bettype 
+																			AND p.liveindicator = t_tmp.liveindicator
+																	)
+														AND pf.Bettype = 0
+													))
+						GROUP BY t_tmp.MatchId, pf.ProfileID
+					) t ON m.ProfileID = t.ProfileID
 		
 	IF @@ERROR > 0 
 	BEGIN
@@ -148,6 +162,5 @@ BEGIN
 
 END
 GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_GlobalSettingInsert] TO [bodbAdminNet]
-GO
+
 

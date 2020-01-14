@@ -16,6 +16,7 @@ AS
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180316@Helen: Integrate Super Live product - [Redmine: 89986]
+		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		
 	Parameter's explaination: 
 		Bettypes for SportBook:((bettype < 31 and bettype NOT IN (9,29,10)) OR bettype between 121 and 999 OR bettype BETWEEN 1301 and 1334)
@@ -31,7 +32,7 @@ BEGIN
 	
 	DECLARE @EventDate_min DATETIME
 	
-	CREATE TABLE #TicketGroupHeadlineList (matchid INT,TotalStake MONEY, TotalHouseTO MONEY)
+	CREATE TABLE #TicketGroupHeadlineList (matchid INT, bettype SMALLINT, liveindicator BIT, TotalStake MONEY, TotalHouseTO MONEY)
 	CREATE TABLE #ExtraPTInfo (SuperID INT,ExtraPT DECIMAL(9,8), fromDate DATETIME, todate DATETIME)
 	
 	-- Check SP Version
@@ -87,13 +88,14 @@ BEGIN
 		
 		IF EXISTS (SELECT 1 FROM @GroupHeadlineList WHERE RoleID = 4)
 		BEGIN
-			INSERT INTO #TicketGroupHeadlineList (matchid,TotalStake,TotalHouseTO)
+			INSERT INTO #TicketGroupHeadlineList (matchid, bettype, liveindicator, TotalStake,TotalHouseTO)
 			SELECT 
-				b.matchid, 
+				b.matchid, b.bettype, b.liveindicator,
 				SUM(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))* ABS(b.stake) * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype, bet.liveindicator
+
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -105,7 +107,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking, gameID as bettype, tl.liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -121,19 +123,19 @@ BEGIN
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
 							 	
-			GROUP BY b.matchid
+			GROUP BY b.matchid,b.bettype,b.liveindicator
 			
 		END
 		
 		IF EXISTS (SELECT 1 FROM @GroupHeadlineList WHERE RoleID = 3)
 		BEGIN
-			INSERT INTO #TicketGroupHeadlineList (matchid,TotalStake,TotalHouseTO)
+			INSERT INTO #TicketGroupHeadlineList (matchid, bettype, liveindicator, TotalStake,TotalHouseTO)
 			SELECT 
-				b.matchid, 
+				b.matchid, b.bettype, b.liveindicator,
 				SUM(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))* ABS(b.stake) * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype, bet.liveindicator
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -145,7 +147,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking, gameID as bettype, tl.liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -161,20 +163,20 @@ BEGIN
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
 							 	
-			GROUP BY b.matchid
+			GROUP BY b.matchid, b.bettype, b.liveindicator
 			
 				
 		END
 		
 		IF EXISTS (SELECT 1 FROM @GroupHeadlineList WHERE RoleID = 2)
 		BEGIN
-			INSERT INTO #TicketGroupHeadlineList (matchid,TotalStake,TotalHouseTO)
+			INSERT INTO #TicketGroupHeadlineList (matchid, bettype, liveindicator, TotalStake,TotalHouseTO)
 			SELECT 
-				b.matchid, 
+				b.matchid, b.bettype, b.liveindicator,
 				SUM(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))* ABS(b.stake) * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype, bet.liveindicator
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -186,7 +188,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking, gameID as bettype, tl.liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -202,19 +204,19 @@ BEGIN
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
 							 	
-			GROUP BY b.matchid	
+			GROUP BY b.matchid, b.bettype, b.liveindicator	
 		END
 		
 		IF EXISTS (SELECT 1 FROM @GroupHeadlineList WHERE RoleID = 1)
 		BEGIN
 			
-			INSERT INTO #TicketGroupHeadlineList (matchid,TotalStake,TotalHouseTO)
+			INSERT INTO #TicketGroupHeadlineList (matchid, bettype, liveindicator, TotalStake,TotalHouseTO)
 			SELECT 
-				b.matchid, 
+				b.matchid, b.bettype, b.liveindicator,
 				SUM(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))* ABS(b.stake) * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.currency,bet.actualrate,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype, bet.liveindicator
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -226,7 +228,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.currency,tl.actualrate,tl.winlostdate,tl.srecommend, tl.tpositiontaking, gameID as bettype, tl.liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -242,16 +244,17 @@ BEGIN
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
 							 	
-			GROUP BY b.matchid	
+			GROUP BY b.matchid, b.bettype, b.liveindicator
 			
 		END
 		
-		SELECT 
-				matchid, 
-				SUM(TotalStake) AS SumOfStake, 
-				SUM(TotalHouseTO) AS HouseTurnover
-		FROM #TicketGroupHeadlineList  WITH(NOLOCK)
-		GROUP BY matchid
+		SELECT t.matchid,
+			   t.bettype,
+			   t.liveindicator,
+			    SUM(t.TotalStake) AS SumOfStake,
+			    SUM(t.TotalHouseTO) AS HouseTurnover
+		FROM #TicketGroupHeadlineList  t WITH(NOLOCK)
+		GROUP BY t.matchid, t.bettype, t.liveindicator
 		
 	END
 	-- Process for Super/Master/Agent Level
@@ -271,10 +274,12 @@ BEGIN
 		BEGIN
 			SELECT 
 				b.matchid, 
+				b.bettype,
+				b.liveindicator,
 				SUM(b.stake) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))*b.stake) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype AS bettype, bet.liveindicator AS liveindicator
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -286,7 +291,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.winlostdate,tl.srecommend, tl.tpositiontaking, tl.gameID as bettype, tl.liveindicator AS liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -296,22 +301,24 @@ BEGIN
 					AND tl.betfrom <> 'p'
 				
 				) AS b
-				
+
 				OUTER APPLY (SELECT SUM(s.ExtraPT) AS ExtraPT 
 							 FROM #ExtraPTInfo s WITH(NOLOCK) 
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
-			GROUP BY b.matchid
+			GROUP BY b.matchid, b.bettype, b.liveindicator
 			
 		END
 		ELSE IF (@RoleID = 3)
 		BEGIN
 			SELECT 
-				b.matchid, 
+				b.matchid,
+				b.bettype,
+				b.liveindicator,
 				SUM(b.stake) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))*b.stake) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype AS bettype, bet.liveindicator AS liveindicator
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -323,7 +330,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.winlostdate,tl.srecommend, tl.tpositiontaking, tl.gameID AS bettype, tl.liveindicator  AS liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -338,17 +345,19 @@ BEGIN
 							 FROM #ExtraPTInfo s WITH(NOLOCK) 
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
-			GROUP BY b.matchid
+			GROUP BY b.matchid, b.bettype, b.liveindicator
 
 		END
 		ELSE IF (@RoleID = 2)
 		BEGIN
 			SELECT 
-				b.matchid, 
+				b.matchid,
+				b.bettype,
+				b.liveindicator,
 				SUM(b.stake) AS SumOfStake, 
 				SUM((1-b.tpositiontaking - ISNULL(ExtraPT_tmp.ExtraPT,0))*b.stake) AS HouseTurnover
 			FROM (		 
-				SELECT bet.matchid,bet.stake,bet.winlostdate,bet.srecommend, bet.tpositiontaking
+				SELECT bet.matchid,bet.stake,bet.winlostdate,bet.srecommend, bet.tpositiontaking, bet.bettype AS bettype, bet.liveindicator  AS liveindicator
 				FROM bodb02.dbo.bettrans bet WITH(NOLOCK)
 					INNER JOIN @MatchList m ON bet.matchid = m.matchid
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
@@ -360,7 +369,7 @@ BEGIN
 				
 				UNION ALL
 				
-				SELECT tl.eventID, tl.stake,tl.winlostdate,tl.srecommend, tl.tpositiontaking
+				SELECT tl.eventID, tl.stake,tl.winlostdate,tl.srecommend, tl.tpositiontaking, tl.gameID AS bettype, tl.liveindicator  AS liveindicator
 				FROM bodb02.dbo.translog tl WITH(NOLOCK)
 					INNER JOIN @MatchList m ON tl.eventID = m.matchid
 											 
@@ -375,7 +384,7 @@ BEGIN
 							 FROM #ExtraPTInfo s WITH(NOLOCK) 
 							 WHERE b.srecommend = s.SuperId AND b.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
 							 
-			GROUP BY b.matchid
+			GROUP BY b.matchid, b.bettype, b.liveindicator
 
 		END
 	END
