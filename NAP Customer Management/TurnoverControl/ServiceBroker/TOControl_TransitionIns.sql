@@ -118,7 +118,7 @@ BEGIN
 		WHERE EXISTS (SELECT 1 FROM @TmpTable tmp  WHERE tmp.srecommend = ca1.CustID OR tmp.mrecommend = ca1.CustID OR tmp.recommend = ca1.CustID OR tmp.player = ca1.CustID) 
 					
 		-- Inserting data into TOControl_Transition
-		INSERT INTO dbo.TOControl_Transition (CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine,liveindicator,bettypeID)
+		INSERT INTO dbo.TOControl_Transition (CustID, matchid, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine,liveindicator,bettype)
 		-- For SMA Setting Level
 		SELECT gl.CustID, t.matchid
 		
@@ -128,16 +128,19 @@ BEGIN
 				
 				, 0 AS IsGroupHeadLine
 				, t.liveindicator AS  liveindicator
-				, t.bettype 'bettypeID'
+				, t.bettype
 		FROM @TmpTable t
-			INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid
-			INNER JOIN bodb02.dbo.TOControl_GlobalSetting gl WITH (NOLOCK) ON (t.srecommend = gl.CustID OR t.mrecommend = gl.CustID OR t.recommend = gl.CustID) 
-													AND t.player = 0 AND IsGroupHeadLine = 0
-													AND ((gl.Sporttype = 1 AND M.sporttype = 1) OR (gl.Sporttype = 99 AND m.sporttype > 1 AND m.sporttype <= 99))
+		    CROSS APPLY (
+			             SELECT  DISTINCT glo.CustID, glo.IsGroupHeadLine, glo.Sporttype 
+						 FROM TOControl_GlobalSetting glo WITH(NOLOCK) 
+                         WHERE glo.CustID IN(t.srecommend,t.recommend,t.mrecommend) 
+						       AND t.player = 0
+							   AND glo.IsGroupHeadLine = 0
+					    ) AS gl
+			INNER JOIN bodb02.dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid AND ((gl.Sporttype = 1 AND m.sporttype = 1) OR (gl.Sporttype = 99 AND m.sporttype > 1 AND m.sporttype <= 99))
 			OUTER APPLY (SELECT SUM(s.ExtraPT) AS ExtraPT 
 						 FROM #ExtraPTInfo s WITH(NOLOCK) 
 						 WHERE t.srecommend = s.SuperId AND t.winlostdate BETWEEN s.FromDate AND s.ToDate ) AS ExtraPT_tmp
-		WHERE gl.MaxTurnOver <> 0
 		GROUP BY gl.CustID, t.matchid, t.liveindicator, t.bettype
 		
 		-- For Headline Setting Level
@@ -151,7 +154,7 @@ BEGIN
 				
 				, 1  AS IsGroupHeadLine
 				, t.liveindicator AS  liveindicator
-				, t.bettype AS 'bettypeID'
+				, t.bettype
 		FROM #GroupHeadline gh
 			INNER JOIN bodb02.dbo.custAccount CA WITH (NOLOCK) ON CA.groupID = gh.GroupID
 			INNER JOIN @TmpTable t ON 
