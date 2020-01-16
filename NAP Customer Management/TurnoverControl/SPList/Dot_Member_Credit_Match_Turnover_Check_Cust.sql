@@ -1,5 +1,6 @@
-/*<info serverAlias="DBCUST-CustDB" executers="Dot_Member,API_Vender" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="Dot_Member,API_Vender,bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
+(
 	@CustID				INT,
 	@MatchID			INT,
 	@Recommend			INT,
@@ -9,8 +10,11 @@ ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 	@TPositionTaking	SMALLMONEY,
 	@eventdate			DATETIME,
 	@actualrate			FLOAT,
-	@ExchangeID			INT
-	
+	@ExchangeID			INT,
+	@Sporttype          SMALLINT,
+	@Bettype            SMALLINT,
+	@liveindicator      BIT
+)	
 AS
 /*
 	Created: Don
@@ -21,6 +25,7 @@ AS
 	Revisions:
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
+		- 20200114@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		
 	Parameter's explaination:
 	
@@ -33,9 +38,18 @@ BEGIN
 	
 	DECLARE @NewMatchTurnover MONEY, @MaxMatchTurnover_Setting MONEY, @adjHouseTurnover MONEY
 	DECLARE @StopFlag TINYINT
+		, @ProfileID SMALLINT
 	
 	SELECT @NewMatchTurnover = -1, @MaxMatchTurnover_Setting = -1
 	SELECT @StopFlag = 0
+	
+	SELECT @ProfileID =  ProfileID
+	FROM   dbo.TOControl_ProfileSetting WITH(NOLOCK)
+	WHERE  Sporttype = @Sporttype AND
+		   (Bettype = @Bettype OR (NOT EXISTS (SELECT TOP(1) 1 
+										    	FROM TOControl_ProfileSetting pf WITH(NOLOCK) 
+										    	WHERE pf.Sporttype = @Sporttype AND pf.Bettype = @Bettype AND pf.liveindicator = @liveindicator) AND Bettype = 0)) 
+	     	AND liveindicator = @liveindicator
 	
 	-- Get Extra PT Info: 
 	-- Sportbook: Categorized by SubProduct =  '' , 'MG-SuperLive', 'MuayThai'. They are the same value. 
@@ -56,23 +70,23 @@ BEGIN
 	
 	SET @adjHouseTurnover = (@Stake * (1 - @TPositionTaking- @ExtraPT))
 	
-	IF (@Recommend > -1) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @Recommend AND IsGroupHeadLine = 0)
+	IF (@Recommend > -1) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @Recommend AND IsGroupHeadLine = 0 AND ProfileID = @ProfileID)
 	BEGIN
 		SELECT 
 			@NewMatchTurnover = tos.HouseTurnover + @adjHouseTurnover,
 			@MaxMatchTurnover_Setting = tos.MaxTurnOver
-		FROM dbo.TOControl_Setting tos WITH(NOLOCK)
-			
+		FROM dbo.TOControl_Setting tos WITH(NOLOCK)			
 		WHERE tos.CustID = @Recommend 
 			AND	tos.matchid = @MatchID
 			AND tos.IsGroupHeadLine = 0
+			AND tos.ProfileID = @ProfileID
 
 		IF (@@ROWCOUNT > 0)
 			IF (@NewMatchTurnover > @MaxMatchTurnover_Setting)
 				SELECT @StopFlag = 1
 	END
 
-	IF (@MRecommend > -1 AND @StopFlag = 0) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @MRecommend AND IsGroupHeadLine = 0)
+	IF (@MRecommend > -1 AND @StopFlag = 0) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @MRecommend AND IsGroupHeadLine = 0 AND ProfileID = @ProfileID)
 	BEGIN
 		SELECT 
 			@NewMatchTurnover = tos.HouseTurnover + @adjHouseTurnover,
@@ -81,13 +95,14 @@ BEGIN
 		WHERE tos.custid = @MRecommend 
 			AND tos.matchid = @MatchID
 			AND tos.IsGroupHeadLine = 0
+			AND tos.ProfileID = @ProfileID
 			
 		IF (@@ROWCOUNT > 0)
 			IF (@NewMatchTurnover > @MaxMatchTurnover_Setting)
 				SELECT @StopFlag = 1
 	END
 
-	IF (@SRecommend >- 1 AND @StopFlag = 0) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @SRecommend AND IsGroupHeadLine = 0)
+	IF (@SRecommend >- 1 AND @StopFlag = 0) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @SRecommend AND IsGroupHeadLine = 0 AND ProfileID = @ProfileID)
 	BEGIN
 		SELECT 
 			@NewMatchTurnover = tos.HouseTurnover + @adjHouseTurnover,
@@ -97,6 +112,7 @@ BEGIN
 			tos.custid = @SRecommend 
 			AND tos.matchid = @MatchID
 			AND tos.IsGroupHeadLine = 0
+			AND tos.ProfileID = @ProfileID
 			
 		IF (@@ROWCOUNT > 0)
 			IF (@NewMatchTurnover > @MaxMatchTurnover_Setting)
@@ -137,6 +153,7 @@ BEGIN
 												AND	tos.matchid = @MatchID
 												AND tos.IsGroupHeadLine = 1
 												AND tos.HouseTurnover + @adjHouseTurnover > tos.MaxTurnOver
+												AND tos.ProfileID = @ProfileID
 										) AS TO_tmp		
 						)				
 			BEGIN
@@ -150,8 +167,4 @@ BEGIN
 	SELECT @StopFlag AS StopFlag
 
 END
-GO
-GRANT EXECUTE ON [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust] TO [Dot_Member]
-GO
-GRANT EXECUTE ON [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust] TO [API_Vender]
 GO

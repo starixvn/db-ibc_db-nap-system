@@ -117,7 +117,7 @@ BEGIN
 		
 	), CTE_Sum AS(
 	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,SUM(t.HouseTurnover) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
-		   FROM TOControl_Setting t WITH (NOLOCK)
+		   FROM CTE_SettingList t WITH (NOLOCK)
 		   GROUP BY t.matchid, t.CustID, t.IsGroupHeadLine
 	)
 	SELECT 
@@ -140,7 +140,6 @@ BEGIN
 		INNER JOIN dbo.exchange e WITH (NOLOCK) on c.currency = e.exchangeid
 		INNER JOIN CTE_Sum s WITH(NOLOCK) ON t.CustID = s.CustID AND t.matchid = s.matchid AND t.IsGroupHeadLine = s.IsGroupHeadLine 
 		INNER JOIN dbo.TOControl_Profile pf WITH(NOLOCK) ON pf.ProfileID = t.ProfileID
-	WHERE @UsedPercent <= t.PercentageUsed
 	ORDER BY 
 		m.leagueid DESC,
 		m.matchid ASC, 

@@ -28,7 +28,7 @@ AS
     
 */
 RETURN (
-   SELECT 1  ProfileID, 1  Sporttype, '789y'   Site,0  ExchangeID, 60000  MaxTurnover,3   ToCurrency
+    SELECT 1  ProfileID, 1  Sporttype, '789y'   Site,0  ExchangeID, 60000  MaxTurnover,3   ToCurrency
 	UNION ALL
 	SELECT 2  ProfileID, 1 Sporttype, '789y'  Site,0 ExchangeID, 60000  MaxTurnover, 3  ToCurrency
 	UNION ALL
@@ -50,25 +50,25 @@ RETURN (
 	UNION ALL
 	-- CN88
 
-	SELECT 1  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 300000  MaxTurnover, 81  ToCurrency
+	SELECT 1  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 225000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 2  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 300000  MaxTurnover, 81  ToCurrency
+	SELECT 2  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 225000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 3  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 100000  MaxTurnover, 81  ToCurrency
+	SELECT 3  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 80000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 4  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 100000  MaxTurnover, 81  ToCurrency
+	SELECT 4  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 80000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 5  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 100000  MaxTurnover, 81  ToCurrency
+	SELECT 5  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 80000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 6  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 300000  MaxTurnover, 81  ToCurrency
+	SELECT 6  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 225000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 7  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 300000  MaxTurnover, 81  ToCurrency
+	SELECT 7  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 225000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 8  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 100000  MaxTurnover, 81  ToCurrency
+	SELECT 8  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 80000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 9  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 100000  MaxTurnover, 81  ToCurrency
+	SELECT 9  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 80000  MaxTurnover, 81  ToCurrency
 	UNION ALL
-	SELECT 10  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 100000  MaxTurnover, 81  ToCurrency
+	SELECT 10  ProfileID, 1 Sporttype, 'CN88'  Site,0 ExchangeID, 80000  MaxTurnover, 81  ToCurrency
 	UNION ALL
 	-- OTHER SITE SPORTTYPE = 1
 
@@ -95,25 +95,25 @@ RETURN (
 
 	-- OTHER SPORT ALL SITE SPORT ID = 99
 
-	SELECT 11  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 50000  MaxTurnover, 2  ToCurrency
+	SELECT 11  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 37500  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 12  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 50000  MaxTurnover, 2  ToCurrency
+	SELECT 12  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 37500  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 13  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 30000  MaxTurnover, 2  ToCurrency
+	SELECT 13  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 24000  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 14  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 30000  MaxTurnover, 2  ToCurrency
+	SELECT 14  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 24000  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 15  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 30000  MaxTurnover, 2  ToCurrency
+	SELECT 15  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 24000  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 16  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 50000  MaxTurnover, 2  ToCurrency
+	SELECT 16  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 37500  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 17  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 50000  MaxTurnover, 2  ToCurrency
+	SELECT 17  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 37500  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 18  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 30000  MaxTurnover, 2  ToCurrency
+	SELECT 18  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 24000  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 19  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 30000  MaxTurnover, 2  ToCurrency
+	SELECT 19  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 24000  MaxTurnover, 2  ToCurrency
 	UNION ALL
-	SELECT 20  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 30000  MaxTurnover, 2  ToCurrency
+	SELECT 20  ProfileID, 99 Sporttype, ''  Site,0 ExchangeID, 24000  MaxTurnover, 2  ToCurrency
    
 )
 GO
