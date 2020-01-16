@@ -10,7 +10,7 @@ AS
 	DB: DBCUST.CustDB
 
 	Revisions:
-		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
+		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 
 	Parameter's explaination:
 	Sample data for @GlobalSetting: 
@@ -93,7 +93,7 @@ BEGIN
 	
 	-- ERROR DATASET
 	
-	SELECT GS.rowID ,
+	SELECT DISTINCT GS.rowID ,
 		   GS.Username, 
 		   CASE GS.ErrorID  WHEN 1 THEN 'Username'
 							WHEN 2 THEN 'Headline'
