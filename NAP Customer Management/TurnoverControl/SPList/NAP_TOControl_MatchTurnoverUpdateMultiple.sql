@@ -70,7 +70,8 @@ BEGIN
 		WHILE @start <= @end
 		BEGIN
 	
-			SELECT @CustID = CustID, @MaxTurnover = MaxTurnover, @IsGroupHeadline = IsGroupHeadline, @MatchID = MatchID,@SportType = SportType FROM #ExistingGlobalSettingTbl WITH (NOLOCK) WHERE ID = @start
+			SELECT @CustID = CustID, @MaxTurnover = MaxTurnover, @IsGroupHeadline = IsGroupHeadline, @MatchID = MatchID,@SportType = SportType, @ProfileID = ProfileID 
+			FROM #ExistingGlobalSettingTbl WITH (NOLOCK) WHERE ID = @start
 			
 			EXEC dbo.NAP_TOControl_MatchTurnoverUpdate @CustID = @CustID, @UserID=@UserID,@SportType = @SportType, @IP=@IP,@MaxTurnover=@MaxTurnover, @ProfileID = @ProfileID,@IsGroupHeadline = @IsGroupHeadline,@MatchID = @MatchID,@ErrCode=@ErrCode output,@ErrMsg=@ErrMsg output
 			
