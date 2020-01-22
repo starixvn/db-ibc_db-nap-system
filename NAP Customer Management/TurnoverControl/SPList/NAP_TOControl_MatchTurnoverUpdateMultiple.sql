@@ -46,11 +46,11 @@ BEGIN
 
 	INSERT #GlobalSettingTbl (CustId,MatchId,IsGroupHeadline,MaxTurnover,SportType,ProfileID)
 	SELECT CustId,mid,isGH,maxTO,spt,pfID
-	FROM OPENXML(@iDoc, '/ROOT/gs', 1) WITH (CustId INT,mid INT, isGH BIT, maxTO MONEY,spt SMALLINT, pfID SMALLINT)
+	FROM OPENXML(@iDoc, '/ROOT/gs', 1) WITH (custID INT,mid INT, isGH BIT, maxTO MONEY,spt SMALLINT, pfID SMALLINT)
 
 	EXEC sp_xml_removedocument @iDoc	
 	
-	INSERT #ExistingGlobalSettingTbl (custID,IsGroupHeadline,MaxTurnover,MatchID,SportType, ProfileID)
+	INSERT #ExistingGlobalSettingTbl (CustID,IsGroupHeadline,MaxTurnover,MatchID,SportType, ProfileID)
 	SELECT custid,IsGroupHeadline,MaxTurnover,MatchID,SportType, ProfileID
 	FROM #GlobalSettingTbl GS_tmp WITH (NOLOCK)
 	WHERE EXISTS (	SELECT 1 
