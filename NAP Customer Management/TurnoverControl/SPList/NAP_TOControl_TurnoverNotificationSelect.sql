@@ -117,7 +117,7 @@ BEGIN
 							)p
 		)pf
 		OUTER APPLY (
-			SELECT *
+			SELECT t.CustID, t.matchid, t.ProfileID, t.IsGroupHeadLine, t.MaxTurnOver, t.HouseTurnover, t.TotalTurnOver
 			FROM TOControl_Setting t WITH (NOLOCK)
 			WHERE pf.custid = t.CustID
 				AND pf.matchid = t.matchid
