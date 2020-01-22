@@ -23,6 +23,7 @@ AS
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
+		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 		
 	Parameter's explaination:
 		Sample data for @GlobalSetting: 
@@ -98,7 +99,7 @@ BEGIN
 	EXECUTE DBAGE.bodb02.dbo.NAP_TOControl_MatchTurnoverByCustomerSelect @CustID = @CustID, @RoleID = @roleid, @IsGroupHeadline = @IsGroupHeadline, @SportType = @SportType
 	
 	
-	INSERT INTO dbo.TOControl_Setting(CustID, matchid, MaxTurnOver, TotalTurnOver, HouseTurnover, PercentLevel, IsNotified,IsGroupHeadline)
+	INSERT INTO dbo.TOControl_Setting(CustID, matchid, MaxTurnOver, TotalTurnOver, HouseTurnover, PercentLevel, IsNotified,IsGroupHeadline, ProfileID)
 	SELECT
 		@CustID, t.MatchId, m.MaxTurnover AS MaxTurnOver, t.SumOfStake AS TotalTurnOver, t.HouseTurnover
 		,	CASE	WHEN m.MaxTurnover = 0 THEN @MaxLevel 
@@ -107,6 +108,7 @@ BEGIN
 			
 		, 0 AS IsNotified
 		, @IsGroupHeadline AS IsGroupHeadline
+		, m.ProfileID
 	FROM #tmpMaxTurnover m WITH (NOLOCK)
 		INNER JOIN (
 						SELECT pf.ProfileID, t_tmp. MatchId, SUM(t_tmp.SumOfStake) AS SumOfStake, SUM(t_tmp. HouseTurnover) AS HouseTurnover

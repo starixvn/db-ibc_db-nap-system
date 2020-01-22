@@ -17,7 +17,8 @@ AS
 	Revisions:
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20171215@Helen: Implement some change request from OPS Team - [Redmine: 85638]
-		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
+		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
+		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 		
 	Parameter's explaination:
 		Sample data for @GlobalSetting: 
@@ -49,7 +50,7 @@ BEGIN
 
 	EXEC sp_xml_removedocument @iDoc	
 	
-	INSERT #ExistingGlobalSettingTbl (CustID,IsGroupHeadline,MaxTurnover,MatchID,SportType, ProfileID)
+	INSERT #ExistingGlobalSettingTbl (custID,IsGroupHeadline,MaxTurnover,MatchID,SportType, ProfileID)
 	SELECT custid,IsGroupHeadline,MaxTurnover,MatchID,SportType, ProfileID
 	FROM #GlobalSettingTbl GS_tmp WITH (NOLOCK)
 	WHERE EXISTS (	SELECT 1 

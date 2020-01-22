@@ -13,6 +13,7 @@ Revisions:
 	- 20190708@Patrick: Move to DB052 [Redmine: #112219]
 	- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 	- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
+	- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 
 Param explanation:
 */
@@ -23,11 +24,11 @@ BEGIN
 	
 	SET @MaxLevel = (SELECT TOP 1 PercentLevel FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentValue = 100)
 	
-	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT, liveindicator BIT, bettypeID SMALLINT)
+	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT, liveindicator BIT, bettype SMALLINT)
 	
 	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT, ProfileID SMALLINT)
 	
-	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype, bettypeID, liveindicator)
+	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype, bettype, liveindicator)
 	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid, IsGroupHeadline, sporttype, ProfileID)
 
 	--get rowversion
@@ -37,19 +38,27 @@ BEGIN
 	WHERE VName = 'MaxID'
 
 	INSERT INTO #TmpTableRaw(RowId, CustID, matchid, adjusted_TurnOver
-		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype, liveindicator, bettypeID)
+		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype, liveindicator, bettype)
 	EXEC DBEXT.bodb02.dbo.TASK_TOControl_GetTransition @RowId = @__lastRowId
 
 	IF @@ROWCOUNT = 0
 		RETURN
 
 	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, ProfileID , adjusted_TurnOver, adjusted_HouseTurnOver)
-	SELECT t.CustID, t.matchid,t.IsGroupHeadline, pf.sporttype, pf.ProfileID, SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
-	FROM #TmpTableRaw t WITH (NOLOCK)
-		INNER JOIN TOControl_ProfileSetting pf WITH(NOLOCK) ON t.liveindicator = pf.liveindicator AND  ((t.sporttype = 1 and pf.Sporttype = 1) OR (pf.Sporttype = 99 AND t.sporttype > 1 AND t.sporttype <= 99)) --t.sporttype = pf.Sporttype 
-		                                                       AND (t.bettypeID = pf.Bettype OR (NOT EXISTS (SELECT 1 FROM TOControl_ProfileSetting  pr WITH(NOLOCK) 
-															   WHERE pr.Sporttype = t.sporttype and pr.liveindicator = t.liveindicator and pr.Bettype = t.bettypeID) AND pf.Bettype = 0))
-	GROUP BY t.CustID, t.matchid, t.IsGroupHeadline, pf.sporttype, pf.ProfileID
+	SELECT t1.CustID, matchid,IsGroupHeadline, spt.sporttype, pf.profileID
+		, SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
+	FROM #TmpTableRaw t1
+		CROSS APPLY (SELECT CASE WHEN t1.sporttype = 1 THEN 1 
+								 WHEN t1.sporttype > 1 AND t1.sporttype <= 99 THEN 99
+							END as sporttype) AS spt
+		CROSS APPLY (SELECT TOP 1 profileID
+					 FROM dbo.TOControl_ProfileSetting t2 WITH (NOLOCK)
+					 WHERE  t2.Sporttype = spt.sporttype 
+							AND T1.liveindicator = T2.liveindicator
+							AND t2.bettype IN (t1.bettype,0)
+					 ORDER BY t2.bettype DESC		 
+					 )AS pf
+	GROUP BY t1.CustID, t1.matchid, t1.IsGroupHeadline, spt.sporttype,pf.profileID
 
 
 	UPDATE t 
@@ -58,7 +67,7 @@ BEGIN
 		INNER JOIN dbo.TOControl_GlobalSetting gl WITH (NOLOCK) ON t.CustID = gl.CustID 
 							AND t.IsGroupHeadline = gl.IsGroupHeadLine 
 							AND t.ProfileID = gl.ProfileID
-							--AND ((gl.Sporttype = 1 AND t.sporttype = 1) OR (gl.Sporttype = 99 AND t.sporttype > 1 AND t.sporttype <= 99))								
+							AND t.sporttype = gl.Sporttype								
 	
 	DELETE #TmpTable WHERE MaxTurnOver IS NULL
 		

@@ -121,57 +121,55 @@ BEGIN
 		   FROM CTE_SettingList t WITH (NOLOCK)
 		   GROUP BY t.matchid, t.CustID, t.IsGroupHeadLine
 	)
-	SELECT p.ProfileID
-		, p.GroupName
-		, res.CustID
-		, res.username
-		, res.currency
-		, res.Level
-		, res.leagueid
-		, res.matchid
-		, res.IsNeutral
-		, res.homeid
-		, res.awayid
-		, res.eventdate
-		, res.eventstatus
-		, res.TotalMemberTurnover
-		, res.TotalHouseTurnover
-		, CASE WHEN p.ProfileID = res. ProfileID THEN res.MaxTurnOver ELSE 0 END AS MaxTurnOver
-		, CASE WHEN p.ProfileID = res. ProfileID THEN res.TotalTurnOver ELSE 0 END AS TotalTurnOver
-		, CASE WHEN p.ProfileID = res. ProfileID THEN res.HouseTurnover ELSE 0 END AS HouseTurnover
-		, CASE WHEN p.ProfileID = res. ProfileID THEN res.PercentageUsed ELSE 0 END AS PercentageUsed
-	FROM TOControl_Profile p WITH (NOLOCK)
-	LEFT JOIN (
-			SELECT t.CustID
-					, c.username
-					, CASE WHEN T.IsGroupHeadLine = 1 THEN 'RM' ELSE e.currency END AS currency
-					, m.leagueid
-					, m.matchID
-					, m.IsNeutral
-					, m.homeid
-					, m.awayid
-					, m.eventdate
-					, m.eventstatus
-					, t.MaxTurnover
-					, t.TotalTurnover
-					, t.HouseTurnover
-					, t.ProfileID
-					, s.SumHouseTurnover AS TotalHouseTurnover
-					, s.SumTotalTurnOver AS TotalMemberTurnover
-					, CASE WHEN t.IsGroupHeadLine = 1 THEN 'Headline'
-						   ELSE	CASE c.RoleID WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' END 
-					  END AS Level
-					, t.PercentageUsed
-					, CASE WHEN @SportType = 1 THEN 1 ELSE 99 END AS SportType
-					, pf.GroupName		
-			FROM  CTE_SettingList t
-				INNER JOIN #MatchList m WITH (NOLOCK) ON t.matchID = m.matchid
-				INNER JOIN dbo.custInfo c WITH (NOLOCK) ON t.custID = c.custid
-				INNER JOIN dbo.exchange e WITH (NOLOCK) on c.currency = e.exchangeid
-				LEFT JOIN CTE_Sum s WITH(NOLOCK) ON t.CustID = s.CustID AND t.matchid = s.matchid AND t.IsGroupHeadLine = s.IsGroupHeadLine 
-				INNER JOIN dbo.TOControl_Profile pf WITH(NOLOCK) ON pf.ProfileID = t.ProfileID
-		) res ON res.GroupName = p.GroupName
-	WHERE p.Sporttype = @SportType
+	SELECT CASE WHEN @SportType = 1 THEN 1 ELSE 99 END AS SportType
+		, pf.CustID
+		, c.username
+		, CASE WHEN pf.IsGroupHeadLine = 1 THEN 'RM' ELSE e.currency END AS currency
+		, CASE WHEN pf.IsGroupHeadLine = 1 THEN 'Headline'
+				ELSE	CASE c.RoleID WHEN 4 THEN 'Super' WHEN 3 THEN 'Master' WHEN 2 THEN 'Agent' END 
+			END AS Level
+		, m.leagueid
+		, pf.matchID
+		, m.IsNeutral
+		, m.homeid
+		, m.awayid
+		, m.eventdate
+		, m.eventstatus
+		, pf.ProfileID
+		, pf.GroupName
+		, ts.MaxTurnOver
+		, ts.TotalTurnOver
+		, ts.HouseTurnover
+		, ts.PercentageUsed
+		, s.SumHouseTurnover AS TotalHouseTurnover
+		, s.SumTotalTurnOver AS TotalMemberTurnover
+	FROM (
+			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName
+			FROM (
+					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid 
+					FROM CTE_Filter t
+				)ct
+				CROSS APPLY (
+							SELECT ProfileID, GroupName
+							FROM TOControl_Profile WITH (NOLOCK)
+							WHERE Sporttype = @SportType
+							)p
+		) pf
+		OUTER APPLY (
+					SELECT t.MaxTurnover
+							, t.TotalTurnover
+							, t.HouseTurnover
+							, t.PercentageUsed
+					FROM  CTE_SettingList t		
+					WHERE pf.matchid = t.matchid
+						AND pf.custid = t.CustID
+						AND pf.isgroupHeadline = t.IsGroupHeadLine
+						AND pf.ProfileID = t.profileID
+			)ts
+		LEFT JOIN CTE_Sum s WITH(NOLOCK) ON pf.CustID = s.CustID AND pf.matchid = s.matchid AND pf.IsGroupHeadLine = s.IsGroupHeadLine
+		INNER JOIN #MatchList m WITH (NOLOCK) ON m.matchID = pf.matchid
+		INNER JOIN dbo.custInfo c WITH (NOLOCK) ON pf.custID = c.custid
+		INNER JOIN dbo.exchange e WITH (NOLOCK) on c.currency = e.exchangeid
 		
 	DROP TABLE #MatchList
 

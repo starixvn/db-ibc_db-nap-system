@@ -12,6 +12,7 @@ AS
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		- 20191112@Helen: Ignore closed matches notification & SP Enhancement [Redmine: #122236]
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
+		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841] 
 		
 	Parameter's explaination: 
 	Hardcode:
@@ -74,57 +75,58 @@ BEGIN
 	WHERE m.eventstatus = 'running' AND EXISTS(SELECT tmp.matchid FROM @temp_ tmp WHERE m.matchid = tmp.matchid)
 
 	-- return result
-	;WITH CTE_Result AS(
-		SELECT 
-		m.sporttype, m.leagueid, m.matchid, m.homeid, m.awayid, m.eventdate,
-		c.custid, c.username
-		, CASE WHEN t.IsGroupHeadline = 1 THEN 'RM' ELSE e.currency END AS currency
-		, CASE WHEN t.IsGroupHeadline = 1 THEN 'Headline' 
-											  ELSE CASE WHEN c.roleid = 4 THEN 'Super'
-														WHEN c.roleid = 3 THEN 'Master'	
-														WHEN c.roleid = 2 THEN 'Agent'	
-														ELSE ''
-													END	
-										 END AS [Level]				
+	SELECT pf.sporttype
+		, m.leagueid
+		, pf.matchid
+		, m.homeid
+		, m.awayid
+		, m.eventdate
+		, pf.custid
+		, c.username
+		, CASE WHEN pf.IsGroupHeadline = 1 THEN 'RM' ELSE e.currency END AS currency
+		, CASE WHEN pf.IsGroupHeadline = 1 THEN 'Headline' 
+				ELSE CASE WHEN c.roleid = 4 THEN 'Super'
+						WHEN c.roleid = 3 THEN 'Master'	
+						WHEN c.roleid = 2 THEN 'Agent'	
+						ELSE ''
+					END	
+			END AS [Level]
 		, c.roleid
-		, t.totalturnover, t.ProfileID,pf.ProfileName,t.maxturnover, t.houseturnover, t.nlevel , t.TotalMemberTurnover, t.TotalHouseTurnover
-		, t.IsGroupHeadline
+		, rs.totalturnover
+		, pf.ProfileID
+		, pf.ProfileName
+		, rs.maxturnover
+		, rs.houseturnover
+		, NULL AS nlevel 
+		, pf.TotalMemberTurnover
+		, pf.TotalHouseTurnover
+		, pf.IsGroupHeadline
 		, c.site AS SiteName 
-		, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.houseturnover*100/t.MaxTurnover END AS PercentageUsed
-		FROM @temp_ t
-			INNER JOIN @MatchList m ON t.matchid = m.matchid
-			INNER JOIN dbo.Customer c WITH(NOLOCK) ON t.custID = c.custid
-			INNER JOIN dbo.exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
-			INNER JOIN TOControl_Profile pf WITH(NOLOCK) ON pf.ProfileID = t.ProfileID
-	)
-	SELECT ct.sporttype, ct.leagueid,ct.matchid,ct.homeid,ct.awayid,ct.eventdate,ct.custid,ct.username,ct.currency,ct.Level,
-	       ct.roleid,ct.totalturnover,ct.ProfileID,ct.ProfileName,ct.MaxTurnover,ct.houseturnover,ct.nlevel,ct.TotalMemberTurnover,
-	       ct.TotalHouseTurnover,ct.IsGroupHeadline,ct.SiteName,ct.PercentageUsed
-	FROM CTE_Result ct WITH(NOLOCK)
-    UNION ALL
-	SELECT 
-		m.sporttype, m.leagueid, m.matchid, m.homeid, m.awayid, m.eventdate,
-		c.custid, c.username
-		, CASE WHEN t.IsGroupHeadline = 1 THEN 'RM' ELSE e.currency END AS currency
-		, CASE WHEN t.IsGroupHeadline = 1 THEN 'Headline' 
-											  ELSE CASE WHEN c.roleid = 4 THEN 'Super'
-														WHEN c.roleid = 3 THEN 'Master'	
-														WHEN c.roleid = 2 THEN 'Agent'	
-														ELSE ''
-													END	
-										 END AS [Level]				
-		, c.roleid
-		, t.totalturnover, t.ProfileID,pf.ProfileName,t.maxturnover, t.houseturnover, NULL AS nlevel , tmp.TotalMemberTurnover, tmp.TotalHouseTurnover
-		, t.IsGroupHeadline
-		, c.site AS SiteName 
-		, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.houseturnover*100/t.MaxTurnover END AS PercentageUsed
-	FROM dbo.TOControl_Setting t
-		INNER JOIN @MatchList m ON t.matchid = m.matchid
-		INNER JOIN dbo.Customer c WITH(NOLOCK) ON t.custID = c.custid
+		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover*100/rs.MaxTurnover END AS PercentageUsed
+	FROM (
+			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover
+			FROM (
+					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover
+						, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END AS sporttype
+					FROM @temp_ t
+				)ct
+				CROSS APPLY (
+							SELECT ProfileID, GroupName, ProfileName
+							FROM TOControl_Profile WITH (NOLOCK)
+							WHERE Sporttype = ct.sporttype
+							)p
+		)pf
+		OUTER APPLY (
+			SELECT *
+			FROM TOControl_Setting t WITH (NOLOCK)
+			WHERE pf.custid = t.CustID
+				AND pf.matchid = t.matchid
+				AND pf.IsGroupHeadline = t.IsGroupHeadLine
+				AND pf.ProfileID = t.ProfileID
+		)rs
+		INNER JOIN @MatchList m ON pf.matchid = m.matchid
+		INNER JOIN dbo.Customer c WITH(NOLOCK) ON pf.custID = c.custid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
-		INNER JOIN TOControl_Profile pf WITH(NOLOCK) ON pf.ProfileID = t.ProfileID
-	    INNER JOIN CTE_Result tmp ON tmp.custid = t.CustID AND tmp.matchid = t.matchid AND tmp.IsGroupHeadline = t.IsGroupHeadLine 
-		                         AND NOT EXISTS(SELECT 1 FROM CTE_Result tm WHERE tm.custid = t.CustID AND tm.matchid = t.matchid AND tm.IsGroupHeadline = t.IsGroupHeadLine AND tm.ProfileID = t.ProfileID)
 
 END
 GO
