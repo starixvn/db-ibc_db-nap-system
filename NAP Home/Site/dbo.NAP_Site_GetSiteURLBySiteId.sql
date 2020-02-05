@@ -1,7 +1,7 @@
-﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Site_GetSiteURLBySiteId]
     @SiteId			INT
-    ,@Environment	VARCHAR(10)
+    ,@Environment	VARCHAR(10) = ''
 AS
 /*  
  * Created	: 20121010@Lewis
@@ -10,7 +10,7 @@ AS
  *  
  * Revisions:
 	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-	     
+	- 20200107@Jacob: Add in environment for each link on "Manage Site".  RedmineID: #126631 		     		     
  * Param's Explanation: 
 */
 BEGIN
@@ -30,10 +30,8 @@ BEGIN
 		INNER JOIN dbo.NAP_Sites s WITH (NOLOCK) ON su.SiteId = s.SiteId
 	WHERE
 		su.SiteId = @SiteId
-		AND su.Environment = @Environment
+		AND (LEN(@Environment)= 0 OR  su.Environment = @Environment)
 		
 END
+
 GO
-GRANT EXECUTE ON [dbo].[NAP_Site_GetSiteURLBySiteId] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_Site_GetSiteURLBySiteId] TO [vnteam] AS [dbo]
