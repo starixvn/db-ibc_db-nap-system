@@ -97,16 +97,16 @@ BEGIN
 		, pf.ProfileName
 		, rs.maxturnover
 		, rs.houseturnover
-		, NULL AS nlevel 
+		, pf.nlevel AS nlevel 
 		, pf.TotalMemberTurnover
 		, pf.TotalHouseTurnover
 		, pf.IsGroupHeadline
 		, c.site AS SiteName 
 		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover*100/rs.MaxTurnover END AS PercentageUsed
 	FROM (
-			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover
+			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, nlevel
 			FROM (
-					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover
+					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, nlevel
 						, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END AS sporttype
 					FROM @temp_ t
 				)ct
