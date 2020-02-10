@@ -90,7 +90,7 @@ BEGIN
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @GlobalSetting
 	INSERT INTO #tmpMaxTurnover(MaxTurnover, ProfileID)
 	SELECT MaxTurnover, ProfileID 
-	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileID SMALLINT)
+	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileId SMALLINT)
 	EXEC sp_xml_removedocument @iDoc
 	
 	CREATE TABLE #tmpTurnover(MatchId INT, bettype SMALLINT, liveindicator bit, SumOfStake MONEY, HouseTurnover MONEY)
