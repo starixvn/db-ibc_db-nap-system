@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[CS_ProblemAccount_AddCustomer]
+ALTER PROCEDURE [dbo].[Nap_ProblemAccount_AddCustomer]
 	@CustomerList	VARCHAR(MAX),
 	@RoleId			TINYINT,
 	@ReasonId		TINYINT,
@@ -14,13 +14,12 @@ ALTER PROCEDURE [dbo].[CS_ProblemAccount_AddCustomer]
 AS
 /*
 	Created: Elodie
-	Date: 20190808
-	Task : Add new problem account
+	Date: 20200210
+	Task : Add new problem account for credit site
 	DB: DBCUST/CustDB
 
 	Revisions:
-		- 20190808@Elodie: Initial SP [Redmine:#116814]
-		- 20191218@Percy: Change using SP CS_DynamicCustSetting_01 to CS_DynamicCustomerInfo_02 [RedmineID: #125186]
+		- 20200210@Elodie: Initial SP [Redmine:#127446]
 
 	Parameter's explaination: 
 	
@@ -40,8 +39,9 @@ BEGIN
 	INSERT INTO @tmpCust(Username, CustID, RoleId)
 	SELECT c.Username, c.custid, c.roleid
 	FROM @tmpList t
-		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username
-	WHERE c.site = 'CN88' 
+		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username		
+	WHERE c.site <> 'CN88' 
+		AND c.srecommend NOT IN (SELECT custid FROM dbo.Dep_CustSuper WITH (NOLOCK))
 
 	----START: Validattion-------------------------------------------------
 	SELECT @WrongUserName = STUFF((SELECT ', '+ l.Username
