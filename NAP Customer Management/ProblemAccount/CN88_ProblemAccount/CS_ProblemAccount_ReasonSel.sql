@@ -23,12 +23,14 @@ BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
 		WHERE ReasonID > 100
+			AND IsCN88 = 1
 		ORDER BY ReasonID
 	END
 	ELSE
 	BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
+		WHERE IsCN88 = 1
 		ORDER BY ReasonID
 	END
 END
