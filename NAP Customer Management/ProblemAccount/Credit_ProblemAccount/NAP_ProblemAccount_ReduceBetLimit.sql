@@ -13,12 +13,12 @@ ALTER PROCEDURE NAP_ProblemAccount_ReduceBetLimit
 AS
 /*
 	Created: Elodie
-	Date: 20190808
+	Date: 20200210
 	Task : Reduce BetLimit of problem account
 	DB: DBCUST/CustDB
 
 	Revisions:
-		- 20190808@Elodie: Initial SP [Redmine:#116814]
+		- 20200210@Elodie: Initial SP [Redmine:#127446]
 
 	Parameter's explaination: 
 	
@@ -39,13 +39,13 @@ BEGIN
 	UPDATE t 
 	SET t.MaxBet = pa.MaxBet,
 		t.MaxPerEvent = pa.MaxPerEvent
-	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
+	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
 	UPDATE pa 
 	SET pa.MaxBet = @MaxBet,
 		pa.MaxPerEvent = @MaxPerEvent
-	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
+	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
 	WHILE (1=1)
@@ -66,16 +66,16 @@ BEGIN
 		BEGIN
 			SELECT  @LogDataOld = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPE="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
+							+ ' MPE="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' Max="' + dbo.f_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 		END
 
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPE="' + dbo.f_CS_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_CS_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
+							+ ' MPE="' + dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' Max="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'		
 
@@ -84,7 +84,7 @@ BEGIN
 		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
-			@ActionId			= 31602,
+			@ActionId			= 31614,
 			@TrackingValue		= @LogDataNew,
 			@TrackingValue2		= @LogDataOld,
 			@Duration			= @Duration
