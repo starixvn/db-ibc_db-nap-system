@@ -28,8 +28,8 @@ AS
 	Parameter's explaination:
 		Sample data for @GlobalSetting: 
 			'<ROOT>
-				<GlobalSetting MaxTurnover="100" ProfileId  = "1" />
-				<GlobalSetting MaxTurnover="1" ProfileId  = "1"/>
+				<GlobalSetting MaxTurnover="100" ProfileID  = "1" />
+				<GlobalSetting MaxTurnover="1" ProfileID  = "1"/>
 			</ROOT>'
 */
 BEGIN 
@@ -90,7 +90,7 @@ BEGIN
 	EXEC sp_xml_preparedocument @iDoc OUTPUT, @GlobalSetting
 	INSERT INTO #tmpMaxTurnover(MaxTurnover, ProfileID)
 	SELECT MaxTurnover, ProfileID 
-	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileId SMALLINT)
+	FROM OPENXML(@iDoc, '/ROOT/GlobalSetting', 1) WITH (MaxTurnover MONEY, ProfileID SMALLINT)
 	EXEC sp_xml_removedocument @iDoc
 	
 	CREATE TABLE #tmpTurnover(MatchId INT, bettype SMALLINT, liveindicator bit, SumOfStake MONEY, HouseTurnover MONEY)
