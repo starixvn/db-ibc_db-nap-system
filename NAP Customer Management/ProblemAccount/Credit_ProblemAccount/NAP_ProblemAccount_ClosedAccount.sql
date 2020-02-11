@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE [dbo].[CS_ProblemAccount_InactiveAccount]	
+ALTER PROCEDURE NAP_ProblemAccount_ClosedAccount
 	@CustomerList	VARCHAR(MAX),
 	@RoleId			TINYINT,
 	@IsConfirmed	BIT,
@@ -12,12 +12,12 @@ ALTER PROCEDURE [dbo].[CS_ProblemAccount_InactiveAccount]
 AS
 /*  
 	Created: Elodie
-	Date: 20190808
-	Task : Inactive problem account
+	Date: 20200210
+	Task : Closed problem account
 	DB: DBCUST/CustDB
 
 	Revisions:
-		- 20190808@Elodie: Initial SP [Redmine:#116814]
+		- 20200210@Elodie: Initial SP [Redmine:#127446]
 
 	Parameter's explaination:
 */
