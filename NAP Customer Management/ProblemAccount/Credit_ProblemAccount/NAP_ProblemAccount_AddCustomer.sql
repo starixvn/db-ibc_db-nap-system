@@ -69,7 +69,7 @@ BEGIN
 
 	SELECT @WrongUserName = STUFF((SELECT ', '+ c.Username
 									FROM @tmpCust c
-										INNER JOIN dbo.CS_ProblemAccount pa ON pa.CustId = c.CustId
+										INNER JOIN dbo.ProblemAccount pa ON pa.CustId = c.CustId
 									WHERE pa.ReasonId IS NOT NULL
 									FOR XML PATH('')),1,2,'')
 
@@ -101,7 +101,7 @@ BEGIN
 	
 		IF @@ROWCOUNT = 0 BREAK
 
-		EXEC dbo.CS_DynamicCustomerInfo_02
+		EXEC dbo.Acc_CustomerInfo_Execrep_12
 			@CustId = @CustId,
 			@RoleId = @RoleId,
 			@ReasonId = @ReasonId,
