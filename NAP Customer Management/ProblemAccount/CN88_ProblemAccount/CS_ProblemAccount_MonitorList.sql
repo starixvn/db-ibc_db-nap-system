@@ -11,6 +11,7 @@ ALTER PROCEDURE CS_ProblemAccount_MonitorList
 	@UserSearch				NVARCHAR(50) = '',
 	@IsSearchDownline		BIT = 0,
 	@OrderType				TINYINT = 1,
+	@IsDirectlyMarked		TINYINT = 0,
 	
 	@PageSize				INT = 100,
 	@PageIndex				INT = 1,
@@ -25,11 +26,12 @@ AS
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
 		- 20190808@Elodie: Change datatype of @ReasonId parameter [Redmine:#126080]
-
+		- 20191230@Johnson: filter by directly marked [redmine:#121298]
 	Parameter's explaination: 
 		@IsReduce: 0:All, 1:No, 2:Yes
 		@OrderType: 1:SMA line, 2:MarkDate, 3:Account Status
 		@Status: 0:All, 1:Inactive, 2:Suspended, 3:View Only, 4:Active
+		@IsDirectlyMarked: 0: All, 1: No, 2: Yes
 	
 */
 BEGIN
@@ -37,12 +39,12 @@ BEGIN
 	DECLARE @CustSearchId INT, @CustSearchRoleId TINYINT
 	DECLARE @RowCount INT, @RowStart INT, @RowEnd INT
 	DECLARE @Reason TABLE (ReasonId TINYINT)	
-	CREATE TABLE #CustList (CustId INT PRIMARY KEY, HeadlineId INT, srecommend INT, mrecommend INT, recommend INT, CustStatus TINYINT, AbnormalBetNumber INT)
+	CREATE TABLE #CustList (CustId INT PRIMARY KEY, HeadlineId INT, srecommend INT, mrecommend INT, recommend INT, CustStatus TINYINT, AbnormalBetNumber INT, IsDirectlyMarked BIT, IsAbnormalMember BIT)
 	CREATE TABLE #CustDetailList (CustId INT, CreateDate DATETIME, UplineId NVARCHAR(50), ReasonId TINYINT, MaxBet MONEY, AbnormalBetNumber INT DEFAULT(0))
 	CREATE TABLE #Result (CustId INT, username NVARCHAR(50), Headline NVARCHAR(50), Super NVARCHAR(50), Master NVARCHAR(50), Agent NVARCHAR(50), 
 			IsProblemAccSuper BIT, IsProblemAccMaster BIT, IsProblemAccAgent BIT, IsProblemAcc BIT,
 			SuperMaxBet MONEY, SuperMPM MONEY, MasterMaxBet MONEY, MasterMPM MONEY, AgentMaxBet MONEY, AgentMPM MONEY, MaxBet MONEY, MPM MONEY,
-			CustStatus TINYINT, MarkDate DATETIME, Comment NVARCHAR(100), AbnormalBetNumber INT, RowNumber INT)	
+			CustStatus TINYINT, MarkDate DATETIME, Comment NVARCHAR(100), AbnormalBetNumber INT, informed1By NVARCHAR(50), informed2By NVARCHAR(50), RowNumber INT)	
 
 	INSERT INTO @Reason (ReasonId)	
 	SELECT CAST(f.val AS TINYINT)
@@ -59,8 +61,8 @@ BEGIN
 			BEGIN
 				IF @CustSearchRoleId = @RoleId
 				BEGIN
-					INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
-					SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
+					INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus, IsDirectlyMarked, IsAbnormalMember)				
+					SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus, cast(pa.ProblemStatus&POWER(2,ci.roleid-1) AS BIT), pa.IsAbnormalMember
 					FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
 						INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
 						CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
@@ -75,8 +77,8 @@ BEGIN
 			BEGIN
 				IF @CustSearchRoleId > @RoleId
 				BEGIN
-					INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
-					SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
+					INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus, IsDirectlyMarked, IsAbnormalMember)				
+					SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus, cast(pa.ProblemStatus&POWER(2,ci.roleid-1) AS BIT), pa.IsAbnormalMember
 					FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
 						INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
 						CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
@@ -93,8 +95,8 @@ BEGIN
 	END 
 	ELSE
 	BEGIN
-		INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus)				
-			SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus
+		INSERT INTO #CustList (CustId, srecommend, mrecommend, recommend, CustStatus, IsDirectlyMarked, IsAbnormalMember)				
+			SELECT ci.custid, ci.srecommend, ci.mrecommend, ci.recommend, st.CustStatus, cast(pa.ProblemStatus&POWER(2,ci.roleid-1) AS BIT), pa.IsAbnormalMember
 		FROM dbo.CS_ProblemAccount pa WITH (NOLOCK)
 			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = pa.CustId				
 			CROSS APPLY dbo.f_CS_GetCustomerStatus(ci.custid) st
@@ -163,7 +165,9 @@ BEGIN
 							FROM #CustDetailList cd 
 							WHERE cd.MaxBet IS NOT NULL) AND @IsReduce = 2								
 				)
-	
+		OR (1= CASE WHEN @IsDirectlyMarked = 1 AND (IsDirectlyMarked = 1 OR IsAbnormalMember = 1) THEN 1
+					WHEN @IsDirectlyMarked = 2 AND (IsDirectlyMarked = 0 AND IsAbnormalMember = 0) THEN 1 ELSE 0 END)
+					
 	DELETE cd 
 	FROM #CustDetailList cd
 	WHERE NOT EXISTS (SELECT 1 FROM #CustList WHERE CustId = cd.CustId)
@@ -178,7 +182,7 @@ BEGIN
 		INSERT INTO #Result (CustId, username, Headline, Super, Master, Agent, 
 			IsProblemAccSuper, IsProblemAccMaster, IsProblemAccAgent, IsProblemAcc,
 			SuperMaxBet, SuperMPM, MasterMaxBet, MasterMPM, AgentMaxBet, AgentMPM, MaxBet, MPM,
-			CustStatus, MarkDate, Comment, AbnormalBetNumber, RowNumber)
+			CustStatus, MarkDate, Comment, AbnormalBetNumber, informed1By, informed2By, RowNumber)
 		SELECT c.CustId, ci.username, hl.username AS Headline, s.username AS Super, m.username AS Master, a.username AS Agent, 
 			CASE WHEN spa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAccSuper,
 			CASE WHEN mpa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAccMaster,
@@ -186,7 +190,7 @@ BEGIN
 			CASE WHEN cpa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAcc,
 			spa.MaxBet AS SuperMaxBet, spa.MaxPerEvent AS SuperMPM, mpa.MaxBet AS MasterMaxBet, mpa.MaxPerEvent AS MasterMPM, 
 			apa.MaxBet AS AgentMaxBet, apa.MaxPerEvent AS AgentMPM, cpa.MaxBet AS MaxBet, cpa.MaxPerEvent AS MPM,
-			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber,
+			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber, inform1.username as Informed1By, inform2.username as Informed2By,
 			ROW_NUMBER() OVER (ORDER BY hl.username, s.username, m.username, a.username, ci.username, c.CustStatus DESC, cpa.CreatedDate DESC) AS RowNumber
 		FROM #CustList c
 			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
@@ -195,6 +199,8 @@ BEGIN
 			LEFT JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
 			LEFT JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
 			INNER JOIN dbo.CS_ProblemAccount cpa WITH (NOLOCK) ON c.custid = cpa.CustId
+			LEFT JOIN dbo.custinfo inform1 WITH(NOLOCK) ON inform1.custid = cpa.Informed1By
+			LEFT JOIN dbo.custinfo inform2 WITH(NOLOCK) ON inform2.custid = cpa.Informed2By
 			LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount apa WITH (NOLOCK) ON a.custid = apa.CustId
@@ -204,7 +210,7 @@ BEGIN
 		INSERT INTO #Result (CustId, username, Headline, Super, Master, Agent, 
 			IsProblemAccSuper, IsProblemAccMaster, IsProblemAccAgent, IsProblemAcc,
 			SuperMaxBet, SuperMPM, MasterMaxBet, MasterMPM, AgentMaxBet, AgentMPM, MaxBet, MPM,
-			CustStatus, MarkDate, Comment, AbnormalBetNumber, RowNumber)
+			CustStatus, MarkDate, Comment, AbnormalBetNumber,Informed1By,Informed2By, RowNumber)
 		SELECT c.CustId, ci.username, hl.username AS Headline, s.username AS Super, m.username AS Master, a.username AS Agent, 
 			CASE WHEN spa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAccSuper,
 			CASE WHEN mpa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAccMaster,
@@ -213,6 +219,7 @@ BEGIN
 			spa.MaxBet AS SuperMaxBet, spa.MaxPerEvent AS SuperMPM, mpa.MaxBet AS MasterMaxBet, mpa.MaxPerEvent AS MasterMPM, 
 			apa.MaxBet AS AgentMaxBet, apa.MaxPerEvent AS AgentMPM, cpa.MaxBet AS MaxBet, cpa.MaxPerEvent AS MPM,
 			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber,
+			inform1.username as Informed1By, inform2.username as Informed2By,
 			ROW_NUMBER() OVER (ORDER BY cpa.CreatedDate DESC, hl.username, s.username, m.username, a.username, ci.username, c.CustStatus DESC) AS RowNumber
 		FROM #CustList c
 			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
@@ -221,6 +228,8 @@ BEGIN
 			LEFT JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
 			LEFT JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
 			INNER JOIN dbo.CS_ProblemAccount cpa WITH (NOLOCK) ON c.custid = cpa.CustId
+			LEFT JOIN dbo.custinfo inform1 WITH(NOLOCK) ON inform1.custid = cpa.Informed1By
+			LEFT JOIN dbo.custinfo inform2 WITH(NOLOCK) ON inform2.custid = cpa.Informed2By
 			LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount apa WITH (NOLOCK) ON a.custid = apa.CustId
@@ -230,7 +239,7 @@ BEGIN
 		INSERT INTO #Result (CustId, username, Headline, Super, Master, Agent, 
 			IsProblemAccSuper, IsProblemAccMaster, IsProblemAccAgent, IsProblemAcc,
 			SuperMaxBet, SuperMPM, MasterMaxBet, MasterMPM, AgentMaxBet, AgentMPM, MaxBet, MPM,
-			CustStatus, MarkDate, Comment, AbnormalBetNumber, RowNumber)
+			CustStatus, MarkDate, Comment, AbnormalBetNumber,Informed1By,Informed2By, RowNumber)
 		SELECT c.CustId, ci.username, hl.username AS Headline, s.username AS Super, m.username AS Master, a.username AS Agent, 
 			CASE WHEN spa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAccSuper,
 			CASE WHEN mpa.custid IS NULL THEN 0 ELSE 1 END AS IsProblemAccMaster,
@@ -239,6 +248,7 @@ BEGIN
 			spa.MaxBet AS SuperMaxBet, spa.MaxPerEvent AS SuperMPM, mpa.MaxBet AS MasterMaxBet, mpa.MaxPerEvent AS MasterMPM, 
 			apa.MaxBet AS AgentMaxBet, apa.MaxPerEvent AS AgentMPM, cpa.MaxBet AS MaxBet, cpa.MaxPerEvent AS MPM,
 			c.CustStatus, cpa.CreatedDate AS MarkDate, cpa.Comment, c.AbnormalBetNumber,
+			inform1.username as Informed1By, inform2.username as Informed2By,
 			ROW_NUMBER() OVER (ORDER BY c.CustStatus DESC, hl.username, s.username, m.username, a.username, ci.username, cpa.CreatedDate DESC) AS RowNumber
 		FROM #CustList c
 			INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON ci.custid = c.custid
@@ -247,6 +257,8 @@ BEGIN
 			LEFT JOIN dbo.custInfo m WITH (NOLOCK) ON m.custid = c.mrecommend
 			LEFT JOIN dbo.custInfo a WITH (NOLOCK) ON a.custid = c.recommend
 			INNER JOIN dbo.CS_ProblemAccount cpa WITH (NOLOCK) ON c.custid = cpa.CustId
+			LEFT JOIN dbo.custinfo inform1 WITH(NOLOCK) ON inform1.custid = cpa.Informed1By
+			LEFT JOIN dbo.custinfo inform2 WITH(NOLOCK) ON inform2.custid = cpa.Informed2By
 			LEFT JOIN dbo.CS_ProblemAccount spa WITH (NOLOCK) ON s.custid = spa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount mpa WITH (NOLOCK) ON m.custid = mpa.CustId
 			LEFT JOIN dbo.CS_ProblemAccount apa WITH (NOLOCK) ON a.custid = apa.CustId
