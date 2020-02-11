@@ -21,6 +21,7 @@ AS
 			- 20191030@Johnson: change request to allow add licensee [redmine:#122642]
 			- 20191125@Johnson: set counter = 10 when update robot [redmine:#122642]
 			- 20200113@Johnson: add default for robotdate [redmine:#126998]
+			- 20200205@Johnson: call sp wrapper from DBCUST to write log [redmine:#127911]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -183,25 +184,13 @@ BEGIN
 									+ 'IP="' + COALESCE(@IP,SPACE(1)) + '" />'
 		END
 		
-		BEGIN TRY
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@Userid = @userid,
-				@Custid = @CustID,
-				@ActionID = @ActionID,
-				@TrackingValue = @LogData,	
-				@TrackingValue2 = @LogData_Old,				
-				@Duration = @duration
-		END TRY
-		BEGIN CATCH
-			EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@Userid = @userid,
-				@Custid = @CustID,
-				@ActionID = @ActionID,
-				@TrackingValue = @LogData,
-				@TrackingValue2 = @LogData_Old,
-				@Duration = @duration										
-		END CATCH
+		EXEC DBCUST.CUSTDB.dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			@UserID = @UserID,
+			@CustID = @CustID, 
+			@ActionID = @ActionID, 
+			@TrackingValue = @LogData,
+			@TrackingValue2 = @LogData_Old,
+			@duration = @duration
 	END	
-	
 END
 GO	

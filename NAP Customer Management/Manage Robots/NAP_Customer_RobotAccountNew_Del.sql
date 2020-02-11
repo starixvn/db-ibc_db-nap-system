@@ -16,6 +16,7 @@ AS
 		Revision:
 			- 20190913@Johnson: Initial sp [redmine:#119714]
 			- 20191125@Johnson: add country,region [redmine:#122642]
+			- 20200205@Johnson: call sp wrapper from DBCUST to write log [redmine:#127911]
 		Parameter's Explanation:			
 */ 
 BEGIN
@@ -50,21 +51,11 @@ BEGIN
 	SELECT @ActionID = 696
 			,@LogData = '<R IP="' + COALESCE(@IP,SPACE(1)) + '" />'
 	
-	BEGIN TRY
-		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-			@Userid = @userid,
-			@Custid = @CustID,
-			@ActionID = @ActionID,
-			@TrackingValue = @LogData,							
-			@Duration = @duration
-	END TRY
-	BEGIN CATCH
-		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-			@Userid = @userid,
-			@Custid = @CustID,
-			@ActionID = @ActionID,
-			@TrackingValue = @LogData,			
-			@Duration = @duration										
-	END CATCH
+	EXEC DBCUST.CUSTDB.dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+		@UserID = @UserID,
+		@CustID = @CustID, 
+		@ActionID = @ActionID, 
+		@TrackingValue = @LogData,
+		@duration = @duration
 END
 GO
