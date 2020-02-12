@@ -1,16 +1,15 @@
 /*<info serverAlias="DBCUST-CustDB" executers="" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE CS_ProblemAccount_AddAbnormalMember	
+ALTER PROCEDURE NAP_ProblemAccount_AddAbnormalMember	
 AS
 /*
 	Created: Elodie
-	Date: 20190808
+	Date: 20200210
 	Task : Add abnormal member
 	DB: DBCUST/CustDB
 
 	Revisions:
-		- 20190808@Elodie: Initial SP [Redmine:#116814]
-		- 20190930@Elodie: Only add the member that is voided ticket abnormal into CS_ProblemAccount [Redmine:#121104]
+		- 20200210@Elodie: Initial SP [Redmine:#127446]
 
 	Parameter's explaination: 
 	

@@ -30,23 +30,19 @@ BEGIN
 
 	SELECT  @StartRun = GETDATE()			
 
-	INSERT INTO @tmpCust(Username, CustID)
-	SELECT ci.Username, ci.custid
+	INSERT INTO @tmpCust(Username, CustID, StatusID)
+	SELECT ci.Username, ci.custid,
+		CASE WHEN ci.Enabled = 1 THEN CASE WHEN ci.closed = 1 THEN 3 WHEN ci.reject = 1 THEN 2 ELSE 1 END ELSE 4 END AS CustStatus
 	FROM dbo.f_StringSplit(@CustomerList, ',') f
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
-
-	UPDATE t 
-	SET t.StatusID = f.CustStatus
-	FROM @tmpCust t 
-		CROSS APPLY dbo.f_CS_GetCustomerStatus(t.CustId) f
-
+	
 	IF @IsConfirmed = 0
 	BEGIN
-		IF EXISTS (SELECT 1 FROM @tmpCust t WHERE t.StatusID <> 1)
+		IF EXISTS (SELECT 1 FROM @tmpCust t WHERE t.StatusID <> 3)
 		BEGIN
 			SELECT @WarningList= STUFF((SELECT ', '+ t.Username
 										FROM @tmpCust t
-										WHERE t.StatusID = 1
+										WHERE t.StatusID = 3
 										FOR XML PATH('')),1,2,'')
 
 			IF ISNULL(@WarningList,'') <> '' 
@@ -57,7 +53,7 @@ BEGIN
 		END
 		ELSE
 		BEGIN	
-			SELECT @ErrCode = 102, @ErrMsg = '' --All accounts are inactive, return
+			SELECT @ErrCode = 102, @ErrMsg = '' --All accounts are closed, return
 			RETURN
 		END
 	END
@@ -65,7 +61,7 @@ BEGIN
 	BEGIN
 		DELETE t 
 		FROM @tmpCust t
-		WHERE StatusID = 1
+		WHERE StatusID = 3
 	END
 
 	WHILE (1=1)
@@ -79,12 +75,32 @@ BEGIN
 	
 		IF @@ROWCOUNT = 0 BREAK	
 
-		EXEC dbo.CS_DynamicCustomerInfo_01
-			@CustId			= @CustId,
-			@RoleId			= @RoleId,
-			@Action			= 'UpdateStatus',
-			@Mode			= 1,
-			@AffectedList	= @AffectedList OUTPUT
+		IF @RoleID BETWEEN 2 AND 4
+		BEGIN
+			EXEC Acc_CustomerInfo_Execrep_04
+				 @CustID		= @CustID
+				,@RoleID		= @RoleID
+				,@Action		= 'Closed'
+				,@Closed		= 1
+				,@SystemID		= 1
+		END	
+		ELSE
+		BEGIN
+			UPDATE custinfo WITH(ROWLOCK, UPDLOCK) 
+			SET Closed = 1
+			WHERE custid = @custid
+
+			IF NOT EXISTS (SELECT 1 FROM dbo.CustLoginInfo_Member WITH(NOLOCK) WHERE custid = @custid)
+			BEGIN
+				INSERT INTO [CustLoginInfo_Member]([CustID],[SecurityCode],[IP],[LastChangedID],[LastChangedDate],ClosedReason)
+				VALUES(@custid,NULL,@IP,@UserID,GETDATE(),1)
+			END
+			ELSE
+			BEGIN
+				UPDATE [dbo].CustLoginInfo_Member WITH (ROWLOCK, UPDLOCK) set ClosedReason = 1
+				WHERE custid = @custid
+			END
+		END	
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
@@ -92,14 +108,14 @@ BEGIN
 		DECLARE @LogDataNew VARCHAR(500)
 		SELECT  @LogDataNew = '<R'
 								+ ' Username="' + @UserName + '"'								
-								+ ' OldStatus="' + COALESCE(CASE @OldStatusID WHEN 1 THEN 'Inactive' WHEN 2 THEN 'Suspended' WHEN 3 THEN 'ViewOnly' WHEN 4 THEN 'Active' END, SPACE(1)) + '"'
+								+ ' OldStatus="' + COALESCE(CASE @OldStatusID WHEN 1 THEN 'Open' WHEN 2 THEN 'Suspended' WHEN 3 THEN 'Closed' WHEN 4 THEN 'Disabled' END, SPACE(1)) + '"'
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 								+ ' />'		
 	
 		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
-			@ActionId			= 165012,
+			@ActionId			= 1172,
 			@TrackingValue		= @LogDataNew,
 			@Duration			= @Duration,
 			@AffectedDownlines	= @AffectedList
