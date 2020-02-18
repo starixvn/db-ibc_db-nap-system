@@ -155,7 +155,7 @@ BEGIN
 								+ ' />'			
 		END
 
-		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
 			@ActionId			= @ActionId,
@@ -185,7 +185,7 @@ BEGIN
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'			
 
-		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
 			@ActionId			= @ActionId,

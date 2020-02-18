@@ -81,7 +81,7 @@ BEGIN
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
-		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
 			@ActionId			= 31614,
