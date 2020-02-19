@@ -1,8 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE NAP_ProblemAccount_ReasonSel
-	@Mode TINYINT = 1,
-	@IsLicensee BIT = 0
+	@Mode TINYINT = 1
 AS
 /*
 	Created: Elodie
@@ -24,16 +23,14 @@ BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
 		WHERE ReasonID > 100
-			AND ((IsCredit = 1 AND @IsLicensee = 0)
-					OR (IsLicensee = 1 AND @IsLicensee = 1))
+			AND IsCredit = 1
 		ORDER BY ReasonID
 	END
 	ELSE
 	BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
-		WHERE (IsCredit = 1 AND @IsLicensee = 0)
-			OR (IsLicensee = 1 AND @IsLicensee = 1)
+		WHERE IsCredit = 1
 		ORDER BY ReasonID
 	END
 END
