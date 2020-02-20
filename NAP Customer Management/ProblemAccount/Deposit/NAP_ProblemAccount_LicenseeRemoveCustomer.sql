@@ -29,8 +29,10 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, CustID)
 	SELECT ci.Username, ci.custid
-	FROM dbo.f_strSplit(@CustomerList, ',') f
+	FROM dbo.strSplit(@CustomerList, ',') f
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	WHERE srecommend IN (SELECT custid FROM Dep_CustSuper)
+		AND roleid = 1
 	
 	DELETE pa 
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
@@ -50,6 +52,7 @@ BEGIN
 		SET isfinished = 1,
 			@CustId = custid
 		WHERE isfinished = 0
+			AND custid IS NOT NULL
 	
 		IF @@ROWCOUNT = 0 BREAK	
 		

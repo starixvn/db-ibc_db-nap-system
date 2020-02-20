@@ -23,21 +23,29 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
-	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @today DATE 
+	DECLARE @CustId INT, 
+			@UserName VARCHAR(50),
+			@WrongUserName VARCHAR(MAX), 
+			@CustNumber INT, 
+			@today DATE, 
+			@ReasonName VARCHAR(100),
+			@MaxBet MONEY,
+			@MaxPerEvent MONEY
+			
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 	
 	SELECT @startRun = GETDATE()
 	
 	INSERT INTO @tmpCust(Username)
 	SELECT Val
-	FROM dbo.f_StringSplit(@CustomerList, ',') f
+	FROM dbo.strSplit(@CustomerList, ',') f
 
 	UPDATE t
 	SET t.custid = c.custid,
 		t.currency = c.currency
-	FROM @tmpList t
+	FROM @tmpCust t
 		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username
-	WHERE srecommend IN (SELECT custid FROM)
+	WHERE srecommend IN (SELECT custid FROM Dep_CustSuper)
 		AND roleid = 1
 		
 	----START: Validattion-------------------------------------------------
@@ -117,7 +125,7 @@ BEGIN
 			@CustId				= @CustId,
 			@ActionId			= 31626,
 			@TrackingValue		= @LogDataNew,
-			@Duration			= @Duration,		
+			@Duration			= @Duration		
 	END
 END
 GO

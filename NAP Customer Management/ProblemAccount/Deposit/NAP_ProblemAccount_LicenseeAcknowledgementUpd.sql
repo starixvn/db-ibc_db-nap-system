@@ -55,13 +55,13 @@ BEGIN
 	DECLARE @LogData VARCHAR(500),
 			@LogData_Old VARCHAR(500)
 	SELECT  @LogData = '<R'
-							+ ' Licensee="' + @LicenseeName + '"'								
+							+ ' Licensee="' + @Licensee + '"'								
 							+ ' IsAcknowledgement="' + COALESCE(CAST(@IsAcknowledgement AS VARCHAR(10)), SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'	
 							
 	SELECT  @LogData_old = '<R'
-							+ ' Licensee="' + @LicenseeName + '"'								
+							+ ' Licensee="' + @Licensee + '"'								
 							+ ' IsAcknowledgement="' + COALESCE(CAST(@IsAcknowledgement_old AS VARCHAR(10)), SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'

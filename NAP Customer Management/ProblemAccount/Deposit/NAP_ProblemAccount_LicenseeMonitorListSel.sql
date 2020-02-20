@@ -7,6 +7,7 @@ ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel
 	@Vip		TINYINT = 0,
 	@Currency 	INT = 0,
 	@isReduced 	TINYINT =0,
+	@ActionID	TINYINT=0,
 	@Username 	VARCHAR(50) = '',
 	@Licensee 	VARCHAR(20) = '',
 	@ReasonList VARCHAR(MAX) = ''
@@ -24,18 +25,19 @@ AS
 		- @Type: 0:All, 1:Acknowledgement, 2:Not Acknowledgement	
 		- @Vip: 0:All, 1:Yes, 2:No	
 		- @currency: 0;All, <>0: currencyID
-		- @isReduced: 0:All, 1:Yes, 2:No		
+		- @isReduced: 0:All, 1:Yes, 2:No	
+		- Preventive ActionID: 0:All, 1: None, 2:Void all tickets, 3: Void winning tickets
 */
 BEGIN
 	SET NOCOUNT ON
 	
-	CREATE TABLE #tblCust (custid INT, srecommend INT, isVip BIT, AbnormalBetNumber INT)
+	CREATE TABLE #tblCust (custid INT, srecommend INT, isVip BIT,ActionID TINYINT, AbnormalBetNumber INT)
 	CREATE TABLE #tblCustReason (CustId INT, CreatedDate DATETIME, ReasonId INT, AbnormalBetNumber INT)
 	
 	DECLARE @tmpReason TABLE (reasonID INT)
 	DECLARE @tmpLicensee TABLE(LicenseeID INT, LicenseeName VARCHAR(50), isAcknowledgement BIT)
 	DECLARE @tmpSuper TABLE(custid INT, site VARCHAR(50))
-	DECLARE @Result TABLE(custid INT, isVip BIT, AbnormalBetNumber INT, site VARCHAR(50), rn INT)
+	DECLARE @Result TABLE(custid INT, isVip BIT, ActionID TINYINT, AbnormalBetNumber INT, site VARCHAR(50), rn INT)
 	
 	IF @Licensee = ''
 		SELECT @Licensee = NULL
@@ -43,6 +45,8 @@ BEGIN
 		SELECT @Type = NULL
 	IF @currency = 0	
 		SELECT @currency = NULL
+	IF @ActionID = 0
+		SELECT @ActionID = NULL
 		
 	INSERT INTO @tmpReason(reasonID)
 	SELECT val
@@ -64,7 +68,7 @@ BEGIN
 	BEGIN
 		;WITH t as (
 		SELECT c.custid,c.srecommend, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
-			p.MaxBet
+			p.MaxBet,ActionID
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 			LEFT JOIN Dep_CustVip d WITH(NOLOCK) ON c.custid = d.custid
@@ -73,10 +77,11 @@ BEGIN
 			AND p.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND roleid = 1
 		)
-		INSERT INTO #tblCust(custid,srecommend,isVip)
-		SELECT custid,srecommend,isVip
+		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID)
+		SELECT custid,srecommend,isVip,ActionID
 		FROM t
 		WHERE isVip = ISNULL(@Vip,isVip)
+			AND ActionID = ISNULL(@ActionID,ActionID)
 			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 2 AND MaxBet IS NULL THEN 1
 						WHEN @isReduced = 0 THEN 1 ELSE 0 END
@@ -85,7 +90,7 @@ BEGIN
 	BEGIN
 		;WITH t as (
 		SELECT c.custid,c.srecommend, p. CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
-			p.MaxBet
+			p.MaxBet,p.ActionID
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 			LEFT JOIN Dep_CustVip d WITH(NOLOCK) ON c.custid = d.custid
@@ -93,10 +98,11 @@ BEGIN
 			AND p.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND roleid = 1
 		)
-		INSERT INTO #tblCust(custid,srecommend,isVip)
-		SELECT custid,srecommend,isVip
+		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID)
+		SELECT custid,srecommend,isVip,ActionID
 		FROM t
 		WHERE isVip = ISNULL(@Vip,isVip)
+			AND ActionID = ISNULL(@ActionID,ActionID)
 			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 2 AND MaxBet IS NULL THEN 1
 						WHEN @isReduced = 0 THEN 1 ELSE 0 END
@@ -134,24 +140,25 @@ BEGIN
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 	
 	;WITH t AS (
-	SELECT c.custid,c.isVip,c.AbnormalBetNumber,s.site, ROW_NUMBER() OVER (ORDER BY s.site ASC, t.MarkDate DESC) rn
+	SELECT c.custid,c.isVip,c.ActionID,c.AbnormalBetNumber,s.site, ROW_NUMBER() OVER (ORDER BY s.site ASC, t.MarkDate DESC) rn
 	FROM #tblCust c
 		INNER JOIN @tmpSuper s ON c.srecommend = s.custid
 	)
-	INSERT INTO @Result(custid,isVip,AbnormalBetNumber,site,rn)
-	SELECT custid,isVip,AbnormalBetNumber,site,rn
+	INSERT INTO @Result(custid,isVip,ActionID,AbnormalBetNumber,site,rn)
+	SELECT custid,isVip,ActionID,AbnormalBetNumber,site,rn
 	FROM t 		
 	WHERE rn BETWEEN @RowStart AND @RowEnd
 	
 	SELECT rs.site, l.isAcknowledgement, c.username, 
 		SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS username2,
-		e.currency, rs.isVip, p.MaxBet, p.MaxPerEvent as MaxPerMatch, p.CreatedDate as MarkDate, p.comment,
+		e.currency, rs.isVip, a.ActionName, p.MaxBet, p.MaxPerEvent as MaxPerMatch, p.CreatedDate as MarkDate, p.comment,
 		inform1.username as inform1, inform2.username as inform2, rs.AbnormalBetNumber
 	FROM @Result rs
 		INNER JOIN customer c WITH(NOLOCK) ON rs.custid = c.custid
 		INNER JOIN Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid 
 		INNER JOIN ProblemAccount p WITH(NOLOCK) ON rs.custid = p.custid
 		INNER JOIN @tmpLicensee l ON rs.site = l.LicenseeName
+		LEFT JOIN ProblemAccountAction a WITH(NOLOCK) ON rs.ActionID = a.ActionID
 		LEFT JOIN custinfo inform1 WITH(NOLOCK) ON p.Informed1By = inform1.custid
 		LEFT JOIN custinfo inform2 WITH(NOLOCK) ON p.Informed2By = inform2.custid
 		
