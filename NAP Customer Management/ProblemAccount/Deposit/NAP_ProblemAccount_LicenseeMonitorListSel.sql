@@ -1,7 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
 
-ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel_xtest
+ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel
 	@FromDate 	DATETIME,
 	@ToDate 	DATETIME,
 	@Type		TINYINT = 0,
