@@ -3,6 +3,7 @@ ALTER PROCEDURE [dbo].[Nap_ProblemAccount_AddCustomer]
 	@CustomerList	VARCHAR(MAX),
 	@RoleId			TINYINT,
 	@ReasonId		TINYINT,
+	@ActionId		TINYINT,
 	@Comment		NVARCHAR(300) = '',
 
 	@UserID			INT,
@@ -31,6 +32,12 @@ BEGIN
 	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpList TABLE (Username VARCHAR(MAX))	
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))
+
+	IF NOT EXISTS (SELECT 1 FROM dbo.ProblemAccountReasonAction WITH (NOLOCK) WHERE ReasonId = @ReasonId AND ActionId = @ActionId)
+	BEGIN
+	   SELECT @ErrCode = 100, @ErrMsg = 'The selected reason is not available for this preventive action'   
+	   RETURN
+    END
 
 	INSERT INTO @tmpList(Username)
 	SELECT Val

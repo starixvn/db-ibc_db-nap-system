@@ -1,7 +1,8 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE NAP_ProblemAccount_ReasonSel
-	@Mode TINYINT = 1
+	@Mode TINYINT = 1,
+	@ActionId TINYINT = NULL
 AS
 /*
 	Created: Elodie
@@ -21,9 +22,11 @@ BEGIN
 	IF @Mode = 1
 	BEGIN
 		SELECT ReasonID, ReasonName
-		FROM dbo.ProblemAccountReason WITH(NOLOCK)
+		FROM dbo.ProblemAccountReason r WITH(NOLOCK)
+			INNER JOIN ProblemAccountReasonAction ra WITH (NOLOCK) ON r.ReasonID = ra.ReasonID
 		WHERE ReasonID > 100
 			AND IsCredit = 1
+			AND ra.ActionID = @ActionId
 		ORDER BY ReasonID
 	END
 	ELSE
