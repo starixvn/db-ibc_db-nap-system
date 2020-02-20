@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE NAP_ProblemAccount_InformStatusUpd
+ALTER PROCEDURE NAP_ProblemAccount_LicenseeInformStatusUpd
 	@customerList 	VARCHAR(MAX),	
 	@InformedType 	TINYINT = 0,
 	@UserID 		INT,
