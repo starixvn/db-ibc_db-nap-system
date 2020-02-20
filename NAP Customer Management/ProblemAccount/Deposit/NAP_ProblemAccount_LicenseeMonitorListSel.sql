@@ -1,6 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel
+
+ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel_xtest
 	@FromDate 	DATETIME,
 	@ToDate 	DATETIME,
 	@Type		TINYINT = 0,
@@ -10,7 +11,11 @@ ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel
 	@ActionID	TINYINT=0,
 	@Username 	VARCHAR(50) = '',
 	@Licensee 	VARCHAR(20) = '',
-	@ReasonList VARCHAR(MAX) = ''
+	@ReasonList VARCHAR(MAX) = '',
+	
+	@PageSize	INT = 100,
+	@PageIndex	INT = 1,
+	@TotalItems	INT = 0 OUTPUT
 AS
 /*
 	Created: Johnson
@@ -38,6 +43,7 @@ BEGIN
 	DECLARE @tmpLicensee TABLE(LicenseeID INT, LicenseeName VARCHAR(50), isAcknowledgement BIT)
 	DECLARE @tmpSuper TABLE(custid INT, site VARCHAR(50))
 	DECLARE @Result TABLE(custid INT, isVip BIT, ActionID TINYINT, AbnormalBetNumber INT, site VARCHAR(50), rn INT)
+	DECLARE @Rowstart INT, @RowEnd INT
 	
 	IF @Licensee = ''
 		SELECT @Licensee = NULL
@@ -89,7 +95,7 @@ BEGIN
 	ELSE
 	BEGIN
 		;WITH t as (
-		SELECT c.custid,c.srecommend, p. CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
+		SELECT c.custid,c.srecommend,CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
 			p.MaxBet,p.ActionID
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
