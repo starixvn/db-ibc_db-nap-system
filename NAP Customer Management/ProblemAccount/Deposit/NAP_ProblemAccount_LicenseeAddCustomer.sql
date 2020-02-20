@@ -87,7 +87,7 @@ BEGIN
 	SET MaxBet = ROUND(100*MYR,0),
 		MaxPerEvent = ROUND(300*MYR,0)
 	FROM @tmpCust t
-		INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = t.ExchangeId
+		INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
 	WHERE ExchangeDate = @today	
 		
 	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)	
