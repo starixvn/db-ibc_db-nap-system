@@ -46,7 +46,7 @@ BEGIN
 	WHERE ci.roleid = 1
 					
 	SELECT @ErrMsg = STUFF((SELECT ', '+ l.Username
-									FROM @tmpList l
+									FROM @tmpCust l
 										LEFT JOIN @tmpCust c ON c.Username = l.Username
 									WHERE c.CustId IS NULL
 									FOR XML PATH('')),1,2,'')
