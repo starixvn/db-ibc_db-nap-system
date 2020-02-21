@@ -21,10 +21,10 @@ AS
 BEGIN	
 	IF @Mode = 1
 	BEGIN
-		SELECT ReasonID, ReasonName
+		SELECT r.ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason r WITH(NOLOCK)
 			INNER JOIN ProblemAccountReasonAction ra WITH (NOLOCK) ON r.ReasonID = ra.ReasonID
-		WHERE ReasonID > 100
+		WHERE r.ReasonID > 100
 			AND IsCredit = 1
 			AND ra.ActionID = @ActionId
 		ORDER BY ReasonID
