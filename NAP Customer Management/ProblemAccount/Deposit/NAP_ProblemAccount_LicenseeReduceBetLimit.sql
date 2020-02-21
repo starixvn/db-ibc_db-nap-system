@@ -25,7 +25,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
-	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @Old_MaxBet MONEY, @Old_MaxPerEvent MONEY
+	DECLARE @CustId INT, @UserName NVARCHAR(50), @Old_MaxBet MONEY, @Old_MaxPerEvent MONEY
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, site VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 
 	SET	@startRun = GETDATE()
@@ -61,7 +61,7 @@ BEGIN
 	UPDATE pa 
 	SET pa.MaxBet = @MaxBet,
 		pa.MaxPerEvent = @MaxPerEvent
-	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
+	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
 	-- Write log

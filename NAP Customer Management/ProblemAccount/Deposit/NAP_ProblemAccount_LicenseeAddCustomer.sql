@@ -2,6 +2,7 @@
 ALTER PROCEDURE [dbo].[NAP_ProblemAccount_LicenseeAddCustomer]
 	@CustomerList	VARCHAR(MAX),	
 	@ReasonId		TINYINT,
+	@ActionId		TINYINT,
 	@Comment		NVARCHAR(300) = '',
 
 	@UserID			INT,
@@ -29,6 +30,7 @@ BEGIN
 			@CustNumber INT, 
 			@today DATE, 
 			@ReasonName VARCHAR(100),
+			@ActionName VARCHAR(100),
 			@MaxBet MONEY,
 			@MaxPerEvent MONEY
 			
@@ -75,11 +77,18 @@ BEGIN
 
 	IF @CustNumber > 100
     BEGIN
-	   SELECT @ErrCode = 103, @ErrMsg = 'The function can only mark up to 100 accounts per request.'
-	   RETURN
+		SELECT @ErrCode = 103, @ErrMsg = 'The function can only mark up to 100 accounts per request.'
+		RETURN
     END	
+	
+	IF NOT EXISTS(SELECT 1 FROM ProblemAccountReasonAction WHERE ActionId = @ActionId AND ReasonID = @ReasonID)
+	BEGIN
+		SELECT @ErrCode = 104, @ErrMsg = 'The selected reason is not available for this preventive action.'
+		RETURN
+	END
 	----END: Validattion-------------------------------------------------	
 	SELECT @ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @ReasonId
+	SELECT @ActionName = ActionName FROM ProblemAccountAction WITH(NOLOCK) WHERE ActionID = @ActionID
 	
 	SELECT @today = GETDATE()
 	
@@ -90,8 +99,8 @@ BEGIN
 		INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
 	WHERE ExchangeDate = @today	
 		
-	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)	
-	SELECT CustId, 0, @ReasonID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0
+	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)	
+	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0
 	FROM @tmpCust t
 	WHERE custid IS NOT NULL
 	
@@ -114,9 +123,10 @@ BEGIN
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
 							+ ' Reason="' + @ReasonName + '"'
+							+ ' Action="' + @ActionName + '"'
 							+ ' Comment="' + @Comment + '"'
-							+ ' MaxBet="'+COALESCE(CAST(@MaxBet AS VARCHAR(10)), SPACE(1))+'"'
-							+ ' MaxPerEvent="'+COALESCE(CAST(@MaxPerEvent AS VARCHAR(10)), SPACE(1))+'"'
+							+ ' MaxBet="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxBet AS VARCHAR(10))), SPACE(1))+'"'
+							+ ' MaxPerEvent="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1))+'"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 	
