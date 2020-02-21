@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE NAP_ProblemAccount_LicenseeAccountReasonUpd_xtest
+ALTER PROCEDURE NAP_ProblemAccount_LicenseeAccountReasonUpd
 	@CustomerList	VARCHAR(MAX),
 	@ActionId		TINYINT,
 	@ReasonID		TINYINT,
