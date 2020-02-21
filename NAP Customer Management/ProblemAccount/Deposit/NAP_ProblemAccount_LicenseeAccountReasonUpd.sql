@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE NAP_ProblemAccount_LicenseeAccountReasonUpd
+ALTER PROCEDURE NAP_ProblemAccount_LicenseeAccountReasonUpd_xtest
 	@CustomerList	VARCHAR(MAX),
 	@ActionId		TINYINT,
 	@ReasonID		TINYINT,
@@ -65,11 +65,11 @@ BEGIN
 	
 	--get old ActionID & ReasonID
 	UPDATE t 
-	SET t.ActionName = pr.ActionName,
-		t.ReasonName = pa.ReasonName,
-		t.Comment = pa.Comment
+	SET t.ReasonName = pr.ReasonName,
+		t.ActionName = pa.ActionName,
+		t.Comment = p.Comment
 	FROM dbo.ProblemAccount p WITH (ROWLOCK)
-		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
+		INNER JOIN @tmpCust t ON t.CustId = p.CustId
 		INNER JOIN ProblemAccountReason pr WITH(NOLOCK) ON p.ReasonID = pr.ReasonID
 		INNER JOIN ProblemAccountAction pa WITH(NOLOCK) ON p.ActionID = pa.ActionID
 		
