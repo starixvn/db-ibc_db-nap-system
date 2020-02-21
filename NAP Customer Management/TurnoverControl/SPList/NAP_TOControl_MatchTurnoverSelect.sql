@@ -152,7 +152,9 @@ BEGIN
 				CROSS APPLY (
 							SELECT ProfileID, GroupName
 							FROM TOControl_Profile WITH (NOLOCK)
-							WHERE Sporttype = @SportType
+							WHERE Sporttype = CASE WHEN @SportType = 1 THEN 1
+												WHEN @Sporttype > 1 AND @SportType <= 99 THEN 99 
+												END
 							)p
 		) pf
 		OUTER APPLY (
