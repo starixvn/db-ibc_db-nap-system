@@ -1,6 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE NAP_ProblemAccount_LicenseePreventiveActionSel	
+ALTER PROCEDURE NAP_ProblemAccount_LicenseeActionReasonSel	
 AS
 /*
 	Created: Johnson
