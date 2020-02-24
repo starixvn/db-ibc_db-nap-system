@@ -39,6 +39,8 @@ BEGIN
 			@endRun		DATETIME,
 			@duration	INT,
 			@FunctionKey NVARCHAR(50)
+
+	DECLARE @MaxTurnover_Log VARCHAR(1000)
 			
 	DECLARE @roleid INT, @iDoc INT
 	SET	@startRun = GETDATE()
@@ -59,7 +61,7 @@ BEGIN
 	
 	SELECT @CustID = CustID, @roleid = RoleID FROM dbo.CustInfo WITH(NOLOCK) WHERE UserName = @UserName
 
-	IF (@CustID IS NULL OR @roleid = 1) AND @IsGroupHeadline = 0
+	IF ((@CustID IS NULL OR @roleid = 1) AND @IsGroupHeadline = 0) OR @roleid = 0
 	BEGIN
 		SELECT @ErrCode = 101, @ErrMsg = 'Invalid Super/Master/Agent.'
 		RETURN
@@ -142,10 +144,17 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond, @startRun, @endRun)
 
+	SET @MaxTurnover_Log = (
+						SELECT STUFF((SELECT ' ' + CAST(REPLACE(pf.ProfileName, ' ', '') AS VARCHAR(50)) + '="' + CAST(m.MaxTurnover AS VARCHAR(50)) + '"'
+						FROM #tmpMaxTurnover m
+							INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON m.ProfileID = pf.ProfileID
+						FOR XML PATH('')),1,1,'')
+					)
+
 	DECLARE @LogData NVARCHAR(4000)
 	SELECT @LogData = '<NAP_TOControl_GlobalSettingInsert CustID="' + COALESCE(CAST(@CustID as varchar(50)),space(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'MaxTuronver="' + COALESCE(CAST(@GlobalSetting AS VARCHAR(MAX)), SPACE(1)) + '" ' 
+					+ COALESCE(CAST(@MaxTurnover_Log AS VARCHAR(MAX)), SPACE(1)) + ' ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(50)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '

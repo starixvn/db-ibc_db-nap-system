@@ -36,7 +36,7 @@ BEGIN
 
 	DECLARE @MatchList TABLE(matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 	
-	DECLARE @MaxTurnover_Old MONEY, @AffectedMatch VARCHAR(1000) = ''
+	DECLARE @MaxTurnover_Old MONEY, @AffectedMatch VARCHAR(1000) = '', @ProfileName VARCHAR(50)
 	DECLARE @PercentageUsed MONEY
 	DECLARE @startRun	DATETIME,
 			@endRun		DATETIME,
@@ -83,8 +83,10 @@ BEGIN
 			 )
 
 	SELECT @MaxTurnover_Old = t.MaxTurnover 
+		, @ProfileName = pf.ProfileName
 	FROM dbo.TOControl_Setting t WITH(NOLOCK)
 		INNER JOIN @MatchList m ON t.matchid = m.matchid
+		INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
 	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadLine AND t.ProfileID = @ProfileID
 
 	SELECT @AffectedMatch = @AffectedMatch + CAST(t.MatchID AS VARCHAR(20)) + ',' 
@@ -134,7 +136,7 @@ BEGIN
 
 	SELECT @LogData = '<NAP_TOControl_GlobalSettingUpdate CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ REPLACE(@ProfileName, ' ', '') + '="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" '  
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'AffectedMatch="' + COALESCE(@AffectedMatch,space(1)) + '" '
@@ -143,7 +145,7 @@ BEGIN
 	-- For old value
 	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingUpdate CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ REPLACE(@ProfileName, ' ', '') + '="' + COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'AffectedMatch="' + COALESCE(@AffectedMatch,space(1)) + '" '

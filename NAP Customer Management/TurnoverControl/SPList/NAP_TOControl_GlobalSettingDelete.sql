@@ -33,7 +33,7 @@ BEGIN
 
 	DECLARE @MatchList TABLE(matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
-	DECLARE @MaxTurnover_Old MONEY, @AffectedMatch VARCHAR(1000)=''
+	DECLARE @MaxTurnover_Old VARCHAR(MAX), @AffectedMatch VARCHAR(1000)=''
 	DECLARE @startRun	DATETIME,
 			@endRun		DATETIME,
 			@duration	INT,
@@ -64,10 +64,16 @@ BEGIN
 				(@SportType = 99 AND sporttype > 1 AND sporttype <=99 )
 			 )
 
-	SELECT @MaxTurnover_Old = t.MaxTurnover 
-	FROM dbo.TOControl_Setting t WITH(NOLOCK) 
-		INNER JOIN @MatchList m ON t.matchid = m.matchid
-	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
+	SELECT @MaxTurnover_Old = (
+							SELECT STUFF((SELECT ' ' + CAST(REPLACE(pf.ProfileName, ' ', '') AS VARCHAR(50)) + '="' + CAST(t.MaxTurnover AS VARCHAR(50)) + '"'
+							FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK) 
+								INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
+							WHERE t.CustID = @CustID
+								AND pf.Sporttype = @SportType
+								AND t.IsGroupHeadLine = @IsGroupHeadline 
+								AND t.ProfileID IS NOT NULL
+							FOR XML PATH('')),1,1,'')
+						)
 	
 	SELECT @AffectedMatch = @AffectedMatch + CAST(t.MatchID AS VARCHAR(20)) + ',' 
 	FROM dbo.TOControl_Setting t WITH(NOLOCK) 
@@ -93,7 +99,7 @@ BEGIN
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)
 	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingDelete CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(MAX)), SPACE(1)) + ' '
 					+ 'IsGroupHeadLine="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'AffectedMatch="' + COALESCE(@AffectedMatch,space(1)) + '" '
