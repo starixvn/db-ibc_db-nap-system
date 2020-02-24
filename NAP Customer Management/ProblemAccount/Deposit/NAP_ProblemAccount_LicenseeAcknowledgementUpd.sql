@@ -25,7 +25,7 @@ BEGIN
 	
 	SELECT @IsAcknowledgement_Old = ISNULL(IsAcknowledgement,0),
 		@Licensee = LicenseeName
-	FROM Licensee WITH(NOLOCK)
+	FROM Licensees WITH(NOLOCK)
 	WHERE LicenseeID = @LicenseeID
 	
 	IF @@Rowcount = 0
@@ -38,7 +38,7 @@ BEGIN
 	IF @IsAcknowledgement = @IsAcknowledgement_Old
 		RETURN
 		
-	UPDATE Licensee WITH(UPDLOCK,ROWLOCK)
+	UPDATE Licensees WITH(UPDLOCK,ROWLOCK)
 	SET IsAcknowledgement = @IsAcknowledgement
 	WHERE LicenseeID = @LicenseeID
 	

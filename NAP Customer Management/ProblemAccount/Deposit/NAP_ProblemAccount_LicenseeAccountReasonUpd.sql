@@ -120,7 +120,7 @@ BEGIN
 		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 			@UserId				= @UserId,
 			@CustId				= @CustId,
-			@ActionId			= 31632,
+			@ActionId			= 31631,
 			@TrackingValue		= @LogDataNew,
 			@TrackingValue2		= @LogDataOld,
 			@Duration			= @Duration

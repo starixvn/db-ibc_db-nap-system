@@ -13,7 +13,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	SELECT LicenseeID,LicenseeName,IsActive, IsAcknowledgement
+	SELECT LicenseeID,LicenseeName,IsActive, ISNULL(IsAcknowledgement,0) IsAcknowledgement
 	FROM Licensees WITH(NOLOCK)
 	ORDER BY IsActive DESC, LicenseeName ASC
 END
