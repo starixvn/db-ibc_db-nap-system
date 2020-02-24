@@ -15,10 +15,8 @@ AS
 	
 */
 BEGIN	
-	SELECT r.ReasonID, ReasonName, a.ActionID, a.ActionName
+	SELECT r.ReasonID, ReasonName
 	FROM dbo.ProblemAccountReason r WITH(NOLOCK)
-		INNER JOIN ProblemAccountReasonAction ra WITH (NOLOCK) ON r.ReasonID = ra.ReasonID
-		INNER JOIN dbo.ProblemAccountAction a WITH (NOLOCK) ON a.ActionID = ra.ActionID
 	WHERE IsCredit = 1
 	ORDER BY ReasonID
 END
