@@ -1,17 +1,17 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Nap_ProblemAccount_AddCustomer]
-	@CustomerList	VARCHAR(MAX),
-	@RoleId			TINYINT,
-	@ReasonId		TINYINT,
-	@ActionId		TINYINT,
-	@Comment		NVARCHAR(300) = '',
+	@CustomerList		VARCHAR(MAX),
+	@RoleId				TINYINT,
+	@ReasonId			TINYINT,
+	@PreventActionId	TINYINT,
+	@Comment			NVARCHAR(300) = '',
 
-	@UserID			INT,
-	@IP				VARCHAR(15),
-	@ErrCode		INT = 0 OUTPUT,
-	@ErrMsg			NVARCHAR(MAX) = '' OUTPUT,
-	@SuccessList	VARCHAR(MAX) = '' OUTPUT, 
-	@FailList		VARCHAR(MAX) = '' OUTPUT
+	@UserID				INT,
+	@IP					VARCHAR(15),
+	@ErrCode			INT = 0 OUTPUT,
+	@ErrMsg				NVARCHAR(MAX) = '' OUTPUT,
+	@SuccessList		VARCHAR(MAX) = '' OUTPUT, 
+	@FailList			VARCHAR(MAX) = '' OUTPUT
 AS
 /*
 	Created: Elodie
@@ -33,7 +33,7 @@ BEGIN
 	DECLARE @tmpList TABLE (Username VARCHAR(MAX))	
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))
 
-	IF NOT EXISTS (SELECT 1 FROM dbo.ProblemAccountReasonAction WITH (NOLOCK) WHERE ReasonId = @ReasonId AND ActionId = @ActionId)
+	IF NOT EXISTS (SELECT 1 FROM dbo.ProblemAccountReasonAction WITH (NOLOCK) WHERE ReasonId = @ReasonId AND ActionId = @PreventActionId)
 	BEGIN
 	   SELECT @ErrCode = 100, @ErrMsg = 'The selected reason is not available for this preventive action'   
 	   RETURN
@@ -112,6 +112,7 @@ BEGIN
 			@CustId = @CustId,
 			@RoleId = @RoleId,
 			@ReasonId = @ReasonId,
+			@PreventActionId = @PreventActionId,
 			@Comment = @Comment,
 			@Action = 'MarkProblem',
 			@IsSuccess = @IsSuccess OUTPUT,
