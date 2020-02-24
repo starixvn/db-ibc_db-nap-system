@@ -178,7 +178,9 @@ BEGIN
 					@Duration			= @Duration
 			END							
 		END				
-		
+				
+		END
+		*/
 		UPDATE s
 		SET s.VValue = CAST(@MaxID AS VARCHAR(10))
 		FROM DBACC.bodb02.dbo.SystemSettings s WITH (ROWLOCK) 
