@@ -65,7 +65,7 @@ BEGIN
 			 )
 
 	SELECT @MaxTurnover_Old = (
-							SELECT STUFF((SELECT ' ' + CAST(REPLACE(pf.ProfileName, ' ', '') AS VARCHAR(50)) + '="' + CAST(t.MaxTurnover AS VARCHAR(50)) + '"'
+							SELECT STUFF((SELECT ',' + CAST(pf.ProfileName AS VARCHAR(50)) + '="' + CAST(t.MaxTurnover AS VARCHAR(50)) + '"'
 							FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK) 
 								INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
 							WHERE t.CustID = @CustID
@@ -94,7 +94,8 @@ BEGIN
 	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
 
 	DECLARE @TrackingValue2 NVARCHAR(4000)
-
+	SELECT @MaxTurnover_Old = REPLACE(REPLACE(REPLACE(@MaxTurnover_Old , '&amp;',''), ' ', ''), ',', ' ')
+	
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)
 	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingDelete CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					

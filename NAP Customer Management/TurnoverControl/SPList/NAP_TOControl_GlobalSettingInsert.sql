@@ -145,11 +145,12 @@ BEGIN
 	SET @duration  = DATEDIFF(millisecond, @startRun, @endRun)
 
 	SET @MaxTurnover_Log = (
-						SELECT STUFF((SELECT ' ' + CAST(REPLACE(pf.ProfileName, ' ', '') AS VARCHAR(50)) + '="' + CAST(m.MaxTurnover AS VARCHAR(50)) + '"'
+						SELECT STUFF((SELECT ',' + CAST(pf.ProfileName AS VARCHAR(50)) + '="' + CAST(m.MaxTurnover AS VARCHAR(50)) + '"'
 						FROM #tmpMaxTurnover m
 							INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON m.ProfileID = pf.ProfileID
 						FOR XML PATH('')),1,1,'')
 					)
+	SELECT @MaxTurnover_Log = REPLACE(REPLACE(REPLACE(@MaxTurnover_Log , '&amp;',''), ' ', ''), ',', ' ')
 
 	DECLARE @LogData NVARCHAR(4000)
 	SELECT @LogData = '<NAP_TOControl_GlobalSettingInsert CustID="' + COALESCE(CAST(@CustID as varchar(50)),space(1)) + '" ' 					

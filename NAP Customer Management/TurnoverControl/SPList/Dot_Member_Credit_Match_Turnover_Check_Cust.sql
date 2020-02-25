@@ -43,13 +43,18 @@ BEGIN
 	SELECT @NewMatchTurnover = -1, @MaxMatchTurnover_Setting = -1
 	SELECT @StopFlag = 0
 	
-	SELECT @ProfileID =  ProfileID
-	FROM   dbo.TOControl_ProfileSetting WITH(NOLOCK)
-	WHERE  Sporttype = @Sporttype AND
-		   (Bettype = @Bettype OR (NOT EXISTS (SELECT TOP(1) 1 
-										    	FROM TOControl_ProfileSetting pf WITH(NOLOCK) 
-										    	WHERE pf.Sporttype = @Sporttype AND pf.Bettype = @Bettype AND pf.liveindicator = @liveindicator) AND Bettype = 0)) 
-	     	AND liveindicator = @liveindicator
+	SELECT @ProfileID =  p.ProfileID
+	FROM   dbo.TOControl_ProfileSetting pf WITH(NOLOCK)
+	CROSS APPLY (SELECT CASE WHEN @Sporttype = 1 THEN 1 
+								 WHEN @Sporttype > 1 AND @Sporttype <= 99 THEN 99
+							END as sporttype) AS spt
+	CROSS APPLY (SELECT TOP 1 profileID
+				FROM dbo.TOControl_ProfileSetting t2 WITH (NOLOCK)
+				WHERE  t2.Sporttype = spt.sporttype 
+					AND t2.liveindicator = @liveindicator
+					AND t2.bettype IN (@Bettype,0)
+				ORDER BY t2.bettype DESC		 
+			)AS p
 	
 	-- Get Extra PT Info: 
 	-- Sportbook: Categorized by SubProduct =  '' , 'MG-SuperLive', 'MuayThai'. They are the same value. 
