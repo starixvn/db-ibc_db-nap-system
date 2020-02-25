@@ -11,9 +11,9 @@ ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 	@eventdate			DATETIME,
 	@actualrate			FLOAT,
 	@ExchangeID			INT,
-	@Sporttype          SMALLINT,
-	@Bettype            SMALLINT,
-	@liveindicator      BIT
+	@Sporttype          SMALLINT = NULL,
+	@Bettype            SMALLINT = NULL,
+	@liveindicator      BIT = NULL
 )	
 AS
 /*
