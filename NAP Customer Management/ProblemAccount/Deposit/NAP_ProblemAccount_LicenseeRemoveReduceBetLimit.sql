@@ -55,7 +55,7 @@ BEGIN
 
 			IF ISNULL(@WarningList,'') <> '' 
 			BEGIN
-			   SELECT @ErrCode = 101, @ErrMsg = 'The following account(s) don''t have their bet limit reduced: '+ @WarningList
+			   SELECT @ErrCode = 101, @ErrMsg = @WarningList
 			   RETURN
 			END
 		END
