@@ -3,6 +3,8 @@
 ALTER PROCEDURE NAP_ProblemAccount_LicenseeAcknowledgementUpd
 	@LicenseeID INT,
 	@IsAcknowledgement BIT,
+	@isConfirmed BIT = 0,
+	
 	@UserID 	INT,
 	@IP			VARCHAR(15) = '',	
 	@ErrCode	INT = 0 OUTPUT,
@@ -37,7 +39,21 @@ BEGIN
 	
 	IF @IsAcknowledgement = @IsAcknowledgement_Old
 		RETURN
-		
+	
+	IF @IsAcknowledgement = 0
+		AND @isConfirmed = 0
+		AND EXISTS (SELECT 1 
+				FROM CUSTDB.dbo.ProblemAccount p WITH(NOLOCK)
+					INNER JOIN CUSTDB.dbo.customer c WITH(NOLOCK) ON p.custid = c.custid
+				WHERE c.srecommend IN (SELECT custid FROM CUSTDB.dbo.Dep_CustSuper WITH(NOLOCK) WHERE site = @Licensee)
+					AND MaxBet IS NOT NULL
+			)
+	BEGIN
+		SELECT @ErrCode = 101,
+			@ErrMsg = ''--confirmed msg handle by web
+		RETURN;
+	END
+	
 	UPDATE Licensees WITH(UPDLOCK,ROWLOCK)
 	SET IsAcknowledgement = @IsAcknowledgement
 	WHERE LicenseeID = @LicenseeID

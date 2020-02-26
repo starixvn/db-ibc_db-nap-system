@@ -51,7 +51,7 @@ BEGIN
 	IF @currency = 0	
 		SELECT @currency = NULL
 	IF @ActionID = 0
-		SELECT @ActionID = NULL
+		SELECT @ActionID = NULL	
 		
 	INSERT INTO @tmpReason(reasonID)
 	SELECT val
@@ -85,7 +85,8 @@ BEGIN
 		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate)
 		SELECT custid,srecommend,isVip,ActionID,MarkDate
 		FROM t
-		WHERE isVip = ISNULL(@Vip,isVip)
+		WHERE isVip = CASE WHEN @Vip = 1 THEN 1
+							WHEN @Vip = 2 THEN 0 ELSE isVip END
 			AND ActionID = ISNULL(@ActionID,ActionID)
 			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 2 AND MaxBet IS NULL THEN 1
@@ -106,7 +107,8 @@ BEGIN
 		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate)
 		SELECT custid,srecommend,isVip,ActionID,MarkDate
 		FROM t
-		WHERE isVip = ISNULL(@Vip,isVip)
+		WHERE isVip = CASE WHEN @Vip = 1 THEN 1
+							WHEN @Vip = 2 THEN 0 ELSE isVip END
 			AND ActionID = ISNULL(@ActionID,ActionID)
 			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 2 AND MaxBet IS NULL THEN 1
@@ -166,7 +168,8 @@ BEGIN
 		LEFT JOIN ProblemAccountAction a WITH(NOLOCK) ON rs.ActionID = a.ActionID
 		LEFT JOIN custinfo inform1 WITH(NOLOCK) ON p.Informed1By = inform1.custid
 		LEFT JOIN custinfo inform2 WITH(NOLOCK) ON p.Informed2By = inform2.custid
-		
+	ORDER BY rn ASC
+	
 	SELECT rs.rn, c.custid, c.CreatedDate, pr.ReasonName
 	FROM @Result rs
 		INNER JOIN #tblCustReason c ON rs.custid = c.custid
