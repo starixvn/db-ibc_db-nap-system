@@ -190,7 +190,7 @@ BEGIN
 			SET t.matchid = b.matchid
 			FROM #tmpCustVoidTicket t
 				INNER JOIN DBACC.bodb02.dbo.bettrans b WITH(NOLOCK) ON t.transid = b.transid
-			WHERE t.machid = 0
+			WHERE t.matchid = 0
 				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
 			
 			UPDATE t
@@ -281,11 +281,11 @@ BEGIN
 				p.matchid2 = CASE WHEN p.matchid1 IS NOT NULL AND p.matchid2 IS NULL THEN t1.matchid 
 									WHEN p.matchid1 IS NULL AND p.matchid2 IS NULL AND t2.matchid IS NOT NULL THEN t1.matchid 
 									ELSE p.matchid2 END
-			OUTPUT p.custid, INSERTED.matchid1, INSERTED.matchid2
-			INTO @tmpMatchUpdate
-			FROM ProblemAccount p 
-				INNER JOIN #tmpCustMatch t1 ON p.custid = t1.custid AND t.rn = 1
-				LEFT JOIN #tmpCustMatch t2 ON p.custid = t2.custid AND t.rn = 2
+			OUTPUT INSERTED.custid, INSERTED.matchid1, INSERTED.matchid2
+			INTO @tmpMatchUpdate(custid,matchid1,matchid2)
+			FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
+				INNER JOIN #tmpCustMatch t1 ON p.custid = t1.custid AND t1.rn = 1
+				LEFT JOIN #tmpCustMatch t2 ON p.custid = t2.custid AND t2.rn = 2
 			WHERE p.matchid1 IS NULL OR p.matchid2 IS NULL	
 			
 			--set isMarkVoid = 1 for account has 2 matches voided
