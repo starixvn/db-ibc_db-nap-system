@@ -3,7 +3,7 @@
 ALTER PROCEDURE NAP_ProblemAccount_LicenseeReduceBetLimit
 	@CustomerList	VARCHAR(MAX),
 	@MaxBet			MONEY,
-	@MaxPerEvent	MONEY,
+	@MaxPerMatch	MONEY,
 
 	@UserID			INT,
 	@IP				VARCHAR(15),
@@ -60,7 +60,7 @@ BEGIN
 	--update new bet limit
 	UPDATE pa 
 	SET pa.MaxBet = @MaxBet,
-		pa.MaxPerEvent = @MaxPerEvent
+		pa.MaxPerEvent = @MaxPerMatch
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
@@ -86,7 +86,7 @@ BEGIN
 		BEGIN
 			SELECT  @LogDataOld = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPE="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' MPM="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
 							+ ' Max="' + dbo.f_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
@@ -94,7 +94,7 @@ BEGIN
 
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPE="' + dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' MPM="' + dbo.f_FomatNumber (CAST (@MaxPerMatch AS VARCHAR(50))) + '"'
 							+ ' Max="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'

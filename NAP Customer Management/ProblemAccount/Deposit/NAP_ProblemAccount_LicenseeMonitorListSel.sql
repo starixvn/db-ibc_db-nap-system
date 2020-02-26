@@ -1,7 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 
-
-ALTER PROCEDURE NAP_ProblemAccount_LicenseeMonitorListSel
+ALTER PROCEDURE [dbo].[NAP_ProblemAccount_LicenseeMonitorListSel]
 	@FromDate 	DATETIME,
 	@ToDate 	DATETIME,
 	@Type		TINYINT = 0,
@@ -36,7 +35,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	CREATE TABLE #tblCust (custid INT, srecommend INT, isVip BIT,ActionID TINYINT, AbnormalBetNumber INT)
+	CREATE TABLE #tblCust (custid INT, srecommend INT, isVip BIT, MarkDate DATETIME, ActionID TINYINT, AbnormalBetNumber INT)
 	CREATE TABLE #tblCustReason (CustId INT, CreatedDate DATETIME, ReasonId INT, AbnormalBetNumber INT)
 	
 	DECLARE @tmpReason TABLE (reasonID INT)
@@ -62,7 +61,7 @@ BEGIN
 	SELECT LicenseeID,LicenseeName, ISNULL(isAcknowledgement,0)
 	FROM bodb_licensee.dbo.Licensees WITH(NOLOCK)
 	WHERE LicenseeName LIKE '%'+ISNULL(@Licensee,LicenseeName) + '%'
-		AND isAcknowledgement = ISNULL(@Type,isAcknowledgement)
+		AND ISNULL(isAcknowledgement,0) = ISNULL(@Type,ISNULL(isAcknowledgement,0))
 		
 	INSERT INTO @tmpSuper (custid,site)
 	SELECT custid,site
@@ -74,7 +73,7 @@ BEGIN
 	BEGIN
 		;WITH t as (
 		SELECT c.custid,c.srecommend, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
-			p.MaxBet,ActionID
+			p.MaxBet,ActionID,p.CreatedDate as MarkDate
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 			LEFT JOIN Dep_CustVip d WITH(NOLOCK) ON c.custid = d.custid
@@ -83,8 +82,8 @@ BEGIN
 			AND p.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND roleid = 1
 		)
-		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID)
-		SELECT custid,srecommend,isVip,ActionID
+		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate)
+		SELECT custid,srecommend,isVip,ActionID,MarkDate
 		FROM t
 		WHERE isVip = ISNULL(@Vip,isVip)
 			AND ActionID = ISNULL(@ActionID,ActionID)
@@ -96,7 +95,7 @@ BEGIN
 	BEGIN
 		;WITH t as (
 		SELECT c.custid,c.srecommend,CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
-			p.MaxBet,p.ActionID
+			p.MaxBet,p.ActionID,p.CreatedDate as MarkDate
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 			LEFT JOIN Dep_CustVip d WITH(NOLOCK) ON c.custid = d.custid
@@ -104,8 +103,8 @@ BEGIN
 			AND p.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND roleid = 1
 		)
-		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID)
-		SELECT custid,srecommend,isVip,ActionID
+		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate)
+		SELECT custid,srecommend,isVip,ActionID,MarkDate
 		FROM t
 		WHERE isVip = ISNULL(@Vip,isVip)
 			AND ActionID = ISNULL(@ActionID,ActionID)
@@ -146,7 +145,7 @@ BEGIN
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 	
 	;WITH t AS (
-	SELECT c.custid,c.isVip,c.ActionID,c.AbnormalBetNumber,s.site, ROW_NUMBER() OVER (ORDER BY s.site ASC, t.MarkDate DESC) rn
+	SELECT c.custid,c.isVip,c.ActionID,c.AbnormalBetNumber,s.site, ROW_NUMBER() OVER (ORDER BY s.site ASC, c.MarkDate DESC) rn
 	FROM #tblCust c
 		INNER JOIN @tmpSuper s ON c.srecommend = s.custid
 	)
@@ -155,7 +154,7 @@ BEGIN
 	FROM t 		
 	WHERE rn BETWEEN @RowStart AND @RowEnd
 	
-	SELECT rs.site, l.isAcknowledgement, c.username, 
+	SELECT rs.custid, rs.site, l.isAcknowledgement, c.username, 
 		SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS username2,
 		e.currency, rs.isVip, a.ActionName, p.MaxBet, p.MaxPerEvent as MaxPerMatch, p.CreatedDate as MarkDate, p.comment,
 		inform1.username as inform1, inform2.username as inform2, rs.AbnormalBetNumber
@@ -174,5 +173,5 @@ BEGIN
 		INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = c.ReasonId
 	ORDER BY rn ASC, custid, CreatedDate DESC 	
 END
+
 GO
-	

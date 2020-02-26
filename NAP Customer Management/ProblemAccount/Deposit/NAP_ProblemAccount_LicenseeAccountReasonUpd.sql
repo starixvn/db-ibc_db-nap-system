@@ -76,7 +76,8 @@ BEGIN
 	--update new Action & Reason
 	UPDATE pa 
 	SET pa.ActionID = @ActionID,
-		pa.ReasonID = @ReasonID
+		pa.ReasonID = @ReasonID,
+		pa.Comment = @Comment		
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
@@ -84,7 +85,7 @@ BEGIN
 	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 	
 	SELECT @ActionName = ActionName FROM ProblemAccountAction WITH(NOLOCK) WHERE ActionID = @ActionID
-	SELECT @ReasonID = ReasonName FROM ProblemAccountReason WITH(NOLOCK) WHERE ReasonID = @ReasonID
+	SELECT @ReasonName = ReasonName FROM ProblemAccountReason WITH(NOLOCK) WHERE ReasonID = @ReasonID
 		
 	SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 	
