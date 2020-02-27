@@ -23,7 +23,7 @@ AS
 
 	Revisions:	
 		- 20190930@Johnson: initial sp [redmine:#117714]
-	
+		- 20200227@Johnson: exclude finance accounts [redmine:#129228]
 	Parameter's Explanation:
 		-@AgentStatus= 1:inactive, 2: suspended, 3:view only, 4:active  
 		-@MonitorPT= 0: NO , 1: yes, 2: all
@@ -74,6 +74,7 @@ BEGIN
 				)t
 		WHERE c.roleid = 2
 			AND c.site = 'CN88'
+			AND c.custid NOT IN (SELECT custid FROM CustAgent WITH(NOLOCK) WHERE IsInternal = 1)
 	END
 	ELSE 
 	BEGIN
@@ -94,6 +95,7 @@ BEGIN
 					)t
 			WHERE c.roleid = 2
 				AND srecommend = @custid
+				AND c.custid NOT IN (SELECT custid FROM CustAgent WITH(NOLOCK) WHERE IsInternal = 1)
 		END	
 		ELSE IF @roleid = 3
 		BEGIN
@@ -107,6 +109,7 @@ BEGIN
 					)t
 			WHERE c.roleid = 2
 				AND mrecommend = @custid
+				AND c.custid NOT IN (SELECT custid FROM CustAgent WITH(NOLOCK) WHERE IsInternal = 1)
 		END
 		ELSE IF @roleid = 2
 		BEGIN
@@ -119,6 +122,7 @@ BEGIN
 								AND ISNULL(ca.isMonitorPT,0) = ISNULL(@MonitorPT,ISNULL(ca.isMonitorPT,0))
 					)t
 			WHERE c.custid = @custid
+			AND c.custid NOT IN (SELECT custid FROM CustAgent WITH(NOLOCK) WHERE IsInternal = 1)
 		END
 			
 	END
