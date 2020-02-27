@@ -1,6 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="" viewers="" isFunction="0"></info>*/
 
-ALTER PROCEDURE NAP_ProblemAccount_AddAbnormalMember	
+ALTER PROCEDURE CS_ProblemAccount_AddAbnormalMember	
 AS
 /*
 	Created: Elodie
