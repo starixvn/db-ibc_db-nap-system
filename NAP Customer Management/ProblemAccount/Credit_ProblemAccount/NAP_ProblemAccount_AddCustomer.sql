@@ -48,7 +48,7 @@ BEGIN
 	FROM @tmpList t
 		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username		
 	WHERE c.site <> 'CN88' 
-		AND c.srecommend NOT IN (SELECT custid FROM dbo.Dep_CustSuper WITH (NOLOCK))
+		AND NOT EXISTS (SELECT custid FROM dbo.Dep_CustSuper WITH (NOLOCK) WHERE custid = c.srecommend)
 
 	----START: Validattion-------------------------------------------------
 	SELECT @WrongUserName = STUFF((SELECT ', '+ l.Username
