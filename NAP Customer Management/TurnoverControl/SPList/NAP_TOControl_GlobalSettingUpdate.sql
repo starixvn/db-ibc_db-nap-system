@@ -84,8 +84,7 @@ BEGIN
 
 	SELECT @MaxTurnover_Old = t.MaxTurnover 
 		, @ProfileName = pf.ProfileName
-	FROM dbo.TOControl_Setting t WITH(NOLOCK)
-		INNER JOIN @MatchList m ON t.matchid = m.matchid
+	FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK)
 		INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
 	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadLine AND t.ProfileID = @ProfileID
 

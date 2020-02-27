@@ -37,7 +37,8 @@ BEGIN
 			@endRun				DATETIME,
 			@duration			INT,
 			@MaxTurnover_old	MONEY,
-			@FunctionKey		NVARCHAR(50)
+			@FunctionKey		NVARCHAR(50),
+			@ProfileName		VARCHAR(50)
 	
 	DECLARE @SiteID INT
 	
@@ -60,9 +61,11 @@ BEGIN
 		RETURN
 	END
 
-	SELECT @MaxTurnover_old = MaxTurnover
-	FROM dbo.TOControl_Setting WITH (NOLOCK)
-	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
+	SELECT @MaxTurnover_old = t.MaxTurnover
+		 , @ProfileName = pf.ProfileName
+	FROM dbo.TOControl_Setting t WITH (NOLOCK)
+		INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
+	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID = @ProfileID
 	
 	SET @SiteID = (SELECT TOP 1 s.siteid
 					FROM dbo.Customer c WITH (NOLOCK) 
@@ -103,7 +106,7 @@ BEGIN
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'MatchID="' + COALESCE(CAST(@MatchID AS VARCHAR(10)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ @ProfileName + '="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" '
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1))+ '" />'
@@ -113,7 +116,7 @@ BEGIN
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'MatchID="' + COALESCE(CAST(@MatchID AS VARCHAR(10)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover_old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ @ProfileName + '="' + COALESCE(CAST(@MaxTurnover_old AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" '
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1))+ '" />'
