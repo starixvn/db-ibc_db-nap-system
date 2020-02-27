@@ -29,7 +29,7 @@ BEGIN
 
 	DECLARE @MatchList TABLE (matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
-	DECLARE @temp_ TABLE (custid INT, matchid INT, totalturnover MONEY, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT)
+	DECLARE @temp_ TABLE (rn INT, custid INT, matchid INT, totalturnover MONEY, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT)
 
 	DECLARE @NotifiedLevel INT
 	
@@ -57,8 +57,9 @@ BEGIN
 		GROUP BY t.CustID, t.matchid, t.IsGroupHeadLine
 	)
 	
-	INSERT INTO @temp_(custid, matchid, totalturnover,ProfileID, MaxTurnover, houseturnover, nlevel,IsGroupHeadline, TotalMemberTurnover, TotalHouseTurnover)
-	SELECT t.custid, t.matchid, t.totalturnover,t.ProfileID, t.MaxTurnover, t.houseturnover, nlevel,t.IsGroupHeadline, cs.TotalMemberTurnover, cs.TotalHouseTurnover
+	INSERT INTO @temp_(rn, custid, matchid, totalturnover,ProfileID, MaxTurnover, houseturnover, nlevel,IsGroupHeadline, TotalMemberTurnover, TotalHouseTurnover)
+	SELECT ROW_NUMBER() OVER(ORDER BY t.CustId, t.MatchId) AS rn 
+		, t.custid, t.matchid, t.totalturnover,t.ProfileID, t.MaxTurnover, t.houseturnover, nlevel,t.IsGroupHeadline, cs.TotalMemberTurnover, cs.TotalHouseTurnover
 	FROM cte_ t WITH(NOLOCK)
 	    INNER JOIN cte_sum cs WITH(NOLOCK) ON t.CustID = cs.CustID AND t.matchid = cs.matchid AND t.IsGroupHeadLine = cs.IsGroupHeadLine
 		CROSS APPLY (SELECT MAX(PercentValue) 
@@ -97,16 +98,17 @@ BEGIN
 		, pf.ProfileName
 		, rs.maxturnover
 		, rs.houseturnover
-		, pf.nlevel AS nlevel 
+		, t.nlevel AS nlevel 
 		, pf.TotalMemberTurnover
 		, pf.TotalHouseTurnover
 		, pf.IsGroupHeadline
 		, c.site AS SiteName 
 		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover*100/rs.MaxTurnover END AS PercentageUsed
+		, pf.rn AS DisplayGroup
 	FROM (
-			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, nlevel
+			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
 			FROM (
-					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, nlevel
+					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, rn
 						, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END AS sporttype
 					FROM @temp_ t
 				)ct
@@ -116,6 +118,7 @@ BEGIN
 							WHERE Sporttype = ct.sporttype
 							)p
 		)pf
+		LEFT JOIN @temp_ t ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID
 		OUTER APPLY (
 			SELECT t.CustID, t.matchid, t.ProfileID, t.IsGroupHeadLine, t.MaxTurnOver, t.HouseTurnover, t.TotalTurnOver
 			FROM TOControl_Setting t WITH (NOLOCK)
