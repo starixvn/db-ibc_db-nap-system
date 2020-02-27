@@ -102,6 +102,8 @@ BEGIN
 		
 	END
 
+	SELECT @ProfileName = REPLACE(REPLACE(REPLACE(@ProfileName , '&',''), ' ', ''), ',', ' ')
+
 	SELECT @LogData = '<NAP_TOControl_MatchTurnoverUpdate CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
