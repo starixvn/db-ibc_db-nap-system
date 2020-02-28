@@ -83,13 +83,13 @@ BEGIN
 								+ ' />'		
 		END
 
-		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-			@UserId				= @UserId,
-			@CustId				= @CustId,
-			@ActionId			= @ActionId,
-			@TrackingValue		= @LogDataNew,
-			@Duration			= @Duration,
-			@AffectedDownlines	= @SuccessDownlineList
+		--EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+		--	@UserId				= @UserId,
+		--	@CustId				= @CustId,
+		--	@ActionId			= @ActionId,
+		--	@TrackingValue		= @LogDataNew,
+		--	@Duration			= @Duration,
+		--	@AffectedDownlines	= @SuccessDownlineList
 	END	
 END
 GO

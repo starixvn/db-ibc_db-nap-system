@@ -134,13 +134,13 @@ BEGIN
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 	
-		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-			@UserId				= @UserId,
-			@CustId				= @CustId,
-			@ActionId			= 31613,
-			@TrackingValue		= @LogDataNew,
-			@Duration			= @Duration,
-			@AffectedDownlines	= @SuccessDownlineList
+		--EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+		--	@UserId				= @UserId,
+		--	@CustId				= @CustId,
+		--	@ActionId			= 31613,
+		--	@TrackingValue		= @LogDataNew,
+		--	@Duration			= @Duration,
+		--	@AffectedDownlines	= @SuccessDownlineList
 	END
 
 	IF ISNULL(@SuccessList,'') <> ''
