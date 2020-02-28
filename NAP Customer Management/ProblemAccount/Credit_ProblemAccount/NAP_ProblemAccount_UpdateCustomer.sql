@@ -86,7 +86,6 @@ BEGIN
 			@PreventActionId = @PreventActionId,
 			@Comment = @Comment,
 			@Action = 'UpdateProblemAcc',
-			@IsSuccess = @IsSuccess OUTPUT,
 			@SuccessDownlineList = @SuccessDownlineList OUTPUT
 
 		-- Write log
