@@ -61,7 +61,7 @@ BEGIN
 	
 	SELECT @CustID = CustID, @roleid = RoleID FROM dbo.CustInfo WITH(NOLOCK) WHERE UserName = @UserName
 
-	IF ((@CustID IS NULL OR @roleid = 1) AND @IsGroupHeadline = 0) OR @roleid = 0
+	IF ((@CustID IS NULL OR @roleid IN (1, 0)) AND @IsGroupHeadline = 0) OR @roleid = 0
 	BEGIN
 		SELECT @ErrCode = 101, @ErrMsg = 'Invalid Super/Master/Agent.'
 		RETURN
