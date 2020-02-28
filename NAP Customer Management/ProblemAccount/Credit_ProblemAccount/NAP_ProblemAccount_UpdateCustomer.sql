@@ -51,7 +51,7 @@ BEGIN
 	UPDATE t 
 	SET t.ReasonId = pa.ReasonId,
 		t.PreventActionId = pa.ActionId,
-		t.Comment = pa.Comment
+		t.Comment = pa.Comment	
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
@@ -59,7 +59,8 @@ BEGIN
 	SET pa.ProblemStatus = ProblemStatus | @SetBit1,
 		pa.ReasonId = @ReasonId,
 		pa.ActionId = @PreventActionId,
-		pa.Comment = @Comment
+		pa.Comment = @Comment,
+		pa.SubIssueTypeId = CASE WHEN @RoleId = 1 AND @ReasonId = 109 THEN 38 ELSE SubIssueTypeId END
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
