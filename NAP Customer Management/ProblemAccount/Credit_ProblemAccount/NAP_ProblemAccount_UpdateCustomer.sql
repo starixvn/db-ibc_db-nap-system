@@ -27,6 +27,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
+	DECLARE @SetBit1 INT, @Pos TINYINT
 	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @Old_ReasonId TINYINT, @Old_PreventActionId TINYINT, @Old_Comment	NVARCHAR(300)
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, ReasonId TINYINT, PreventActionId TINYINT, Comment NVARCHAR(300), IsFinished BIT DEFAULT(0))
 
@@ -37,6 +38,13 @@ BEGIN
     END
 
 	SET	@startRun = GETDATE()
+
+	SELECT	@Pos = CASE @RoleId WHEN 4 THEN 3
+								WHEN 3 THEN 2
+								WHEN 2 THEN 1
+								WHEN 1 THEN 0 END					
+			
+	SELECT @SetBit1 = POWER(2, @Pos)
 
 	INSERT INTO @tmpCust(Username, CustID)
 	SELECT ci.Username, ci.custid
@@ -51,7 +59,8 @@ BEGIN
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId
 
 	UPDATE pa 
-	SET pa.ReasonId = @ReasonId,
+	SET pa.ProblemStatus = ProblemStatus | @SetBit1,
+		pa.ReasonId = @ReasonId,
 		pa.ActionId = @PreventActionId,
 		pa.Comment = @Comment
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
@@ -69,6 +78,16 @@ BEGIN
 		WHERE isfinished = 0
 	
 		IF @@ROWCOUNT = 0 BREAK	
+
+		EXEC dbo.Acc_CustomerInfo_Execrep_12
+			@CustId = @CustId,
+			@RoleId = @RoleId,
+			@ReasonId = @ReasonId,
+			@PreventActionId = @PreventActionId,
+			@Comment = @Comment,
+			@Action = 'UpdateProblemAcc',
+			@IsSuccess = @IsSuccess OUTPUT,
+			@SuccessDownlineList = @SuccessDownlineList OUTPUT
 
 		-- Write log
 		DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
@@ -97,6 +116,7 @@ BEGIN
 		--	@TrackingValue		= @LogDataNew,
 		--	@TrackingValue2		= @LogDataOld,
 		--	@Duration			= @Duration
+		--	@AffectedDownlines	= @SuccessDownlineList
 	END	
 END
 GO
