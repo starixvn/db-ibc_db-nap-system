@@ -31,13 +31,7 @@ BEGIN
 	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName VARCHAR(30), @ReasonName VARCHAR(100)
 	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpList TABLE (Username VARCHAR(MAX))	
-	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))
-
-	IF NOT EXISTS (SELECT 1 FROM dbo.ProblemAccountReasonAction WITH (NOLOCK) WHERE ReasonId = @ReasonId AND ActionId = @PreventActionId)
-	BEGIN
-	   SELECT @ErrCode = 100, @ErrMsg = 'The selected reason is not available for this preventive action'   
-	   RETURN
-    END
+	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))	
 
 	INSERT INTO @tmpList(Username)
 	SELECT Val

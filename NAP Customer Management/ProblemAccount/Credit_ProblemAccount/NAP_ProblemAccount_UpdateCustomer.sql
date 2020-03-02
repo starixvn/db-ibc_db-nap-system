@@ -29,13 +29,7 @@ BEGIN
 	DECLARE	@startRun DATETIME, @duration INT
 	DECLARE @SetBit1 INT, @Pos TINYINT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @Old_ReasonId TINYINT, @Old_PreventActionId TINYINT, @Old_Comment	NVARCHAR(300)
-	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, ReasonId TINYINT, PreventActionId TINYINT, Comment NVARCHAR(300), IsFinished BIT DEFAULT(0))
-
-	IF NOT EXISTS (SELECT 1 FROM dbo.ProblemAccountReasonAction WITH (NOLOCK) WHERE ReasonId = @ReasonId AND ActionId = @PreventActionId)
-	BEGIN
-	   SELECT @ErrCode = 100, @ErrMsg = 'The selected reason is not available for this preventive action'   
-	   RETURN
-    END
+	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, ReasonId TINYINT, PreventActionId TINYINT, Comment NVARCHAR(300), IsFinished BIT DEFAULT(0))	
 
 	SET	@startRun = GETDATE()
 
