@@ -26,7 +26,7 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-	DECLARE	@startRun DATETIME, @duration INT
+	DECLARE	@startRun DATETIME, @duration INT, @SubIssueTypeId TINYINT
 	DECLARE @SetBit1 INT, @Pos TINYINT, @SuccessDownlineList VARCHAR(MAX) = '', @ReasonName VARCHAR(100), @ActionName VARCHAR(100), @Old_ReasonName VARCHAR(100), @Old_ActionName VARCHAR(100)
 	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @Old_ReasonId TINYINT, @Old_PreventActionId TINYINT, @Old_Comment	NVARCHAR(300)
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, ReasonId TINYINT, PreventActionId TINYINT, Comment NVARCHAR(300), IsFinished BIT DEFAULT(0))	
@@ -42,6 +42,10 @@ BEGIN
 
 	SELECT @ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @ReasonId
 	SELECT @ActionName = ActionName FROM dbo.ProblemAccountAction WITH (NOLOCK) WHERE ActionID = @PreventActionId
+
+	SELECT @SubIssueTypeId = SubIssueTypeId 
+	FROM dbo.ProblemAccountAction WITH (NOLOCK)
+	WHERE ActionId = @PreventActionId
 
 	INSERT INTO @tmpCust(Username, CustID)
 	SELECT ci.Username, ci.custid
@@ -60,7 +64,7 @@ BEGIN
 		pa.ReasonId = @ReasonId,
 		pa.ActionId = @PreventActionId,
 		pa.Comment = @Comment,
-		pa.SubIssueTypeId = CASE WHEN @RoleId = 1 AND @ReasonId = 109 THEN 38 ELSE SubIssueTypeId END
+		pa.SubIssueTypeId = CASE WHEN @RoleId = 1 THEN @SubIssueTypeId ELSE NULL END
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
