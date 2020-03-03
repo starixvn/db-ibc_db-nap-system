@@ -103,7 +103,7 @@ BEGIN
 		, pf.TotalHouseTurnover
 		, pf.IsGroupHeadline
 		, c.site AS SiteName 
-		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover*100/rs.MaxTurnover END AS PercentageUsed
+		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover/rs.MaxTurnover END AS PercentageUsed
 		, pf.rn AS DisplayGroup
 	FROM (
 			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
