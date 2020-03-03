@@ -28,7 +28,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
-	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName VARCHAR(30), @ReasonName VARCHAR(100)
+	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName VARCHAR(30), @ReasonName VARCHAR(100), @ActionName VARCHAR(100)
 	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpList TABLE (Username VARCHAR(MAX))	
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))	
@@ -43,7 +43,7 @@ BEGIN
 		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username		
 	WHERE c.site <> 'CN88' 
 		AND NOT EXISTS (SELECT custid FROM dbo.Dep_CustSuper WITH (NOLOCK) WHERE custid = c.srecommend)
-
+	
 	----START: Validattion-------------------------------------------------
 	SELECT @WrongUserName = STUFF((SELECT ', '+ l.Username
 									FROM @tmpList l
@@ -89,6 +89,7 @@ BEGIN
     END	
 	----END: Validattion-------------------------------------------------	
 	SELECT @ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @ReasonId
+	SELECT @ActionName = ActionName FROM dbo.ProblemAccountAction WITH (NOLOCK) WHERE ActionID = @PreventActionId
 
 	WHILE (1=1)
 	BEGIN
@@ -124,6 +125,7 @@ BEGIN
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
 							+ ' Reason="' + @ReasonName + '"'
+							+ ' PreventiveAction="' + CAST (@ActionName AS VARCHAR(5)) + '"'
 							+ ' Comment="' + @Comment + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'

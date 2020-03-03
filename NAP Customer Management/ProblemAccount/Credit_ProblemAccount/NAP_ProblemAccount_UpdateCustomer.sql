@@ -27,7 +27,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
-	DECLARE @SetBit1 INT, @Pos TINYINT, @SuccessDownlineList VARCHAR(MAX) = ''
+	DECLARE @SetBit1 INT, @Pos TINYINT, @SuccessDownlineList VARCHAR(MAX) = '', @ReasonName VARCHAR(100), @ActionName VARCHAR(100), @Old_ReasonName VARCHAR(100), @Old_ActionName VARCHAR(100)
 	DECLARE @CustId INT, @UserName NVARCHAR(50), @DownlineList VARCHAR(MAX), @Old_ReasonId TINYINT, @Old_PreventActionId TINYINT, @Old_Comment	NVARCHAR(300)
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, ReasonId TINYINT, PreventActionId TINYINT, Comment NVARCHAR(300), IsFinished BIT DEFAULT(0))	
 
@@ -39,6 +39,9 @@ BEGIN
 								WHEN 1 THEN 0 END					
 			
 	SELECT @SetBit1 = POWER(2, @Pos)
+
+	SELECT @ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @ReasonId
+	SELECT @ActionName = ActionName FROM dbo.ProblemAccountAction WITH (NOLOCK) WHERE ActionID = @PreventActionId
 
 	INSERT INTO @tmpCust(Username, CustID)
 	SELECT ci.Username, ci.custid
@@ -82,20 +85,23 @@ BEGIN
 			@Action = 'UpdateProblemAcc',
 			@SuccessDownlineList = @SuccessDownlineList OUTPUT
 
+		SELECT @Old_ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @Old_ReasonId
+		SELECT @Old_ActionName = ActionName FROM dbo.ProblemAccountAction WITH (NOLOCK) WHERE ActionID = @Old_PreventActionId
+
 		-- Write log
 		DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 		SELECT  @LogDataOld = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' Reason="' + CAST (@Old_ReasonId AS VARCHAR(5)) + '"'							
-							+ ' PreventiveAction="' + CAST (@Old_PreventActionId AS VARCHAR(5)) + '"'
+							+ ' Reason="' + CAST (@Old_ReasonName AS VARCHAR(5)) + '"'							
+							+ ' PreventiveAction="' + CAST (@Old_ActionName AS VARCHAR(5)) + '"'
 							+ ' Comment="' + @Old_Comment + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' Reason="' + CAST (@ReasonId AS VARCHAR(5)) + '"'
-							+ ' PreventiveAction="' + CAST (@PreventActionId AS VARCHAR(5)) + '"'
+							+ ' Reason="' + CAST (@ReasonName AS VARCHAR(5)) + '"'
+							+ ' PreventiveAction="' + CAST (@ActionName AS VARCHAR(5)) + '"'
 							+ ' Comment="' + @Comment + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'		
