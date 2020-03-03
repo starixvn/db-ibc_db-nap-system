@@ -194,8 +194,8 @@ BEGIN
 				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
 			
 			UPDATE t
-			SET MaxBet = ROUND(100*MYR,0),
-				MaxPerEvent = ROUND(300*MYR,0)
+			SET MaxBet = ROUND(100*CNY,0),
+				MaxPerEvent = ROUND(300*CNY,0)
 			FROM #tmpCust t
 				INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
 			WHERE ExchangeDate = @today

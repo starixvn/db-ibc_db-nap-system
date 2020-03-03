@@ -80,12 +80,7 @@ BEGIN
 		SELECT @ErrCode = 103, @ErrMsg = 'The function can only mark up to 100 accounts per request.'
 		RETURN
     END	
-	
-	IF NOT EXISTS(SELECT 1 FROM ProblemAccountReasonAction WHERE ActionId = @ActionId AND ReasonID = @ReasonID)
-	BEGIN
-		SELECT @ErrCode = 104, @ErrMsg = 'The selected reason is not available for this preventive action.'
-		RETURN
-	END
+		
 	----END: Validattion-------------------------------------------------	
 	SELECT @ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @ReasonId
 	SELECT @ActionName = ActionName FROM ProblemAccountAction WITH(NOLOCK) WHERE ActionID = @ActionID
@@ -93,8 +88,8 @@ BEGIN
 	SELECT @today = GETDATE()
 	
 	UPDATE t
-	SET MaxBet = ROUND(100*MYR,0),
-		MaxPerEvent = ROUND(300*MYR,0)
+	SET MaxBet = ROUND(100*CNY,0),
+		MaxPerEvent = ROUND(300*CNY,0)
 	FROM @tmpCust t
 		INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
 	WHERE ExchangeDate = @today	
