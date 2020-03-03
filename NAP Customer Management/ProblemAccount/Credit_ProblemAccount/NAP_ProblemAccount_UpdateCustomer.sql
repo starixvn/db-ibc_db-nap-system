@@ -108,7 +108,7 @@ BEGIN
 		--	@ActionId			= 31617,
 		--	@TrackingValue		= @LogDataNew,
 		--	@TrackingValue2		= @LogDataOld,
-		--	@Duration			= @Duration
+		--	@Duration			= @Duration,
 		--	@AffectedDownlines	= @SuccessDownlineList
 	END	
 END

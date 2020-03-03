@@ -1,1 +1,1 @@
-NAP Home/Customer/dbo.NAP_Cust_Insert.sql
+NAP Customer Management\ProblemAccount\CN88_ProblemAccount\dbo.CS_ProblemAccount_RemoveCustomer.sql
