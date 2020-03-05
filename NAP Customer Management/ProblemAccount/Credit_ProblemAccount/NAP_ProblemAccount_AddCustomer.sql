@@ -125,7 +125,7 @@ BEGIN
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
 							+ ' Reason="' + @ReasonName + '"'
-							+ ' PreventiveAction="' + CAST (@ActionName AS VARCHAR(5)) + '"'
+							+ ' PreventiveAction="' + @ActionName + '"'
 							+ ' Comment="' + @Comment + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
