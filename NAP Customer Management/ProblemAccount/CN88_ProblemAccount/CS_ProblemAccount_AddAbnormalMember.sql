@@ -60,10 +60,9 @@ BEGIN
 		WHERE v.Id > @MinId AND v.Id <= @MaxId AND v.IssueTypeID = 11
 		
 		INSERT INTO #tmpCust (CustId,username,currency,site,srecommend,reasonID,ActionID)
-		SELECT DISTINCT c.CustId,c.username,c.currency,ISNULL(c.site,''),c.srecommend,v.reasonID,pa.ActionID
+		SELECT DISTINCT c.CustId,c.username,c.currency,ISNULL(c.site,''),c.srecommend,v.reasonID,1--Default None
 		FROM #tmpCustVoidTicket v
-			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
-			LEFT JOIN ProblemAccountReasonAction pa WITH(NOLOCK) ON v.reasonID = pa.reasonID
+			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID			
 				
 		UPDATE t
 		SET isDeposit = 1,
