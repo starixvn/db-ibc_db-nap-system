@@ -108,9 +108,10 @@ BEGIN
 	FROM (
 			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
 			FROM (
-					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, rn
+					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, MAX(rn) AS rn
 						, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END AS sporttype
 					FROM @temp_ t
+					GROUP BY t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END
 				)ct
 				CROSS APPLY (
 							SELECT ProfileID, GroupName, ProfileName
