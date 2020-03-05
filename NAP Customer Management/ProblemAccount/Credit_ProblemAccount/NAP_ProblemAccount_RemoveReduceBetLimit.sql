@@ -155,12 +155,12 @@ BEGIN
 								+ ' />'			
 		END
 
-		--EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-		--	@UserId				= @UserId,
-		--	@CustId				= @CustId,
-		--	@ActionId			= @ActionId,
-		--	@TrackingValue		= @LogDataNew,
-		--	@Duration			= @Duration
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			@UserId				= @UserId,
+			@CustId				= @CustId,
+			@ActionId			= @ActionId,
+			@TrackingValue		= @LogDataNew,
+			@Duration			= @Duration
 	END	
 
 	SELECT @ActionId = 31618
@@ -185,12 +185,12 @@ BEGIN
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'			
 
-		--EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-		--	@UserId				= @UserId,
-		--	@CustId				= @CustId,
-		--	@ActionId			= @ActionId,
-		--	@TrackingValue		= @LogDataNew,
-		--	@Duration			= @Duration
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			@UserId				= @UserId,
+			@CustId				= @CustId,
+			@ActionId			= @ActionId,
+			@TrackingValue		= @LogDataNew,
+			@Duration			= @Duration
 	END	
 END
 GO

@@ -112,13 +112,13 @@ BEGIN
 								+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 								+ ' />'		
 	
-		--EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-		--	@UserId				= @UserId,
-		--	@CustId				= @CustId,
-		--	@ActionId			= 1172,
-		--	@TrackingValue		= @LogDataNew,
-		--	@Duration			= @Duration,
-		--	@AffectedDownlines	= @AffectedList
+		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			@UserId				= @UserId,
+			@CustId				= @CustId,
+			@ActionId			= 1172,
+			@TrackingValue		= @LogDataNew,
+			@Duration			= @Duration,
+			@AffectedDownlines	= @AffectedList
 	END
 END
 GO
