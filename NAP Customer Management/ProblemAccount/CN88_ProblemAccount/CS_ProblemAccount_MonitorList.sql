@@ -270,6 +270,7 @@ BEGIN
 	SELECT *
 	FROM #Result
 	WHERE RowNumber BETWEEN @RowStart AND @RowEnd 	
+	ORDER BY RowNumber
 
 	SELECT cd.Custid, CreateDate, pr.ReasonName, ci.Username
 	FROM #CustDetailList cd
