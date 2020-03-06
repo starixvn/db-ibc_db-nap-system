@@ -50,7 +50,7 @@ BEGIN
 						) AS st
 		WHERE t.PercentLevel >= @NotifiedLevel AND t.ProfileID IS NOT NULL
 	), cte_sum AS (
-	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, SUM(t.MaxTurnOver) AS TotalMemberTurnover, SUM(t.HouseTurnover) AS TotalHouseTurnover
+	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, SUM(t.TotalTurnOver) AS TotalMemberTurnover, SUM(t.HouseTurnover) AS TotalHouseTurnover
 		FROM TOControl_Setting t WITH(NOLOCK)
 		WHERE EXISTS (SELECT 1 FROM cte_ cte WITH(NOLOCK) WHERE cte.CustID = t.CustID AND cte.matchid = t.matchid AND cte.IsGroupHeadLine = t.IsGroupHeadLine) 
 			AND t.ProfileID IS NOT NULL
