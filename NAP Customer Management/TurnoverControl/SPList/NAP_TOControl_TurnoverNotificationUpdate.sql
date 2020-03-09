@@ -25,12 +25,15 @@ BEGIN
 	
 	;WITH tmp AS
 	(
-		SELECT m.val AS matchid, c.val AS custid, l.val AS nlevel,h.val AS IsGroupHeadline,pf.val AS ProfileID
+		SELECT m.val AS matchid, c.val AS custid, l.val AS nlevel, h.val AS IsGroupHeadline, p.val AS ProfileID
 		FROM dbo.strSplit(@matchids,',') m
 			INNER JOIN dbo.strSplit(@supers,',') c ON m.rank = c.rank
 			INNER JOIN dbo.strSplit(@IsGroupHeadlines,',') h ON m.rank = h.rank
 			INNER JOIN dbo.strSplit(@nlevel,',') l ON m.rank = l.rank
-			INNER JOIN dbo.strSplit(@ProfileID,',') pf ON m.rank = pf.rank
+			CROSS APPLY (
+					SELECT val
+					FROM  dbo.strSplit(@ProfileID,',') pf 
+				)p
 	)
 	UPDATE t WITH(ROWLOCK,UPDLOCK)
 	SET t.IsNotified = tmp.nlevel
