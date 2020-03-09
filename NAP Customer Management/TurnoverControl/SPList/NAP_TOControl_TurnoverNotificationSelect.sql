@@ -93,11 +93,11 @@ BEGIN
 					END	
 			END AS [Level]
 		, c.roleid
-		, rs.totalturnover
+		, ISNULL(rs.totalturnover, 0) AS totalturnover
 		, pf.ProfileID
 		, pf.ProfileName
-		, rs.maxturnover
-		, rs.houseturnover
+		, ISNULL(rs.maxturnover, 0) AS maxturnover
+		, ISNULL(rs.houseturnover, 0) AS houseturnover
 		, t.nlevel AS nlevel 
 		, pf.TotalMemberTurnover
 		, pf.TotalHouseTurnover
