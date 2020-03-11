@@ -25,9 +25,6 @@ BEGIN
 			@ReasonName VARCHAR(100),
 			@custid INT,
 			@username VARCHAR(30)			
-	CREATE TABLE #tmpCustVoidTicket(custid INT,transid BIGINT, matchid INT)
-	CREATE TABLE #tmpCust (CustId INT, username, currency INT, site VARCHAR(10), srecommend INT, isDeposit BIT DEFAULT 0, isVip BIT DEFAULT 0, isDeleteVip BIT DEFAULT 0, IsAcknowledgement BIT, MaxBet MONEY, MaxPerEvent MONEY, isLogNew BIT DEFAULT 0, isLogVip BIT DEFAULT 0)
-	DECLARE @tmpCustInsert TABLE (custid INT)
 		
 	CREATE TABLE #tmpCustVoidTicket(custid INT,transid BIGINT, matchid INT, reasonid TINYINT)
 	CREATE TABLE #tmpCust (CustId INT, 
@@ -65,7 +62,8 @@ BEGIN
 		INSERT INTO #tmpCust (CustId,username,currency,site,srecommend,reasonID,ActionID)
 		SELECT DISTINCT c.CustId,c.username,c.currency,ISNULL(c.site,''),c.srecommend,v.reasonID,1--Default None
 		FROM #tmpCustVoidTicket v
-			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID			
+			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
+			
 				
 		UPDATE t
 		SET isDeposit = 1,
@@ -104,103 +102,12 @@ BEGIN
 			BEGIN
 				UPDATE TOP (1) t1
 				SET @username = username,
-					@custid = t1.custid,				
-					isLogNew = 1
-				FROM #tmpCust t1
-					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
-				WHERE isLogNew = 0
-				
-				IF @@ROWCOUNT =0
-					BREAK;
-					
-				SELECT  @LogData = '<R'
-								+ ' Username="' + @UserName + '"'								
-								+ ' Reason="Arbitrage"'								
-								+ ' />'
-									
-				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-					@UserId				=  862400,--Starix2
-					@CustId				= @CustId,
-					@ActionId			= 31632,
-					@TrackingValue		= @LogData,					
-					@Duration			= @Duration
-		----processing for Credit
-		ELSE IF EXISTS(SELECT 1 FROM #tmpCust WHERE site <> 'CN88' AND isDeposit <> 1)
-		BEGIN
-			DELETE @tmpCustInsert
-			
-			UPDATE pa 
-			SET pa.ProblemStatus = ProblemStatus | 1,
-				pa.IsAbnormalMember = 1
-			FROM dbo.ProblemAccount pa WITH (ROWLOCK)
-				INNER JOIN #tmpCust t ON t.CustId = pa.CustId
-			WHERE site <> 'CN88'
-				AND isDeposit <> 1
-				
-			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)			
-			OUTPUT INSERTED.custid 
-			INTO @tmpCustInsert(custid)
-			SELECT CustId, 1, NULL, NULL, NULL, NULL, GETDATE(), 0, 1			
-			FROM #tmpCust t
-			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
-				AND site <> 'CN88'
-				AND isDeposit <> 1
-				
-			--Logging 
-			SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
-			
-			--log for new problem accounts
-			WHILE(1=1)
-			BEGIN
-				UPDATE TOP (1) t1
-				SET @username = username,
-					@custid = t1.custid,				
-					isLogNew = 1
-				FROM #tmpCust t1
-					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
-				WHERE isLogNew = 0
-				
-				IF @@ROWCOUNT =0
-					BREAK;
-					
-				SELECT  @LogData = '<R'
-								+ ' Username="' + @UserName + '"'								
-								+ ' Reason="Arbitrage"'								
-								+ ' />'
-									
-				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-					@UserId				=  862400,--Starix2
-					@CustId				= @CustId,
-					@ActionId			= 31632,
-					@TrackingValue		= @LogData,					
-					@Duration			= @Duration
-			END							
-		END
-		----processing for Deposit
-		ELSE IF EXISTS(SELECT 1 FROM #tmpCust WHERE isDeposit = 1)
-			BEGIN
-				UPDATE TOP (1) t1
-				SET @username = username,
 					@custid = t1.custid,
 					@ReasonName = ISNULL(t1.ReasonName,''),
 					isLogNew = 1
 				FROM #tmpCust t1
 					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
 				WHERE isLogNew = 0
-			SET t.matchid = b.matchid
-			FROM #tmpCustVoidTicket t
-				INNER JOIN DBACC.bodb02.dbo.bettrans b WITH(NOLOCK) ON t.transid = b.transid
-			WHERE t.matchid = 0
-				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
-			
-			UPDATE t
-			SET MaxBet = ROUND(100*CNY,0),
-				MaxPerEvent = ROUND(300*CNY,0)
-			FROM #tmpCust t
-				INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
-			WHERE ExchangeDate = @today
-				AND isDeposit = 1
-			
 				
 				IF @@ROWCOUNT =0
 					BREAK;
@@ -209,8 +116,6 @@ BEGIN
 								+ ' Username="' + @UserName + '"'								
 								+ ' Reason="'+@ReasonName+'"'
 								+ ' />'
-			WHERE rn <= 2
-			ORDER BY custid
 									
 				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
 					@UserId				=  862400,--Starix2
@@ -273,7 +178,63 @@ BEGIN
 					@TrackingValue		= @LogData,					
 					@Duration			= @Duration
 			END							
-		END				
+		END
+		
+		----processing for Deposit
+		IF EXISTS(SELECT 1 FROM #tmpCust WHERE isDeposit = 1)
+		BEGIN
+			DECLARE @tmpCustVip TABLE (custid INT)			
+			DECLARE @tmpMatchUpdate TABLE(custid INT, matchid1 INT, matchid2 INT)
+			DECLARE @today DATE
+			SELECT @today = GETDATE()
+			
+			DELETE @tmpCustInsert
+			
+			UPDATE t
+			SET t.matchid = b.matchid
+			FROM #tmpCustVoidTicket t
+				INNER JOIN DBACC.bodb02.dbo.bettrans b WITH(NOLOCK) ON t.transid = b.transid
+			WHERE t.matchid = 0
+				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
+			
+			UPDATE t
+			SET MaxBet = ROUND(100*CNY,0),
+				MaxPerEvent = ROUND(300*CNY,0)
+			FROM #tmpCust t
+				INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
+			WHERE ExchangeDate = @today
+				AND isDeposit = 1
+			
+			UPDATE t
+			SET t.isVip = CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END,
+				t.IsAcknowledgement = ISNULL(l.IsAcknowledgement,0)
+			FROM #tmpCust t
+				LEFT JOIN Dep_CustVIP d WITH(NOLOCK) ON t.custid = d.custid
+				LEFT JOIN bodb_Licensee.dbo.Licensees l WITH(NOLOCK) ON t.site = l.LicenseeName
+			WHERE t.isDeposit = 1	
+			
+			;WITH t AS(
+						SELECT  custid, matchid, ROW_NUMBER() OVER(PARTITION BY custid ORDER BY matchid ASC) rn
+						FROM (SELECT DISTINCT custid,matchid 
+							FROM #tmpCustVoidTicket
+							WHERE custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
+							)tmp
+					)
+			SELECT * 
+			INTO #tmpCustMatch	
+			FROM t			
+			WHERE rn <= 2
+			ORDER BY custid
+			
+			--insert new problem account
+			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)
+			OUTPUT INSERTED.custid 
+			INTO @tmpCustInsert(custid)
+			SELECT t.CustId, 0, NULL, ActionID, NULL,CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxBet ELSE NULL END, 
+				CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxPerEvent ELSE NULL END, GETDATE(), 0, 1			
+			FROM #tmpCust t
+			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
+				AND isDeposit = 1
 				
 			--update match void of problem account
 			UPDATE p 
@@ -327,6 +288,7 @@ BEGIN
 					@custid = t1.custid,
 					@MaxBet = MaxBet,
 					@MaxPerEvent = MaxPerEvent,
+					@ReasonName = ISNULL(t1.ReasonName,''),
 					isLogNew = 1
 				FROM #tmpCust t1
 					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
@@ -337,7 +299,7 @@ BEGIN
 					
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'								
-								+ ' Reason="Arbitrage"'								
+								+ ' Reason="'+ @ReasonName + '"'							
 								+ ' />'
 									
 				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
@@ -385,3 +347,5 @@ BEGIN
 		WHERE VName = 'ProblemAccount_MaxId'
 	END
 END
+
+
