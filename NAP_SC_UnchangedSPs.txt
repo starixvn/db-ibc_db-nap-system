@@ -1,1 +1,1 @@
-NAP Customer Management\ProblemAccount\CN88_ProblemAccount\CS_ProblemAccount_RemoveCustomer.sql
+NAP Customer Management\ProblemAccount\Credit_ProblemAccount\NAP_ProblemAccount_AddCustomer.sql
