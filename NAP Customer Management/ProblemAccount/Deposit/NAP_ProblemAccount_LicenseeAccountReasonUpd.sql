@@ -56,13 +56,7 @@ BEGIN
 	   SELECT @ErrCode = 101, @ErrMsg = 'Invalid account(s): ' + @ErrMsg	   
 	   RETURN
     END
-	
-	IF NOT EXISTS(SELECT 1 FROM ProblemAccountReasonAction WHERE ActionId = @ActionId AND ReasonID = @ReasonID)
-	BEGIN
-		SELECT @ErrCode = 102, @ErrMsg = 'The selected reason is not available for this preventive action.'
-		RETURN
-	END
-	
+		
 	--get old ActionID & ReasonID
 	UPDATE t 
 	SET t.ReasonName = pr.ReasonName,
