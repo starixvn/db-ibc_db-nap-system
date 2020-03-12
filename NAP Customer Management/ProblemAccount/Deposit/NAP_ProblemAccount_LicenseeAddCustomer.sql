@@ -45,7 +45,7 @@ BEGIN
 	UPDATE t
 	SET t.custid = c.custid,
 		t.currency = c.currency,
-		t.isAcknowledgement = ISNULL(IsAcknowledgement,0),
+		t.isAcknowledgement = ISNULL(l.IsAcknowledgement,0),
 		t.isVip = CASE WHEN cv.custid IS NULL THEN 0 ELSE 1 END
 	FROM @tmpCust t
 		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username		
