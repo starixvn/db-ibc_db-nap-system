@@ -34,7 +34,7 @@ BEGIN
 			@MaxBet MONEY,
 			@MaxPerEvent MONEY
 			
-	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, isVip BIT, isAcknowledgement BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 	
 	SELECT @startRun = GETDATE()
 	
@@ -44,12 +44,16 @@ BEGIN
 
 	UPDATE t
 	SET t.custid = c.custid,
-		t.currency = c.currency
+		t.currency = c.currency,
+		t.isAcknowledgement = ISNULL(IsAcknowledgement,0),
+		t.isVip = CASE WHEN cv.custid IS NULL THEN 0 ELSE 1 END
 	FROM @tmpCust t
-		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username
-	WHERE srecommend IN (SELECT custid FROM Dep_CustSuper)
-		AND roleid = 1
-		
+		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username		
+		INNER JOIN Dep_CustSuper d WITH(NOLOCK) ON c.srecommend = d.custid
+		LEFT JOIN bodb_Licensee.dbo.Licensees l WITH(NOLOCK) ON d.site = l.LicenseeName
+		LEFT JOIN Dep_CustVip cv WITH(NOLOCK) ON c.custid = cv.custid		
+	WHERE roleid = 1
+			
 	----START: Validattion-------------------------------------------------
 	SELECT @WrongUserName = STUFF((SELECT ', '+ Username
 									FROM @tmpCust c
@@ -92,7 +96,9 @@ BEGIN
 		MaxPerEvent = ROUND(300*CNY,0)
 	FROM @tmpCust t
 		INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
-	WHERE ExchangeDate = @today	
+	WHERE ExchangeDate = @today
+		AND isAcknowledgement = 1
+		AND isVip = 0
 		
 	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)	
 	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0
