@@ -72,7 +72,7 @@ BEGIN
 	SET pa.ActionID = @ActionID,
 		pa.ReasonID = @ReasonID,
 		pa.Comment = @Comment,
-		pa.SubIssueTypeId = CASE WHEN @ActionID= 2 THEN 38 ELSE pa.SubIssueTypeId END
+		pa.SubIssueTypeId = CASE WHEN @ActionID= 2 THEN 38 ELSE NULL END
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
