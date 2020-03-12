@@ -45,9 +45,7 @@ BEGIN
 	DECLARE @Rowstart INT, @RowEnd INT
 	
 	IF @Licensee = ''
-		SELECT @Licensee = NULL
-	IF @Type = 0 
-		SELECT @Type = NULL
+		SELECT @Licensee = NULL	
 	IF @currency = 0	
 		SELECT @currency = NULL
 	IF @ActionID = 0
@@ -58,10 +56,15 @@ BEGIN
 	FROM strSplit (@ReasonList,',')
 	
 	INSERT INTO @tmpLicensee(LicenseeID,LicenseeName,isAcknowledgement)
-	SELECT LicenseeID,LicenseeName, ISNULL(isAcknowledgement,0)
-	FROM bodb_licensee.dbo.Licensees WITH(NOLOCK)
-	WHERE LicenseeName LIKE '%'+ISNULL(@Licensee,LicenseeName) + '%'
-		AND ISNULL(isAcknowledgement,0) = ISNULL(@Type,ISNULL(isAcknowledgement,0))
+	SELECT LicenseeID,LicenseeName, isAcknowledgement
+	FROM(
+		SELECT LicenseeID,LicenseeName, ISNULL(isAcknowledgement,0) isAcknowledgement
+		FROM bodb_licensee.dbo.Licensees WITH(NOLOCK)
+		WHERE LicenseeName LIKE '%'+ISNULL(@Licensee,LicenseeName) + '%'
+	)t
+	WHERE 1 = CASE WHEN @Type = 1 AND isAcknowledgement = 1 THEN 1
+					WHEN @Type = 2 AND isAcknowledgement = 0 THEN 1
+					WHEN @Type = 0 THEN 1 ELSE 0 END
 		
 	INSERT INTO @tmpSuper (custid,site)
 	SELECT custid,site
