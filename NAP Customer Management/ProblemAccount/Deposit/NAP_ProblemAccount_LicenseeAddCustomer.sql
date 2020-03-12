@@ -32,7 +32,8 @@ BEGIN
 			@ReasonName VARCHAR(100),
 			@ActionName VARCHAR(100),
 			@MaxBet MONEY,
-			@MaxPerEvent MONEY
+			@MaxPerEvent MONEY, 
+			@SubIssueTypeId TINYINT
 			
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, isVip BIT, isAcknowledgement BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 	
@@ -88,6 +89,7 @@ BEGIN
 	----END: Validattion-------------------------------------------------	
 	SELECT @ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @ReasonId
 	SELECT @ActionName = ActionName FROM ProblemAccountAction WITH(NOLOCK) WHERE ActionID = @ActionID
+	SELECT @SubIssueTypeId = CASE WHEN @ActionID = 2 THEN 38 ELSE NULL END
 	
 	SELECT @today = GETDATE()
 	
@@ -100,8 +102,8 @@ BEGIN
 		AND isAcknowledgement = 1
 		AND isVip = 0
 		
-	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)	
-	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0
+	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, SubIssueTypeId)	
+	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0, @SubIssueTypeId
 	FROM @tmpCust t
 	WHERE custid IS NOT NULL
 	
