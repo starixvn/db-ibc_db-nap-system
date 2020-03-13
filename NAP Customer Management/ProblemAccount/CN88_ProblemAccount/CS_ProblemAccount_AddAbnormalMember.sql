@@ -241,7 +241,8 @@ BEGIN
 			SET p.matchid1 = CASE WHEN p.matchid1 IS NULL THEN t1.matchid ELSE p.matchid1 END,
 				p.matchid2 = CASE WHEN p.matchid1 IS NOT NULL AND p.matchid2 IS NULL THEN t1.matchid 
 									WHEN p.matchid1 IS NULL AND p.matchid2 IS NULL AND t2.matchid IS NOT NULL THEN t1.matchid 
-									ELSE p.matchid2 END
+									ELSE p.matchid2 END,
+				p.IsAbnormalMember = CASE WHEN p.IsAbnormalMember = 0 THEN 1 ELSE p.IsAbnormalMember END
 			OUTPUT INSERTED.custid, INSERTED.matchid1, INSERTED.matchid2
 			INTO @tmpMatchUpdate(custid,matchid1,matchid2)
 			FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
