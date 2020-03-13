@@ -1,5 +1,5 @@
 /*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
+ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel_xtest]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
 	@site VARCHAR(MAX)= NULL,
@@ -23,6 +23,7 @@ AS
 			- 20190912@Johnson: Initial sp [redmine:#119714]
 			- 20191125@Johnson: change request [redmine:]
 			- 20200318@Egan: and date filter [redmine:129835]
+			- 20200313@Johnson: get site from upline instead of RobotUsers [redmine:#129509]
 		Parameter's Explanation:	
 			-@currency = NULL : all currency
 			-@counter = 0: all values
@@ -49,34 +50,39 @@ BEGIN
 	IF ISNULL(@username,'')= ''
 	BEGIN 	
 		INSERT INTO #tmpCust(custid)	
-		SELECT r.custid
-		FROM RobotUsers r WITH(NOLOCK)
-			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
-		WHERE roleid = ISNULL(@level,roleid)			
-			AND currency = ISNULL(@currency, currency)
-			AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
-			AND 1 = CASE WHEN @counter = 0 THEN 1
-						WHEN @counter = 1 AND counter >= 10 THEN 1
-						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
-					ELSE 0 END
+		SELECT custid 
+		FROM (
+			SELECT r.custid, ISNULL(c.site,ag.site) as site
+			FROM RobotUsers r WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
+				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
+			WHERE c.roleid = ISNULL(@level,c.roleid)			
+				AND c.currency = ISNULL(@currency, c.currency)				
+				AND 1 = CASE WHEN @counter = 0 THEN 1
+							WHEN @counter = 1 AND counter >= 10 THEN 1
+							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+						ELSE 0 END
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
 				OR r.RobotDate BETWEEN @fromDate AND @toDate)
 	END
 	ELSE 
 	BEGIN
-		INSERT INTO #tmpCust(custid)	
-		SELECT r.custid
-		FROM RobotUsers r WITH(NOLOCK)
-			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
-		WHERE roleid = ISNULL(@level,roleid)
-			AND username = @username
-			AND currency = ISNULL(@currency, currency)
-			AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
-			AND 1 = CASE WHEN @counter = 0 THEN 1
-						WHEN @counter = 1 AND counter >= 10 THEN 1
-						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
-					ELSE 0 END
+		INSERT INTO #tmpCust(custid)
+		SELECT t.custid
+		FROM(
+			SELECT r.custid, ISNULL(c.site,ag.site) as site
+			FROM RobotUsers r WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
+				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
+			WHERE c.roleid = ISNULL(@level,c.roleid)
+				AND c.username = @username
+				AND c.currency = ISNULL(@currency, c.currency)
+				AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
+				AND 1 = CASE WHEN @counter = 0 THEN 1
+							WHEN @counter = 1 AND counter >= 10 THEN 1
+							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+						ELSE 0 END
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
 				OR r.RobotDate BETWEEN @fromDate AND @toDate)
