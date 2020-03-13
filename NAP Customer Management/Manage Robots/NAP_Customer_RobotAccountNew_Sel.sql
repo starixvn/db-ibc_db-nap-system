@@ -1,5 +1,5 @@
 /*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel_xtest]
+ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@username VARCHAR(50) = NULL,		
 	@level TINYINT= NULL,
 	@site VARCHAR(MAX)= NULL,
