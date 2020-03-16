@@ -126,10 +126,10 @@ BEGIN
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
 							+ ' Reason="' + @ReasonName + '"'
-							+ ' Action="' + @ActionName + '"'
+							+ ' PreventiveAction="' + @ActionName + '"'
 							+ ' Comment="' + @Comment + '"'
 							+ ' MaxBet="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxBet AS VARCHAR(10))), SPACE(1))+'"'
-							+ ' MaxPerEvent="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1))+'"'
+							+ ' MaxPerMatch="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1))+'"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 	

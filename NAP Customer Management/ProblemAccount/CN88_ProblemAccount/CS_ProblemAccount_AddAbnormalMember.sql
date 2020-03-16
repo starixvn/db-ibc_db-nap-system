@@ -300,6 +300,8 @@ BEGIN
 					
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'								
+								+ ' MPM="' + dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
+								+ ' Max="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
 								+ ' Reason="'+ @ReasonName + '"'							
 								+ ' />'
 									

@@ -26,15 +26,16 @@ BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT
 	DECLARE @CustId INT, @UserName NVARCHAR(50), @Old_MaxBet MONEY, @Old_MaxPerEvent MONEY
-	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, site VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, isVip BIT, site VARCHAR(50), MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
 
 	SET	@startRun = GETDATE()
 
-	INSERT INTO @tmpCust(Username, CustID, site)
-	SELECT ci.Username, ci.custid,s.site
+	INSERT INTO @tmpCust(Username, CustID, site, isVip)
+	SELECT ci.Username, ci.custid,s.site, CASE WHEN cv.custid IS NULL THEN 0 ELSE 1 END
 	FROM dbo.strSplit(@CustomerList, ',') f
 		INNER JOIN dbo.customer ci WITH (NOLOCK) ON f.val = ci.username
 		INNER JOIN Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
+		LEFT JOIN Dep_CustVip cv WITH(NOLOCK) ON ci.custid = cv.custid
 	WHERE ci.roleid = 1
 										
 	SELECT @ErrMsg = STUFF((SELECT ', '+ Username
@@ -47,6 +48,18 @@ BEGIN
 	BEGIN
 		SELECT @ErrCode = 100,
 				@ErrMsg = 'Not acknowledged licensee''s members cannot be reduced bet limit: ' +@ErrMsg
+		RETURN;		
+	END
+	
+	SELECT @ErrMsg = STUFF((SELECT ', '+ Username
+							FROM @tmpCust t								
+							WHERE isVip = 1
+							FOR XML PATH('')),1,2,'')
+	
+	IF @ErrMsg <> ''
+	BEGIN
+		SELECT @ErrCode = 101,
+				@ErrMsg = 'VIP members cannot be reduced bet limit: ' +@ErrMsg
 		RETURN;		
 	END
 	
@@ -86,16 +99,16 @@ BEGIN
 		BEGIN
 			SELECT  @LogDataOld = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPM="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
+							+ ' MaxPerMatch="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' MaxBet="' + dbo.f_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 		END
 
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' MPM="' + dbo.f_FomatNumber (CAST (@MaxPerMatch AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
+							+ ' MaxPerMatch="' + dbo.f_FomatNumber (CAST (@MaxPerMatch AS VARCHAR(50))) + '"'
+							+ ' MaxBet="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 							
