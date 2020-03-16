@@ -99,7 +99,7 @@ BEGIN
 
 		SELECT  @LogDataOld = '<R'
 						+ ' Username="' + @UserName + '"'
-						+ ' Action="' + COALESCE(@Old_ActionName, SPACE(1)) + '"'
+						+ ' PreventiveAction="' + COALESCE(@Old_ActionName, SPACE(1)) + '"'
 						+ ' Reason="' + COALESCE(@Old_ReasonName, SPACE(1)) + '"'
 						+ ' Comment="' + COALESCE(@Old_Comment, SPACE(1)) + '"'
 						+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
@@ -107,7 +107,7 @@ BEGIN
 		
 		SELECT  @LogDataNew = '<R'
 							+ ' Username="' + @UserName + '"'
-							+ ' Action="' + COALESCE(@ActionName, SPACE(1)) + '"'
+							+ ' PreventiveAction="' + COALESCE(@ActionName, SPACE(1)) + '"'
 							+ ' Reason="' + COALESCE(@ReasonName, SPACE(1)) + '"'
 							+ ' Comment="' + COALESCE(@Comment, SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
