@@ -1,5 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="Dot_Member,API_Vender" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
+(
 	@CustID				INT,
 	@MatchID			INT,
 	@Recommend			INT,
@@ -9,8 +10,11 @@ ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 	@TPositionTaking	SMALLMONEY,
 	@eventdate			DATETIME,
 	@actualrate			FLOAT,
-	@ExchangeID			INT
-	
+	@ExchangeID			INT,
+	@Sporttype          SMALLINT = NULL,
+	@Bettype            SMALLINT = NULL,
+	@liveindicator      BIT = NULL
+)	
 AS
 /*
 	Created: Don
@@ -21,6 +25,7 @@ AS
 	Revisions:
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
+		- 20200316@Max : Support TW test on UAT - Separate setting and notification into Live/Non-Live and bettypes - [Redmine : #125076]
 		
 	Parameter's explaination:
 	
