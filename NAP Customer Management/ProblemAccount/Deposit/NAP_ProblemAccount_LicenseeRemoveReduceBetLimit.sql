@@ -96,8 +96,8 @@ BEGIN
 
 		-- Write log				
 		SELECT  @LogDataNew = '<R'
-							+ ' MPE="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
-							+ ' Max="' + dbo.f_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
+							+ ' MaxPerMatch="' + dbo.f_FomatNumber (CAST (@Old_MaxPerEvent AS VARCHAR(50))) + '"'
+							+ ' MaxBet="' + dbo.f_FomatNumber (CAST (@Old_MaxBet AS VARCHAR(50))) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'				
 		
