@@ -61,7 +61,7 @@ BEGIN
 		SELECT LicenseeID,LicenseeName, ISNULL(isAcknowledgement,0) isAcknowledgement
 		FROM bodb_licensee.dbo.Licensees WITH(NOLOCK)
 		WHERE LicenseeName LIKE '%'+ISNULL(@Licensee,LicenseeName) + '%'
-			AND isActive = 0
+			AND isActive = 1
 	)t
 	WHERE 1 = CASE WHEN @Type = 1 AND isAcknowledgement = 1 THEN 1
 					WHEN @Type = 2 AND isAcknowledgement = 0 THEN 1
