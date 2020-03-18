@@ -26,6 +26,7 @@ AS
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20200114@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
+		- 20200318@Helen : Get profile tuning code [Redmine : 125076]
 		
 	Parameter's explaination:
 	
@@ -42,19 +43,26 @@ BEGIN
 	
 	SELECT @NewMatchTurnover = -1, @MaxMatchTurnover_Setting = -1
 	SELECT @StopFlag = 0
-	
-	SELECT @ProfileID =  p.ProfileID
-	FROM   dbo.TOControl_ProfileSetting pf WITH(NOLOCK)
-	CROSS APPLY (SELECT CASE WHEN @Sporttype = 1 THEN 1 
-								 WHEN @Sporttype > 1 AND @Sporttype <= 99 THEN 99
-							END as sporttype) AS spt
-	CROSS APPLY (SELECT TOP 1 profileID
+		
+	IF @sporttype = 1
+	BEGIN
+		SET @ProfileID =  (SELECT TOP 1 profileID
 				FROM dbo.TOControl_ProfileSetting t2 WITH (NOLOCK)
-				WHERE  t2.Sporttype = spt.sporttype 
+				WHERE  t2.Sporttype = 1 
 					AND t2.liveindicator = @liveindicator
 					AND t2.bettype IN (@Bettype,0)
-				ORDER BY t2.bettype DESC		 
-			)AS p
+				ORDER BY t2.bettype DESC)
+
+	END
+	ELSE IF @sporttype <= 99
+	BEGIN
+		SET @ProfileID =  (SELECT TOP 1 profileID
+							FROM dbo.TOControl_ProfileSetting t2 WITH (NOLOCK)
+							WHERE  t2.Sporttype = 99 
+								AND t2.liveindicator = @liveindicator
+								AND t2.bettype IN (@Bettype,0)
+							ORDER BY t2.bettype DESC)
+	END			
 	
 	-- Get Extra PT Info: 
 	-- Sportbook: Categorized by SubProduct =  '' , 'MG-SuperLive', 'MuayThai'. They are the same value. 
