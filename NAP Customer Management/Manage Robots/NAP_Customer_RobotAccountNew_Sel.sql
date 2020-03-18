@@ -9,6 +9,8 @@ ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Sel]
 	@OrderType VARCHAR(10)= 'ASC',
 	@pageIndex	INT = 1,
 	@pageSize	INT = 50,
+	@toDate DATETIME = NULL,
+	@fromDate DATETIME = NULL,
 	@totalItems INT = 0 OUTPUT	
 AS
 /*
@@ -20,6 +22,7 @@ AS
 		Revision:
 			- 20190912@Johnson: Initial sp [redmine:#119714]
 			- 20191125@Johnson: change request [redmine:]
+			- 20200318@Egan: and date filter [redmine:129835]
 		Parameter's Explanation:	
 			-@currency = NULL : all currency
 			-@counter = 0: all values
@@ -27,7 +30,8 @@ AS
 			-@orderOption: 0 : default 
 						1: Currency, 2: Site, 3:Country
 						4:Region,5:Last Change Time, 6: Counter	
-			-@OrderType = ASC, DESC			
+			-@OrderType = ASC, DESC
+			-@pageSize = -1: all data			
 */ 
 BEGIN
 	SET NOCOUNT ON
@@ -55,6 +59,9 @@ BEGIN
 						WHEN @counter = 1 AND counter >= 10 THEN 1
 						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
 					ELSE 0 END
+			AND (ISNULL(@fromDate,'') = '' 
+				OR ISNULL(@toDate,'') = '' 
+				OR r.RobotDate BETWEEN @fromDate AND @toDate)
 	END
 	ELSE 
 	BEGIN
@@ -70,9 +77,23 @@ BEGIN
 						WHEN @counter = 1 AND counter >= 10 THEN 1
 						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
 					ELSE 0 END
+			AND (ISNULL(@fromDate,'') = '' 
+				OR ISNULL(@toDate,'') = '' 
+				OR r.RobotDate BETWEEN @fromDate AND @toDate)
 	END
 	
 	SELECT @totalItems = @@rowcount
+
+	DECLARE @filterDate NVARCHAR(MAX)
+
+	IF (ISNULL(@fromDate,'') != '' AND ISNULL(@toDate,'') != '')
+	BEGIN
+		SET @filterDate = 'AND r.RobotDate BETWEEN ''' + CONVERT(varchar, @fromDate, 120) + ''' AND ''' + CONVERT(varchar, @toDate, 120) + ''''
+	END
+	ELSE
+	BEGIN
+		SET @filterDate = ''
+	END
 	
 	DECLARE @sql NVARCHAR(MAX)
 						
@@ -95,9 +116,11 @@ BEGIN
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
 			INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
 			LEFT JOIN bodb02.dbo.customer c2 WITH(NOLOCK) ON c2.custid = r.creator
-		WHERE r.custid IN (SELECT custid FROM #tmpCust)
-	) t
-	WHERE rn BETWEEN '+ CAST(@rowStart AS VARCHAR(10)) +' AND ' + CAST (@rowEnd AS VARCHAR(10)) 
+		WHERE r.custid IN (SELECT custid FROM #tmpCust)'
+		+ @filterDate
+	+') t
+	WHERE' + '''' + CAST(@pageSize AS VARCHAR(10)) + ''' = ''-1'''
+	 + 'OR rn BETWEEN '+ CAST(@rowStart AS VARCHAR(10)) +' AND ' + CAST (@rowEnd AS VARCHAR(10)) 
 	
 	EXEC sys.sp_executesql @sql
 END
