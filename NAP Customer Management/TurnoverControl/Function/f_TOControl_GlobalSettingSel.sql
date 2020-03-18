@@ -29,7 +29,13 @@ AS
     
 */
 RETURN (
-    SELECT 1  ProfileID, 1  Sporttype, '789y'   Site,0  ExchangeID, 60000  MaxTurnover,3   ToCurrency
+	SELECT CAST(1 AS INT) ProfileID
+	, CAST(1 AS SMALLINT) Sporttype
+	, CAST('789y' AS NVARCHAR(50)) AS site
+	, CAST(0 AS INT) ExchangeID
+	, CAST(60000 AS MONEY) MaxTurnOver
+	, CAST(3 AS INT) TOCurrency -- US$
+	
 	UNION ALL
 	SELECT 2  ProfileID, 1 Sporttype, '789y'  Site,0 ExchangeID, 60000  MaxTurnover, 3  ToCurrency
 	UNION ALL
