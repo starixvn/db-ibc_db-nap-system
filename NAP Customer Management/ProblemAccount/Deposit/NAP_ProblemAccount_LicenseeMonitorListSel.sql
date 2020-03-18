@@ -19,7 +19,7 @@ AS
 /*
 	Created: Johnson
 	Date: 20200217
-	Task : currency dropdown box
+	Task : get problem accounts for deposit
 	DB: DBACC/bodb02
 
 	Revisions:
@@ -29,7 +29,7 @@ AS
 		- @Type: 0:All, 1:Acknowledgement, 2:Not Acknowledgement	
 		- @Vip: 0:All, 1:Yes, 2:No	
 		- @currency: 0;All, <>0: currencyID
-		- @isReduced: 0:All, 1:Yes, 2:No	
+		- @isReduced: 0:All, 1:No, 2:Yes	
 		- Preventive ActionID: 0:All, 1: None, 2:Void all tickets, 3: Void winning tickets
 */
 BEGIN
@@ -92,8 +92,8 @@ BEGIN
 		WHERE isVip = CASE WHEN @Vip = 1 THEN 1
 							WHEN @Vip = 2 THEN 0 ELSE isVip END
 			AND ActionID = ISNULL(@ActionID,ActionID)
-			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NOT NULL THEN 1
-						WHEN @isReduced = 2 AND MaxBet IS NULL THEN 1
+			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NULL THEN 1
+						WHEN @isReduced = 2 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 0 THEN 1 ELSE 0 END
 	END
 	ELSE
@@ -114,8 +114,8 @@ BEGIN
 		WHERE isVip = CASE WHEN @Vip = 1 THEN 1
 							WHEN @Vip = 2 THEN 0 ELSE isVip END
 			AND ActionID = ISNULL(@ActionID,ActionID)
-			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NOT NULL THEN 1
-						WHEN @isReduced = 2 AND MaxBet IS NULL THEN 1
+			AND 1 = CASE WHEN @isReduced = 1 AND MaxBet IS NULL THEN 1
+						WHEN @isReduced = 2 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 0 THEN 1 ELSE 0 END
 	END
 				

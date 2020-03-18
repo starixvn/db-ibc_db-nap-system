@@ -43,7 +43,7 @@ BEGIN
 							isLogNew BIT DEFAULT 0, 
 							isLogVip BIT DEFAULT 0)
 							
-	DECLARE @tmpCustInsert TABLE (custid INT)
+	DECLARE @tmpCustInsert TABLE (custid INT, MaxBet MONEY, MaxPerEvent MONEY)
 	
 	SELECT @startRun = GETDATE()
 	SELECT @MinId = CAST(VValue AS INT) FROM DBACC.bodb02.dbo.SystemSettings WITH (NOLOCK) WHERE VName = 'ProblemAccount_MaxId'
@@ -88,7 +88,7 @@ BEGIN
 			
 			INSERT INTO dbo.CS_ProblemAccount (CustId, ProblemStatus, ReasonId, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)			
 			OUTPUT INSERTED.custid 
-			INTO @tmpCustInsert
+			INTO @tmpCustInsert(custid)
 			SELECT CustId, 1, NULL, NULL, NULL, NULL, GETDATE(), 0, 1			
 			FROM #tmpCust t
 			WHERE NOT EXISTS (SELECT 1 FROM CS_ProblemAccount WHERE CustId = t.CustId)
@@ -196,7 +196,7 @@ BEGIN
 				INNER JOIN DBACC.bodb02.dbo.bettrans b WITH(NOLOCK) ON t.transid = b.transid
 			WHERE t.matchid = 0
 				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
-			
+						
 			UPDATE t
 			SET MaxBet = ROUND(100*CNY,0),
 				MaxPerEvent = ROUND(300*CNY,0)
@@ -216,8 +216,10 @@ BEGIN
 			;WITH t AS(
 						SELECT  custid, matchid, ROW_NUMBER() OVER(PARTITION BY custid ORDER BY matchid ASC) rn
 						FROM (SELECT DISTINCT custid,matchid 
-							FROM #tmpCustVoidTicket
-							WHERE custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
+							FROM #tmpCustVoidTicket cv
+							WHERE custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)								
+								AND NOT EXISTS(SELECT 1 FROM ProblemAccount p1 WITH(NOLOCK) WHERE cv.custid = p1.custid AND cv.matchid = p1.matchid1)
+								AND NOT EXISTS(SELECT 1 FROM ProblemAccount p2 WITH(NOLOCK) WHERE cv.custid = p2.custid AND cv.matchid = p2.matchid2)
 							)tmp
 					)
 			SELECT * 
@@ -228,8 +230,8 @@ BEGIN
 			
 			--insert new problem account
 			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)
-			OUTPUT INSERTED.custid 
-			INTO @tmpCustInsert(custid)
+			OUTPUT INSERTED.custid, INSERTED.MaxBet, INSERTED.MaxPerEvent 
+			INTO @tmpCustInsert(custid,MaxBet,MaxPerEvent)
 			SELECT t.CustId, 0, NULL, ActionID, NULL,CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxBet ELSE NULL END, 
 				CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxPerEvent ELSE NULL END, GETDATE(), 0, 1			
 			FROM #tmpCust t
@@ -273,7 +275,7 @@ BEGIN
 				UPDATE p
 				SET p.MaxBet = t.MaxBet,
 					p.MaxPerEvent = t.MaxPerEvent
-				FROM ProblemAccount p 
+				FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
 					INNER JOIN #tmpCust t ON p.custid = t.custid
 				WHERE p.custid IN (SELECT custid FROM @tmpCustVip)				
 			END	
@@ -287,8 +289,8 @@ BEGIN
 				UPDATE TOP (1) t1
 				SET @username = username,
 					@custid = t1.custid,
-					@MaxBet = MaxBet,
-					@MaxPerEvent = MaxPerEvent,
+					@MaxBet = t2.MaxBet,
+					@MaxPerEvent = t2.MaxPerEvent,
 					@ReasonName = ISNULL(t1.ReasonName,''),
 					isLogNew = 1
 				FROM #tmpCust t1
@@ -300,8 +302,8 @@ BEGIN
 					
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'								
-								+ ' MPM="' + dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
-								+ ' Max="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
+								+ ' MPM="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))), SPACE(1)) + '"'
+								+ ' Max="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))), SPACE(1)) + '"'
 								+ ' Reason="'+ @ReasonName + '"'							
 								+ ' />'
 									
@@ -331,8 +333,8 @@ BEGIN
 					
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'
-								+ ' MPM="' + dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))) + '"'
-								+ ' Max="' + dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))) + '"'
+								+ ' MPM="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))), SPACE(1)) + '"'
+								+ ' Max="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))), SPACE(1)) + '"'
 								+ ' />'
 									
 				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
