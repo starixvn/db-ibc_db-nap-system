@@ -1,0 +1,22 @@
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+CREATE PROCEDURE [dbo].[NAP_TOControl_ProfileSelect]
+(
+      @SportType SMALLINT = 1
+)
+AS
+/*
+	Created: Malcolm
+	Date: 2020-01-08
+	Task: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
+	DB: DBCUST/CustDB
+
+	Revisions:
+		- 20200108@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
+	Parameter's explaination:
+*/
+BEGIN
+	SET NOCOUNT ON;
+	SELECT pf.ProfileID, pf.ProfileName
+	FROM  dbo.TOControl_Profile pf WITH (NOLOCK)
+	WHERE pf.Sporttype = @SportType	
+END

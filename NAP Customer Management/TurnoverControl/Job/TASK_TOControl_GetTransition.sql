@@ -1,6 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="" viewers="" isFunction="0"></info>*/
-USE [bodb02]
-GO
+/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[TASK_TOControl_GetTransition]
 	@RowId BIGINT
 AS 
@@ -14,6 +12,7 @@ Original:
 Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 	- 20190708@Patrick: Move to DB052 [Redmine: #112219]
+	- 20191231@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 
 Param explanation:
 */
@@ -23,6 +22,7 @@ BEGIN
 	SELECT TOP (4500) t.ID AS RowId, t.CustID, t.matchid
 		, t.adjusted_TurnOver, t.adjusted_HouseTurnOver
 		,t.IsGroupHeadline, m.sporttype
+		,t.liveindicator, t.bettype
 	FROM dbo.TOControl_Transition t WITH (ROWLOCK)
 		INNER JOIN dbo.match m WITH (NOLOCK) ON t.matchid = m.matchid
 	WHERE t.ID > @RowId

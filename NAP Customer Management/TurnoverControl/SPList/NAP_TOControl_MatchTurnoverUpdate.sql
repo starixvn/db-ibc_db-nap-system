@@ -5,6 +5,7 @@ ALTER PROCEDURE [dbo].[NAP_TOControl_MatchTurnoverUpdate]
 	@SportType SMALLINT = 1,
 	@IsGroupHeadline BIT = 0,
 	@MaxTurnover MONEY,
+	@ProfileID SMALLINT,
 	@UserID INT,
 	@IP	VARCHAR(40),
 	@ErrCode INT = 0 OUTPUT,
@@ -22,6 +23,7 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
+		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		
 	Parameter's explaination:
 		
@@ -35,7 +37,8 @@ BEGIN
 			@endRun				DATETIME,
 			@duration			INT,
 			@MaxTurnover_old	MONEY,
-			@FunctionKey		NVARCHAR(50)
+			@FunctionKey		NVARCHAR(50),
+			@ProfileName		VARCHAR(50)
 	
 	DECLARE @SiteID INT
 	
@@ -58,9 +61,11 @@ BEGIN
 		RETURN
 	END
 
-	SELECT @MaxTurnover_old = MaxTurnover
-	FROM dbo.TOControl_Setting WITH (NOLOCK)
-	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
+	SELECT @MaxTurnover_old = t.MaxTurnover
+		 , @ProfileName = pf.ProfileName
+	FROM dbo.TOControl_Setting t WITH (NOLOCK)
+		INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
+	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID = @ProfileID
 	
 	SET @SiteID = (SELECT TOP 1 s.siteid
 					FROM dbo.Customer c WITH (NOLOCK) 
@@ -76,7 +81,7 @@ BEGIN
 		SET 
 			MaxTurnover = @MaxTurnover,
 			IsNotified = 0
-		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
+		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
 	END
 	ELSE
 	BEGIN
@@ -93,15 +98,17 @@ BEGIN
 										WHERE (HouseTurnOver*100/@MaxTurnover) >= PercentValue
 										),0) 
 						
-		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
+		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
 		
 	END
+
+	SELECT @ProfileName = REPLACE(REPLACE(REPLACE(@ProfileName , '&',''), ' ', ''), ',', ' ')
 
 	SELECT @LogData = '<NAP_TOControl_MatchTurnoverUpdate CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'MatchID="' + COALESCE(CAST(@MatchID AS VARCHAR(10)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ @ProfileName + '="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" '
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1))+ '" />'
@@ -111,7 +118,7 @@ BEGIN
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'MatchID="' + COALESCE(CAST(@MatchID AS VARCHAR(10)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover_old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ @ProfileName + '="' + COALESCE(CAST(@MaxTurnover_old AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" '
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1))+ '" />'
@@ -129,7 +136,5 @@ BEGIN
 		@Duration = @duration					
 						
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_MatchTurnoverUpdate] TO [bodbAdminNet]
 GO
 

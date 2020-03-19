@@ -1,5 +1,6 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingDelete]
+(
 	@CustID INT,
 	@UserID INT,
 	@SportType SMALLINT = 1,
@@ -7,6 +8,7 @@ ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingDelete]
 	@IP	VARCHAR(40),
 	@ErrCode int = 0 OUTPUT,
 	@ErrMsg nvarchar(200) = '' OUTPUT
+)
 AS
 	
 /*
@@ -21,6 +23,7 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190521@Helen: store the same TrackingValue for both old and new TrackingValue - [Redmine:113472]
+		- 20200110@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		
 	Parameter's explaination:
 	
@@ -30,7 +33,7 @@ BEGIN
 
 	DECLARE @MatchList TABLE(matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
-	DECLARE @MaxTurnover_Old MONEY, @AffectedMatch VARCHAR(1000)=''
+	DECLARE @MaxTurnover_Old VARCHAR(MAX), @AffectedMatch VARCHAR(1000)=''
 	DECLARE @startRun	DATETIME,
 			@endRun		DATETIME,
 			@duration	INT,
@@ -61,15 +64,21 @@ BEGIN
 				(@SportType = 99 AND sporttype > 1 AND sporttype <=99 )
 			 )
 
-	SELECT @MaxTurnover_Old = t.MaxTurnover 
-	FROM dbo.TOControl_Setting t WITH(NOLOCK) 
-		INNER JOIN @MatchList m ON t.matchid = m.matchid
-	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline
+	SELECT @MaxTurnover_Old = (
+							SELECT STUFF((SELECT ',' + CAST(pf.ProfileName AS VARCHAR(50)) + '="' + CAST(t.MaxTurnover AS VARCHAR(50)) + '"'
+							FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK) 
+								INNER JOIN dbo.TOControl_Profile pf WITH (NOLOCK) ON t.ProfileID = pf.ProfileID
+							WHERE t.CustID = @CustID
+								AND pf.Sporttype = @SportType
+								AND t.IsGroupHeadLine = @IsGroupHeadline 
+								AND t.ProfileID IS NOT NULL
+							FOR XML PATH('')),1,1,'')
+						)
 	
 	SELECT @AffectedMatch = @AffectedMatch + CAST(t.MatchID AS VARCHAR(20)) + ',' 
 	FROM dbo.TOControl_Setting t WITH(NOLOCK) 
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
-	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline
+	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
 
 	IF(LEN(ISNULL(@AffectedMatch,'')) > 0)
 	BEGIN
@@ -82,15 +91,16 @@ BEGIN
 	DELETE t
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
-	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadline
+	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID IS NOT NULL
 
 	DECLARE @TrackingValue2 NVARCHAR(4000)
-
+	SELECT @MaxTurnover_Old = REPLACE(REPLACE(REPLACE(@MaxTurnover_Old , '&amp;',''), ' ', ''), ',', ' ')
+	
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)
 	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingDelete CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'MaxTurnover="' + COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(MAX)), SPACE(1)) + ' '
 					+ 'IsGroupHeadLine="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'AffectedMatch="' + COALESCE(@AffectedMatch,space(1)) + '" '

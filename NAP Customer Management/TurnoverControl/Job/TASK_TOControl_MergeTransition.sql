@@ -1,6 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="" viewers="" isFunction="0"></info>*/
-USE [CustDB]
-GO
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[TASK_TOControl_MergeTransition]
 AS 
 /*
@@ -14,7 +12,8 @@ Revisions:
 	- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 	- 20190708@Patrick: Move to DB052 [Redmine: #112219]
 	- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
-	
+	- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
+	- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 
 Param explanation:
 */
@@ -25,12 +24,12 @@ BEGIN
 	
 	SET @MaxLevel = (SELECT TOP 1 PercentLevel FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE PercentValue = 100)
 	
-	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT)
+	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT, liveindicator BIT, bettype SMALLINT)
 	
-	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT)
+	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT, ProfileID SMALLINT)
 	
-	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype)
-	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid, IsGroupHeadline, sporttype)
+	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype, bettype, liveindicator)
+	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid, IsGroupHeadline, sporttype, ProfileID)
 
 	--get rowversion
 	DECLARE @__lastRowId BIGINT, @__maxRowId BIGINT
@@ -39,30 +38,43 @@ BEGIN
 	WHERE VName = 'MaxID'
 
 	INSERT INTO #TmpTableRaw(RowId, CustID, matchid, adjusted_TurnOver
-		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype)
+		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype, liveindicator, bettype)
 	EXEC DBEXT.bodb02.dbo.TASK_TOControl_GetTransition @RowId = @__lastRowId
 
 	IF @@ROWCOUNT = 0
 		RETURN
 
-	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, adjusted_TurnOver, adjusted_HouseTurnOver)
-	SELECT CustID, matchid,IsGroupHeadline, sporttype, SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
-	FROM #TmpTableRaw
-	GROUP BY CustID, matchid, IsGroupHeadline, sporttype
+	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, ProfileID , adjusted_TurnOver, adjusted_HouseTurnOver)
+	SELECT t1.CustID, matchid,IsGroupHeadline, spt.sporttype, pf.profileID
+		, SUM (adjusted_TurnOver), SUM(adjusted_HouseTurnOver)
+	FROM #TmpTableRaw t1
+		CROSS APPLY (SELECT CASE WHEN t1.sporttype = 1 THEN 1 
+								 WHEN t1.sporttype > 1 AND t1.sporttype <= 99 THEN 99
+							END as sporttype) AS spt
+		CROSS APPLY (SELECT TOP 1 profileID
+					 FROM dbo.TOControl_ProfileSetting t2 WITH (NOLOCK)
+					 WHERE  t2.Sporttype = spt.sporttype 
+							AND T1.liveindicator = T2.liveindicator
+							AND t2.bettype IN (t1.bettype,0)
+					 ORDER BY t2.bettype DESC		 
+					 )AS pf
+	GROUP BY t1.CustID, t1.matchid, t1.IsGroupHeadline, spt.sporttype,pf.profileID
+
 
 	UPDATE t 
 		SET MaxTurnOver = gl.MaxTurnOver
 	FROM #TmpTable t
 		INNER JOIN dbo.TOControl_GlobalSetting gl WITH (NOLOCK) ON t.CustID = gl.CustID 
 							AND t.IsGroupHeadline = gl.IsGroupHeadLine 
-							AND ((gl.Sporttype = 1 AND t.sporttype = 1) OR (gl.Sporttype = 99 AND t.sporttype > 1 AND t.sporttype <= 99))								
+							AND t.ProfileID = gl.ProfileID
+							AND t.sporttype = gl.Sporttype								
 	
 	DELETE #TmpTable WHERE MaxTurnOver IS NULL
 		
 	MERGE dbo.TOControl_Setting AS TARGET
-			USING (SELECT CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine FROM #TmpTable)
-			   AS SOURCE (CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine)
-				ON (TARGET.CustID = SOURCE.CustID AND TARGET.matchid = SOURCE.matchid AND TARGET.IsGroupHeadLine = SOURCE.IsGroupHeadLine)
+			USING (SELECT CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID FROM #TmpTable)
+			   AS SOURCE (CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID)
+				ON (TARGET.CustID = SOURCE.CustID AND TARGET.matchid = SOURCE.matchid AND TARGET.IsGroupHeadLine = SOURCE.IsGroupHeadLine AND TARGET.ProfileID = SOURCE.ProfileID)
 			WHEN MATCHED THEN 
 				 UPDATE SET 
 							--@PercentageUsed = CASE WHEN TARGET.MaxTurnOver = 0 THEN	100 ELSE (TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver) * 100 / TARGET.MaxTurnOver END,
@@ -78,14 +90,14 @@ BEGIN
 													END				
 								
 			WHEN NOT MATCHED THEN	
-				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel)
+				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID)
 				VALUES (SOURCE.CustID, SOURCE.matchid,SOURCE.IsGroupHeadLine, SOURCE.MaxTurnOver, SOURCE.adjusted_TurnOver, SOURCE.adjusted_HouseTurnOver, 0, 
 						CASE WHEN SOURCE.MaxTurnOver = 0 THEN @MaxLevel 
 							ELSE ISNULL((SELECT MAX(PercentLevel) 
 										FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
 										WHERE (SOURCE.adjusted_HouseTurnOver) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)
-						END				
-										);
+						END, SOURCE.ProfileID				
+						);
 						
 	IF @@ERROR = 0
 	BEGIN
