@@ -48,6 +48,7 @@ BEGIN
 	
 	
 	/* For Rollback Plan:*/
+	SELECT @StopFlag AS StopFlag
 	RETURN
 
 	IF @sporttype = 1
