@@ -11,6 +11,7 @@ AS
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
 		- 20190930@Elodie: Only add the member that is voided ticket abnormal into CS_ProblemAccount [Redmine:#121104]
 		- 20200121@Johnson: Add deposit & credit customer [redine:#128077]
+		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
 	Parameter's explaination: 
 	
 */
@@ -198,8 +199,8 @@ BEGIN
 				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
 						
 			UPDATE t
-			SET MaxBet = ROUND(100*CNY,0),
-				MaxPerEvent = ROUND(300*CNY,0)
+			SET MaxBet = ROUND(100/CNY,0),
+				MaxPerEvent = ROUND(300/CNY,0)
 			FROM #tmpCust t
 				INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
 			WHERE ExchangeDate = @today
