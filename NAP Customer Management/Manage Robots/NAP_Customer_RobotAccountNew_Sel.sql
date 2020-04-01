@@ -65,6 +65,8 @@ BEGIN
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
 				OR r.RobotDate BETWEEN @fromDate AND @toDate)
+			) t
+		WHERE ISNULL(t.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
 	END
 	ELSE 
 	BEGIN
@@ -86,6 +88,8 @@ BEGIN
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
 				OR r.RobotDate BETWEEN @fromDate AND @toDate)
+		)t
+		WHERE ISNULL(t.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
 	END
 	
 	SELECT @totalItems = @@rowcount
