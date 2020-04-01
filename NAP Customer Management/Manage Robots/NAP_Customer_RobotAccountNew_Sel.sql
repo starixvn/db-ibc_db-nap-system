@@ -113,7 +113,7 @@ BEGIN
 		SELECT ROW_NUMBER() OVER (' 
 		+ CASE @OrderOption 
 				WHEN 1 THEN 'ORDER BY e.currency ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
-				WHEN 2 THEN 'ORDER BY ISNULL(r.site,'''')  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 2 THEN 'ORDER BY ISNULL(tmp.site,'''')  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 3 THEN 'ORDER BY r.countryLong  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 4 THEN 'ORDER BY r.ipRegion  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 5 THEN 'ORDER BY r.LastChangeTime  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
