@@ -37,7 +37,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	CREATE TABLE #tmpCust (custid INT)	
+	CREATE TABLE #tmpCust (custid INT, site VARCHAR(50))	
 	DECLARE @tmpSite TABLE(site VARCHAR(15))
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 	
@@ -49,8 +49,8 @@ BEGIN
 	
 	IF ISNULL(@username,'')= ''
 	BEGIN 	
-		INSERT INTO #tmpCust(custid)	
-		SELECT custid 
+		INSERT INTO #tmpCust(custid, site)	
+		SELECT custid, site 
 		FROM (
 			SELECT r.custid, ISNULL(c.site,ag.site) as site
 			FROM RobotUsers r WITH(NOLOCK)
@@ -70,8 +70,8 @@ BEGIN
 	END
 	ELSE 
 	BEGIN
-		INSERT INTO #tmpCust(custid)
-		SELECT t.custid
+		INSERT INTO #tmpCust(custid, site)
+		SELECT t.custid, site
 		FROM(
 			SELECT r.custid, ISNULL(c.site,ag.site) as site
 			FROM RobotUsers r WITH(NOLOCK)
@@ -120,13 +120,14 @@ BEGIN
 				WHEN 6 THEN 'ORDER BY r.counter  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				ELSE ' ORDER BY c.username ASC, c.roleid DESC, c.custid ASC'  END
 		+') rn,
-			c.custid, e.currency, c.username, CASE c.roleid WHEN 4 THEN ''Super'' WHEN 3 THEN ''Master'' WHEN 2 THEN ''Agent'' WHEN 1 THEN ''Member'' END level,
-			ISNULL(r.site,'''') site, r.IP, r.CountryLong as country, r.ipRegion as region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
+			c.custid, e.currency, c.username, CASE c.roleid WHEN 4 THEN ''Super'' WHEN 3 THEN ''Master'' WHEN 2 THEN ''Agent'' WHEN 1 THEN ''Member'' END level,			
+			tmp.site, r.IP, r.CountryLong as country, r.ipRegion as region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
 		FROM RobotUsers r WITH(NOLOCK)
+			INNER JOIN #tmpCust tmp ON r.custid = tmp.custid
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
 			INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
 			LEFT JOIN bodb02.dbo.customer c2 WITH(NOLOCK) ON c2.custid = r.creator
-		WHERE r.custid IN (SELECT custid FROM #tmpCust)'
+		'
 		+ @filterDate
 	+') t
 	WHERE' + '''' + CAST(@pageSize AS VARCHAR(10)) + ''' = ''-1'''
