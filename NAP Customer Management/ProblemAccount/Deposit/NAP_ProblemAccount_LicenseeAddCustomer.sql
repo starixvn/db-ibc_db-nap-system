@@ -94,8 +94,8 @@ BEGIN
 	SELECT @today = GETDATE()
 	
 	UPDATE t
-	SET MaxBet = ISNULL(ROUND(100/NULLIF(ISNULL(CNY,0),0),0),0),
-		MaxPerEvent = ISNULL(ROUND(300/NULLIF(ISNULL(CNY,0),0),0),0)
+	SET MaxBet = CASE WHEN t.currency = 20 THEN 100 ELSE ISNULL(ROUND(100/NULLIF(ISNULL(CNY,0),0),0),0) END,
+		MaxPerEvent = CASE WHEN t.currency = 20 THEN 300 ELSE ISNULL(ROUND(300/NULLIF(ISNULL(CNY,0),0),0),0) END
 	FROM @tmpCust t
 		INNER JOIN ExchangeDailyOanda e WITH(NOLOCK) ON t.currency = e.ExchangeId
 	WHERE ExchangeDate = @today
