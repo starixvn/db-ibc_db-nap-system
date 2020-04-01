@@ -52,7 +52,7 @@ BEGIN
 		INSERT INTO #tmpCust(custid, site)	
 		SELECT custid, site 
 		FROM (
-			SELECT r.custid, ISNULL(c.site,ag.site) as site
+			SELECT r.custid, ISNULL(NULLIF(c.site,''),ag.site) as site
 			FROM RobotUsers r WITH(NOLOCK)
 				INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
@@ -73,7 +73,7 @@ BEGIN
 		INSERT INTO #tmpCust(custid, site)
 		SELECT t.custid, site
 		FROM(
-			SELECT r.custid, ISNULL(c.site,ag.site) as site
+			SELECT r.custid, ISNULL(NULLIF(c.site,''),ag.site) as site
 			FROM RobotUsers r WITH(NOLOCK)
 				INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
 				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
