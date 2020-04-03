@@ -23,6 +23,7 @@ AS
 			- 20190912@Johnson: Initial sp [redmine:#119714]
 			- 20191125@Johnson: change request [redmine:]
 			- 20200318@Egan: and date filter [redmine:129835]
+			- 20200313@Johnson: get site from upline instead of RobotUsers [redmine:#129509]
 		Parameter's Explanation:	
 			-@currency = NULL : all currency
 			-@counter = 0: all values
@@ -36,7 +37,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	CREATE TABLE #tmpCust (custid INT)	
+	CREATE TABLE #tmpCust (custid INT, site VARCHAR(50))	
 	DECLARE @tmpSite TABLE(site VARCHAR(15))
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 	
@@ -48,38 +49,47 @@ BEGIN
 	
 	IF ISNULL(@username,'')= ''
 	BEGIN 	
-		INSERT INTO #tmpCust(custid)	
-		SELECT r.custid
-		FROM RobotUsers r WITH(NOLOCK)
-			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
-		WHERE roleid = ISNULL(@level,roleid)			
-			AND currency = ISNULL(@currency, currency)
-			AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
-			AND 1 = CASE WHEN @counter = 0 THEN 1
-						WHEN @counter = 1 AND counter >= 10 THEN 1
-						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
-					ELSE 0 END
+		INSERT INTO #tmpCust(custid, site)	
+		SELECT custid, site 
+		FROM (
+			SELECT r.custid, ISNULL(NULLIF(c.site,''),ag.site) as site
+			FROM RobotUsers r WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
+				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
+			WHERE c.roleid = ISNULL(@level,c.roleid)			
+				AND c.currency = ISNULL(@currency, c.currency)				
+				AND 1 = CASE WHEN @counter = 0 THEN 1
+							WHEN @counter = 1 AND counter >= 10 THEN 1
+							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+						ELSE 0 END
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
 				OR r.RobotDate BETWEEN @fromDate AND @toDate)
+			) t
+		WHERE ISNULL(t.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
 	END
 	ELSE 
 	BEGIN
-		INSERT INTO #tmpCust(custid)	
-		SELECT r.custid
-		FROM RobotUsers r WITH(NOLOCK)
-			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
-		WHERE roleid = ISNULL(@level,roleid)
-			AND username = @username
-			AND currency = ISNULL(@currency, currency)
-			AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
-			AND 1 = CASE WHEN @counter = 0 THEN 1
-						WHEN @counter = 1 AND counter >= 10 THEN 1
-						WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
-					ELSE 0 END
+		INSERT INTO #tmpCust(custid, site)
+		SELECT t.custid, site
+		FROM(
+			SELECT r.custid, ISNULL(NULLIF(c.site,''),ag.site) as site
+			FROM RobotUsers r WITH(NOLOCK)
+				INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid		
+				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
+			WHERE c.roleid = ISNULL(@level,c.roleid)
+				AND c.username = @username
+				AND c.currency = ISNULL(@currency, c.currency)
+				AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
+				AND 1 = CASE WHEN @counter = 0 THEN 1
+							WHEN @counter = 1 AND counter >= 10 THEN 1
+							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+						ELSE 0 END
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
 				OR r.RobotDate BETWEEN @fromDate AND @toDate)
+		)t
+		WHERE ISNULL(t.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
 	END
 	
 	SELECT @totalItems = @@rowcount
@@ -103,20 +113,21 @@ BEGIN
 		SELECT ROW_NUMBER() OVER (' 
 		+ CASE @OrderOption 
 				WHEN 1 THEN 'ORDER BY e.currency ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
-				WHEN 2 THEN 'ORDER BY ISNULL(r.site,'''')  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
+				WHEN 2 THEN 'ORDER BY ISNULL(tmp.site,'''')  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 3 THEN 'ORDER BY r.countryLong  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 4 THEN 'ORDER BY r.ipRegion  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 5 THEN 'ORDER BY r.LastChangeTime  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				WHEN 6 THEN 'ORDER BY r.counter  ' + @OrderType + ', c.username ASC, c.roleid DESC, c.custid ASC' 
 				ELSE ' ORDER BY c.username ASC, c.roleid DESC, c.custid ASC'  END
 		+') rn,
-			c.custid, e.currency, c.username, CASE c.roleid WHEN 4 THEN ''Super'' WHEN 3 THEN ''Master'' WHEN 2 THEN ''Agent'' WHEN 1 THEN ''Member'' END level,
-			ISNULL(r.site,'''') site, r.IP, r.CountryLong as country, r.ipRegion as region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
+			c.custid, e.currency, c.username, CASE c.roleid WHEN 4 THEN ''Super'' WHEN 3 THEN ''Master'' WHEN 2 THEN ''Agent'' WHEN 1 THEN ''Member'' END level,			
+			tmp.site, r.IP, r.CountryLong as country, r.ipRegion as region, r.LastChangeTime, r.counter, r.serverIP, c2.username as AddedBy, r.RobotDate as AddedDate, r.remark
 		FROM RobotUsers r WITH(NOLOCK)
+			INNER JOIN #tmpCust tmp ON r.custid = tmp.custid
 			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON c.custid = r.custid
 			INNER JOIN bodb02.dbo.Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
 			LEFT JOIN bodb02.dbo.customer c2 WITH(NOLOCK) ON c2.custid = r.creator
-		WHERE r.custid IN (SELECT custid FROM #tmpCust)'
+		'
 		+ @filterDate
 	+') t
 	WHERE' + '''' + CAST(@pageSize AS VARCHAR(10)) + ''' = ''-1'''
