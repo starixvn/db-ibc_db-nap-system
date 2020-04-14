@@ -24,6 +24,7 @@ AS
 
 	Revisions:
 		- 20200217@Johnson: Initial SP [Redmine:#128077]
+		- 20200414@Elodie: Problem account that was abnormal voided does not show in monitor list [Redmine:#132493]
 
 	Parameter's explaination: 
 		- @Type: 0:All, 1:Acknowledgement, 2:Not Acknowledgement	
@@ -131,6 +132,12 @@ BEGIN
 	FROM #tblCust c
 		INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 	
+	INSERT INTO #tblCustReason (CustId, CreateDate, ReasonId, AbnormalBetNumber)
+	SELECT c.CustId, NULL, 0, 0
+	FROM #tblCust c
+	WHERE NOT EXISTS (SELECT 1 FROM dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
+		AND c.IsAbnormalMember = 1
+
 	UPDATE c 
 	SET c.AbnormalBetNumber = t.AbnormalBetNumber
 	FROM #tblCust c
