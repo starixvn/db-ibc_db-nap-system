@@ -36,7 +36,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	CREATE TABLE #tblCust (custid INT, srecommend INT, isVip BIT, MarkDate DATETIME, ActionID TINYINT, AbnormalBetNumber INT)
+	CREATE TABLE #tblCust (custid INT, srecommend INT, isVip BIT, MarkDate DATETIME, ActionID TINYINT, AbnormalBetNumber INT, IsAbnormalMember BIT)
 	CREATE TABLE #tblCustReason (CustId INT, CreatedDate DATETIME, ReasonId INT, AbnormalBetNumber INT)
 	
 	DECLARE @tmpReason TABLE (reasonID INT)
@@ -78,7 +78,7 @@ BEGIN
 	BEGIN
 		;WITH t as (
 		SELECT c.custid,c.srecommend, CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
-			p.MaxBet,ActionID,p.CreatedDate as MarkDate
+			p.MaxBet,ActionID,p.CreatedDate as MarkDate, p.IsAbnormalMember
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 			LEFT JOIN Dep_CustVip d WITH(NOLOCK) ON c.custid = d.custid
@@ -87,8 +87,8 @@ BEGIN
 			AND p.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND roleid = 1
 		)
-		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate)
-		SELECT custid,srecommend,isVip,ActionID,MarkDate
+		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate,IsAbnormalMember)
+		SELECT custid,srecommend,isVip,ActionID,MarkDate, t.IsAbnormalMember
 		FROM t
 		WHERE isVip = CASE WHEN @Vip = 1 THEN 1
 							WHEN @Vip = 2 THEN 0 ELSE isVip END
@@ -101,7 +101,7 @@ BEGIN
 	BEGIN
 		;WITH t as (
 		SELECT c.custid,c.srecommend,CASE WHEN d.custid IS NULL THEN 0 ELSE 1 END isVip,
-			p.MaxBet,p.ActionID,p.CreatedDate as MarkDate
+			p.MaxBet,p.ActionID,p.CreatedDate as MarkDate, p.IsAbnormalMember
 		FROM customer c WITH(NOLOCK)
 			INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 			LEFT JOIN Dep_CustVip d WITH(NOLOCK) ON c.custid = d.custid
@@ -109,8 +109,8 @@ BEGIN
 			AND p.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND roleid = 1
 		)
-		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate)
-		SELECT custid,srecommend,isVip,ActionID,MarkDate
+		INSERT INTO #tblCust(custid,srecommend,isVip,ActionID,MarkDate, IsAbnormalMember)
+		SELECT custid,srecommend,isVip,ActionID,MarkDate, t.IsAbnormalMember
 		FROM t
 		WHERE isVip = CASE WHEN @Vip = 1 THEN 1
 							WHEN @Vip = 2 THEN 0 ELSE isVip END
