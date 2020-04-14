@@ -132,7 +132,7 @@ BEGIN
 	FROM #tblCust c
 		INNER JOIN ProblemAccount p WITH(NOLOCK) ON c.custid = p.custid
 	
-	INSERT INTO #tblCustReason (CustId, CreateDate, ReasonId, AbnormalBetNumber)
+	INSERT INTO #tblCustReason (CustId, CreatedDate, ReasonId, AbnormalBetNumber)
 	SELECT c.CustId, NULL, 0, 0
 	FROM #tblCust c
 	WHERE NOT EXISTS (SELECT 1 FROM dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
