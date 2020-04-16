@@ -27,6 +27,8 @@ AS
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
 		- 20190808@Elodie: Change datatype of @ReasonId parameter [Redmine:#126080]
 		- 20191230@Johnson: filter by directly marked [redmine:#121298]
+		- 20200414@Elodie: Problem account that was abnormal voided does not show in monitor list [Redmine:#132493]
+
 	Parameter's explaination: 
 		@IsReduce: 0:All, 1:No, 2:Yes
 		@OrderType: 1:SMA line, 2:MarkDate, 3:Account Status
@@ -143,6 +145,12 @@ BEGIN
 			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
 		WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate AND IssueTypeId = 11
 		GROUP BY c.CustId, tv.SubIssueTypeId	
+
+		INSERT INTO #CustDetailList (CustId, CreateDate, UplineId, ReasonId, MaxBet, AbnormalBetNumber)
+		SELECT c.CustId, NULL, 0, 0, NULL, 0
+		FROM #CustList c
+		WHERE NOT EXISTS (SELECT 1 FROM dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
+			AND c.IsAbnormalMember = 1
 
 		UPDATE c 
 		SET c.AbnormalBetNumber = t.AbnormalBetNumber

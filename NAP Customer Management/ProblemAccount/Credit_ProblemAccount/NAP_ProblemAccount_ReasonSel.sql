@@ -31,6 +31,8 @@ BEGIN
 		SELECT ReasonID, ReasonName
 		FROM dbo.ProblemAccountReason WITH(NOLOCK)
 		WHERE IsCredit = 1
+		UNION ALL
+		SELECT 0, 'None'
 		ORDER BY ReasonID
 	END
 END

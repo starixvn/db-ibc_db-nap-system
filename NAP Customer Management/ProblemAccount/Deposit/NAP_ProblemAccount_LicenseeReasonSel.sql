@@ -25,12 +25,16 @@ BEGIN
 		FROM ProblemAccountReason WITH(NOLOCK)
 		WHERE IsLicensee = 1
 			AND ReasonID > 100
+		ORDER BY ReasonID
 	END
 	ELSE 
 	BEGIN
 		SELECT ReasonID,ReasonName
 		FROM ProblemAccountReason WITH(NOLOCK)
 		WHERE IsLicensee = 1
+		UNION ALL
+		SELECT 0, 'None'
+		ORDER BY ReasonID
 	END
 END
 GO
