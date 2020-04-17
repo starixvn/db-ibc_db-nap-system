@@ -186,8 +186,8 @@ BEGIN
 		----processing for Deposit
 		IF EXISTS(SELECT 1 FROM #tmpCust WHERE isDeposit = 1)
 		BEGIN
-			DECLARE @tmpCustVip TABLE (custid INT)			
-			DECLARE @tmpMatchUpdate TABLE(custid INT, matchid1 INT, matchid2 INT)
+			--DECLARE @tmpCustVip TABLE (custid INT)			
+			--DECLARE @tmpMatchUpdate TABLE(custid INT, matchid1 INT, matchid2 INT)
 			DECLARE @today DATE
 			SELECT @today = GETDATE()
 			
