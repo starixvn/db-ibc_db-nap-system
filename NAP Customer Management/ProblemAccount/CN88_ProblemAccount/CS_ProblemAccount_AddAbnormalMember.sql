@@ -12,6 +12,8 @@ AS
 		- 20190930@Elodie: Only add the member that is voided ticket abnormal into CS_ProblemAccount [Redmine:#121104]
 		- 20200121@Johnson: Add deposit & credit customer [redine:#128077]
 		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
+		- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
+
 	Parameter's explaination: 
 	
 */
@@ -184,19 +186,19 @@ BEGIN
 		----processing for Deposit
 		IF EXISTS(SELECT 1 FROM #tmpCust WHERE isDeposit = 1)
 		BEGIN
-			DECLARE @tmpCustVip TABLE (custid INT)			
-			DECLARE @tmpMatchUpdate TABLE(custid INT, matchid1 INT, matchid2 INT)
+			--DECLARE @tmpCustVip TABLE (custid INT)			
+			--DECLARE @tmpMatchUpdate TABLE(custid INT, matchid1 INT, matchid2 INT)
 			DECLARE @today DATE
 			SELECT @today = GETDATE()
 			
 			DELETE @tmpCustInsert
 			
-			UPDATE t
-			SET t.matchid = b.matchid
-			FROM #tmpCustVoidTicket t
-				INNER JOIN DBACC.bodb02.dbo.bettrans b WITH(NOLOCK) ON t.transid = b.transid
-			WHERE t.matchid = 0
-				AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
+			--UPDATE t
+			--SET t.matchid = b.matchid
+			--FROM #tmpCustVoidTicket t
+			--	INNER JOIN DBACC.bodb02.dbo.bettrans b WITH(NOLOCK) ON t.transid = b.transid
+			--WHERE t.matchid = 0
+			--	AND t.custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)
 						
 			UPDATE t
 			SET MaxBet = CASE WHEN t.currency = 20 THEN 100 ELSE ISNULL(ROUND(100/NULLIF(ISNULL(CNY,0),0),0),0) END,
@@ -214,20 +216,20 @@ BEGIN
 				LEFT JOIN bodb_Licensee.dbo.Licensees l WITH(NOLOCK) ON t.site = l.LicenseeName
 			WHERE t.isDeposit = 1	
 			
-			;WITH t AS(
-						SELECT  custid, matchid, ROW_NUMBER() OVER(PARTITION BY custid ORDER BY matchid ASC) rn
-						FROM (SELECT DISTINCT custid,matchid 
-							FROM #tmpCustVoidTicket cv
-							WHERE custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)								
-								AND NOT EXISTS(SELECT 1 FROM ProblemAccount p1 WITH(NOLOCK) WHERE cv.custid = p1.custid AND cv.matchid = p1.matchid1)
-								AND NOT EXISTS(SELECT 1 FROM ProblemAccount p2 WITH(NOLOCK) WHERE cv.custid = p2.custid AND cv.matchid = p2.matchid2)
-							)tmp
-					)
-			SELECT * 
-			INTO #tmpCustMatch	
-			FROM t			
-			WHERE rn <= 2
-			ORDER BY custid
+			--;WITH t AS(
+			--			SELECT  custid, matchid, ROW_NUMBER() OVER(PARTITION BY custid ORDER BY matchid ASC) rn
+			--			FROM (SELECT DISTINCT custid,matchid 
+			--				FROM #tmpCustVoidTicket cv
+			--				WHERE custid IN (SELECT custid FROM #tmpCust WHERE isDeposit = 1)								
+			--					AND NOT EXISTS(SELECT 1 FROM ProblemAccount p1 WITH(NOLOCK) WHERE cv.custid = p1.custid AND cv.matchid = p1.matchid1)
+			--					AND NOT EXISTS(SELECT 1 FROM ProblemAccount p2 WITH(NOLOCK) WHERE cv.custid = p2.custid AND cv.matchid = p2.matchid2)
+			--				)tmp
+			--		)
+			--SELECT * 
+			--INTO #tmpCustMatch	
+			--FROM t			
+			--WHERE rn <= 2
+			--ORDER BY custid
 			
 			--insert new problem account
 			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)
@@ -239,47 +241,47 @@ BEGIN
 			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
 				AND isDeposit = 1
 				
-			--update match void of problem account
-			UPDATE p 
-			SET p.matchid1 = CASE WHEN p.matchid1 IS NULL THEN t1.matchid ELSE p.matchid1 END,
-				p.matchid2 = CASE WHEN p.matchid1 IS NOT NULL AND p.matchid2 IS NULL THEN t1.matchid 
-									WHEN p.matchid1 IS NULL AND p.matchid2 IS NULL AND t2.matchid IS NOT NULL THEN t1.matchid 
-									ELSE p.matchid2 END,
-				p.IsAbnormalMember = CASE WHEN p.IsAbnormalMember = 0 THEN 1 ELSE p.IsAbnormalMember END
-			OUTPUT INSERTED.custid, INSERTED.matchid1, INSERTED.matchid2
-			INTO @tmpMatchUpdate(custid,matchid1,matchid2)
-			FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
-				INNER JOIN #tmpCustMatch t1 ON p.custid = t1.custid AND t1.rn = 1
-				LEFT JOIN #tmpCustMatch t2 ON p.custid = t2.custid AND t2.rn = 2
-			WHERE p.matchid1 IS NULL OR p.matchid2 IS NULL	
+			----update match void of problem account
+			--UPDATE p 
+			--SET p.matchid1 = CASE WHEN p.matchid1 IS NULL THEN t1.matchid ELSE p.matchid1 END,
+			--	p.matchid2 = CASE WHEN p.matchid1 IS NOT NULL AND p.matchid2 IS NULL THEN t1.matchid 
+			--						WHEN p.matchid1 IS NULL AND p.matchid2 IS NULL AND t2.matchid IS NOT NULL THEN t1.matchid 
+			--						ELSE p.matchid2 END,
+			--	p.IsAbnormalMember = CASE WHEN p.IsAbnormalMember = 0 THEN 1 ELSE p.IsAbnormalMember END
+			--OUTPUT INSERTED.custid, INSERTED.matchid1, INSERTED.matchid2
+			--INTO @tmpMatchUpdate(custid,matchid1,matchid2)
+			--FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
+			--	INNER JOIN #tmpCustMatch t1 ON p.custid = t1.custid AND t1.rn = 1
+			--	LEFT JOIN #tmpCustMatch t2 ON p.custid = t2.custid AND t2.rn = 2
+			--WHERE p.matchid1 IS NULL OR p.matchid2 IS NULL	
 			
-			--set isMarkVoid = 1 for account has 2 matches voided
-			UPDATE p
-			SET p.isMarkVoid = 1
-			FROM ProblemAccount p
-				INNER JOIN @tmpMatchUpdate rs ON p.custid = rs.custid
-			WHERE rs.matchid1 IS NOT NULL AND rs.matchid2 IS NOT NULL
+			----set isMarkVoid = 1 for account has 2 matches voided
+			--UPDATE p
+			--SET p.isMarkVoid = 1
+			--FROM ProblemAccount p
+			--	INNER JOIN @tmpMatchUpdate rs ON p.custid = rs.custid
+			--WHERE rs.matchid1 IS NOT NULL AND rs.matchid2 IS NOT NULL
 			
-			--un-set VIP if has 2 matches are voided include new problem accounts & existing
-			IF EXISTS (SELECT 1 FROM @tmpMatchUpdate WHERE matchid1 IS NOT NULL AND matchid2 IS NOT NULL)
-				OR EXISTS (SELECT 1 FROM #tmpCustMatch WHERE rn =2)
-			BEGIN
-				DELETE Dep_CustVIP
-				OUTPUT DELETED.custid
-				INTO @tmpCustVip
-				WHERE custid IN (
-					SELECT custid FROM @tmpMatchUpdate WHERE matchid1 IS NOT NULL AND matchid2 IS NOT NULL
-					UNION SELECT custid FROM #tmpCustMatch WHERE rn =2
-				)
+			----un-set VIP if has 2 matches are voided include new problem accounts & existing
+			--IF EXISTS (SELECT 1 FROM @tmpMatchUpdate WHERE matchid1 IS NOT NULL AND matchid2 IS NOT NULL)
+			--	OR EXISTS (SELECT 1 FROM #tmpCustMatch WHERE rn =2)
+			--BEGIN
+			--	DELETE Dep_CustVIP
+			--	OUTPUT DELETED.custid
+			--	INTO @tmpCustVip
+			--	WHERE custid IN (
+			--		SELECT custid FROM @tmpMatchUpdate WHERE matchid1 IS NOT NULL AND matchid2 IS NOT NULL
+			--		UNION SELECT custid FROM #tmpCustMatch WHERE rn =2
+			--	)
 				
-				--reduce betlimit for account has 2 matches voided
-				UPDATE p
-				SET p.MaxBet = t.MaxBet,
-					p.MaxPerEvent = t.MaxPerEvent
-				FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
-					INNER JOIN #tmpCust t ON p.custid = t.custid
-				WHERE p.custid IN (SELECT custid FROM @tmpCustVip)				
-			END	
+			--	--reduce betlimit for account has 2 matches voided
+			--	UPDATE p
+			--	SET p.MaxBet = t.MaxBet,
+			--		p.MaxPerEvent = t.MaxPerEvent
+			--	FROM ProblemAccount p WITH(UPDLOCK,ROWLOCK)
+			--		INNER JOIN #tmpCust t ON p.custid = t.custid
+			--	WHERE p.custid IN (SELECT custid FROM @tmpCustVip)				
+			--END	
 
 			--Logging 
 			SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
@@ -316,35 +318,35 @@ BEGIN
 					@Duration			= @Duration
 			END	
 
-			--log for un-set VIP status
-			WHILE(1=1)
-			BEGIN
-				UPDATE TOP (1) t1
-				SET @username = username,
-					@custid = t1.custid,
-					@MaxBet = MaxBet,
-					@MaxPerEvent = MaxPerEvent,
-					isLogVip = 1
-				FROM #tmpCust t1
-					INNER JOIN @tmpCustVip t2 ON t1.custid = t2.custid
-				WHERE isLogVip = 0
+			----log for un-set VIP status
+			--WHILE(1=1)
+			--BEGIN
+			--	UPDATE TOP (1) t1
+			--	SET @username = username,
+			--		@custid = t1.custid,
+			--		@MaxBet = MaxBet,
+			--		@MaxPerEvent = MaxPerEvent,
+			--		isLogVip = 1
+			--	FROM #tmpCust t1
+			--		INNER JOIN @tmpCustVip t2 ON t1.custid = t2.custid
+			--	WHERE isLogVip = 0
 				
-				IF @@ROWCOUNT =0
-					BREAK;
+			--	IF @@ROWCOUNT =0
+			--		BREAK;
 					
-				SELECT  @LogData = '<R'
-								+ ' Username="' + @UserName + '"'
-								+ ' MPM="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))), SPACE(1)) + '"'
-								+ ' Max="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))), SPACE(1)) + '"'
-								+ ' />'
+			--	SELECT  @LogData = '<R'
+			--					+ ' Username="' + @UserName + '"'
+			--					+ ' MPM="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))), SPACE(1)) + '"'
+			--					+ ' Max="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxBet AS VARCHAR(50))), SPACE(1)) + '"'
+			--					+ ' />'
 									
-				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-					@UserId				=  862400,--Starix2
-					@CustId				= @CustId,
-					@ActionId			= 31633,
-					@TrackingValue		= @LogData,					
-					@Duration			= @Duration
-			END	
+			--	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+			--		@UserId				=  862400,--Starix2
+			--		@CustId				= @CustId,
+			--		@ActionId			= 31633,
+			--		@TrackingValue		= @LogData,					
+			--		@Duration			= @Duration
+			--END	
 		END
 		
 		UPDATE s
