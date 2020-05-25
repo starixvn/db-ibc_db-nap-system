@@ -1,0 +1,121 @@
+/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect] 
+	@ProductList VARCHAR(200) = NULL,
+	@SporttypeList VARCHAR(MAX) = NULL,
+	@BettypeList VARCHAR(MAX) =  NULL,
+	--@BetLimitType VARCHAR(100) = '',
+	@LiveIndicator	TINYINT = NULL
+AS
+/*
+	Created: 20200525@Eden
+	Task : Bet Limit Control - select Type Detail 
+	DB: DBCUST/CustDB
+	Original:
+
+	Revisions:  
+	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+
+	Parameter explanation:
+	-@LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
+
+	Example: 
+	EXEC NAP_BLControl_TypeSelect 
+		@ProductList = '0',
+		@SporttypeList = '0',
+		@BettypeList = '0',
+		--@BetLimitType = 'TypeA',
+		@LiveIndicator = 3
+
+	*/
+BEGIN
+	CREATE TABLE #BTC_SportBettypeReference(
+		ProductID INT, 
+		Sporttype INT, 
+		Bettype   INT, 
+		IsLive    BIT, 
+		IsActive  BIT,
+		PRIMARY KEY (ProductID,Sporttype,Bettype,IsLive)
+	)
+	INSERT INTO #BTC_SportBettypeReference(ProductID,Sporttype,Bettype,IsLive,IsActive)
+	SELECT ProductID,Sporttype,Bettype,IsLive,1 
+	FROM DBEXT.bodb02.dbo.SportBettypeMatrix WITH(NOLOCK) 
+	WHERE ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
+	
+	SELECT  BetLimitTypeID,
+			BetLimitType,
+			BeginTime,
+			EndTime,
+			LiveIndicator,
+			RestrictVIP ,
+			ProductList = SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,c.ProductID )
+										 FROM #BTC_SportBettypeReference c
+										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
+														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+														WHERE (b.ProductID = c.ProductID OR b.ProductID = 0)
+															AND BetLimitTypeID = t.BetLimitTypeID) pro
+										 GROUP BY c.ProductID
+										 ORDER BY c.ProductID
+										 FOR XML PATH ('')),2,10000),
+			SportTypeList = SUBSTRING((  SELECT ',' + CONVERT(VARCHAR,SportType )
+										 FROM #BTC_SportBettypeReference c
+										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
+														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+														WHERE (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
+															AND BetLimitTypeID = t.BetLimitTypeID) sp
+										 GROUP BY c.Sporttype
+										 ORDER BY c.Sporttype
+										 FOR XML PATH ('')),2,10000),
+			BetTypeList = SUBSTRING((	SELECT ',' + CONVERT(VARCHAR,c.BetType)
+										 FROM #BTC_SportBettypeReference c
+										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
+														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+														WHERE (b.Bettype = c.Bettype OR b.Bettype = 0)
+															AND BetLimitTypeID = t.BetLimitTypeID) bt
+										 GROUP BY c.BetType
+										 ORDER BY c.Bettype
+										 FOR XML PATH ('')),2,10000),
+			--LeagueGroupList = SUBSTRING((SELECT ',' + CONVERT(VARCHAR,lg.GroupID)
+			--							 FROM #BTC_SportBettypeReference c
+			--								INNER JOIN DBPRO.bodb02.dbo.leagueGroup lg WITH(NOLOCK) ON lg.sporttype = c.Sporttype OR lg.sporttype = 0
+			--								CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
+			--												FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+			--												WHERE (b.LeagueGroupID = lg.GroupID OR b.LeagueGroupID = 0)
+			--													AND BetLimitTypeID = t.BetLimitTypeID) gr
+			--							 GROUP BY lg.GroupID
+			--							 ORDER BY lg.GroupID
+			--							 FOR XML PATH ('')),2,10000),
+			LeagueIDList = SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
+										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueID <> 0
+										 GROUP BY b.leagueid
+										 ORDER BY b.leagueid
+										 FOR XML PATH ('')),2,10000),
+		IsAllProduct = CAST (0 AS BIT), 
+		IsAllSporttype = CAST (0 AS BIT),
+		IsAllBettype = CAST (0 AS BIT),
+		IsAllLeague = CAST (0 AS BIT)
+	INTO #BetLimitControlType
+	FROM BetLimitControlType t WITH(NOLOCK)
+
+	UPDATE t
+	SET IsAllProduct = CASE WHEN td.ProductID = 0 THEN 1 ELSE 0 END,
+		IsAllSporttype = CASE WHEN td.Sporttype = 0 THEN 1 ELSE 0 END,
+		IsAllBettype = CASE WHEN td.Bettype = 0 THEN 1 ELSE 0 END,
+		IsAllLeague = CASE WHEN td.LeagueID = 0 THEN 1 ELSE 0 END
+	FROM #BetLimitControlType t 
+		INNER JOIN BetLimitControlTypeDetail td WITH(NOLOCK)
+			ON t.BetLimitTypeID = td.BetLimitTypeID
+
+	SELECT * 
+	FROM #BetLimitControlType t
+	WHERE (CHARINDEX( ',' +  @ProductList + ',',',' +  t.ProductList + ',') > 0 OR @ProductList = '0')
+		AND (CHARINDEX( ',' +  @SporttypeList + ',',',' +  t.SportTypeList + ',') > 0 OR @SporttypeList = '0')
+		AND (CHARINDEX( ',' +  @BettypeList + ',',',' +  t.BetTypeList + ',') > 0 OR @BettypeList = '0')
+		AND (t.LiveIndicator = @LiveIndicator OR @LiveIndicator = 3)
+
+	DROP TABLE #BTC_SportBettypeReference
+	DROP TABLE #BetLimitControlType
+END
+GO
+
+
