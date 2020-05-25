@@ -13,9 +13,7 @@ AS
 	Parameter explanation:
 
 	Example: 
-	EXEC NAP_BLControl_SportSel 
-		@ProductList = '0',
-		@BetLimitTypeID = 1
+	EXEC NAP_BLControl_SportBettypeSel 
 	*/
 BEGIN
 	SELECT c.ProductID, 
