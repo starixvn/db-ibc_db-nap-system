@@ -1,8 +1,8 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect] 
-	@ProductList VARCHAR(200) = NULL,
-	@SporttypeList VARCHAR(MAX) = NULL,
-	@BettypeList VARCHAR(MAX) =  NULL,
+	@ProductList VARCHAR(200) = '',
+	@SporttypeList VARCHAR(MAX) = '',
+	@BettypeList VARCHAR(MAX) =  '',
 	--@BetLimitType VARCHAR(100) = '',
 	@LiveIndicator	TINYINT = NULL
 AS
