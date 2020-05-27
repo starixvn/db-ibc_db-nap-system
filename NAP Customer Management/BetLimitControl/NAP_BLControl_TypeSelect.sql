@@ -85,12 +85,12 @@ BEGIN
 			--							 GROUP BY lg.GroupID
 			--							 ORDER BY lg.GroupID
 			--							 FOR XML PATH ('')),2,10000),
-			LeagueIDList = SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
+			LeagueIDList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
 										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueID <> 0
 										 GROUP BY b.leagueid
 										 ORDER BY b.leagueid
-										 FOR XML PATH ('')),2,10000),
+										 FOR XML PATH ('')),2,10000),''),
 		IsAllProduct = CAST (0 AS BIT), 
 		IsAllSporttype = CAST (0 AS BIT),
 		IsAllBettype = CAST (0 AS BIT),

@@ -78,8 +78,6 @@ BEGIN
 		RETURN
 	END 
 
-	SELECT * FROM #ValidData
-
 	--> add more 59 seconds and 999 miliseconds
 	SELECT @EndTime = DATEADD(ms,59999,@EndTime)
 	DECLARE @Insert TABLE (BetLimitTypeID INT)

@@ -54,6 +54,57 @@ BEGIN
 
 		RETURN
 	END
+
+	CREATE TABLE #ValidData (
+		ProductID TINYINT,
+		Sporttype SMALLINT,
+		Bettype SMALLINT,
+		LeagueGroupID INT,
+		LeagueID INT
+	)
+
+	EXEC NAP_BLControl_SportBettypeCheck 
+		@ProductList = @ProductList,
+		@SporttypeList = @SporttypeList,
+		@BettypeList = @BettypeList,
+		@LeagueGroupList = @LeagueGroupList,
+		@LeagueList = @LeagueList,
+		@ErrorCode = @ErrorCode OUTPUT,
+		@ErrorMsg = @ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0 
+	BEGIN
+		RETURN
+	END 
+
+	SELECT @EndTime = DATEADD(ms,59999,@EndTime)
+
+	--> Update BetLimitControlType
+	UPDATE bc
+	SET BeginTime = @BeginTime,
+		EndTime = @EndTime,
+		LiveIndicator = @LiveIndicator,
+		RestrictVIP = @RestrictVIP
+	FROM BetLimitControlType bc WITH(ROWLOCK,UPDLOCK)
+
+	--> Reresh BetLimitControlTypeDetail
+	;WITH t AS(
+		SELECT @BetLimitTypeID AS BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID
+		FROM #ValidData
+	)
+	MERGE BetLimitControlTypeDetail bc
+	USING t 
+		ON bc.BetLimitTypeID = t.BetLimitTypeID
+		AND bc.ProductID = t.ProductID 
+		AND bc.Sporttype = t.Sporttype
+		AND bc.Bettype = t.Bettype 
+		AND bc.LeagueGroupID = t.LeagueGroupID
+		AND bc.LeagueID = t.LeagueID
+	WHEN NOT MATCHED THEN INSERT (BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
+						VALUES( t.BetLimitTypeID,t.ProductID,t.Sporttype,t.Bettype,t.LeagueGroupID,t.LeagueID)
+
+	WHEN NOT MATCHED BY SOURCE 
+		THEN DELETE; 
 END
 GO
 

@@ -36,6 +36,14 @@ BEGIN
 
 		RETURN
 	END
+
+	DELETE 
+	FROM BetLimitControlTypeDetail WITH(ROWLOCK,UPDLOCK)
+	WHERE BetLimitTypeID = @BetLimitTypeID
+
+	DELETE 
+	FROM BetLimitControlType WITH(ROWLOCK,UPDLOCK)
+	WHERE BetLimitTypeID = @BetLimitTypeID
 END
 GO
 
