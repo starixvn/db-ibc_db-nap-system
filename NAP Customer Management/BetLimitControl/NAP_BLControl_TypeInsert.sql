@@ -11,7 +11,8 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_TypeInsert]
 	@EndTime TIME = NULL,
 	@RestrictVIP BIT = NULL,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(100) = '' OUTPUT 
+	@ErrorMsg VARCHAR(MAX) = '' OUTPUT,
+	@UserId INT = 0 
 AS
 /*
 	Created: 20200525@Eden
@@ -28,7 +29,7 @@ AS
 		1: The bet limit type exist already.
 
 	Example: 
-	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(100) = '' 
+	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
 	EXEC NAP_BLControl_TypeInsert 
 		@BetLimitType = 'TypeD',
 		@ProductList = '0',
@@ -54,6 +55,45 @@ BEGIN
 
 		RETURN
 	END
+
+	CREATE TABLE #ValidData (
+		ProductID TINYINT,
+		Sporttype SMALLINT,
+		Bettype SMALLINT,
+		LeagueGroupID INT,
+		LeagueID INT
+	)
+
+	EXEC NAP_BLControl_SportBettypeCheck 
+		@ProductList = @ProductList,
+		@SporttypeList = @SporttypeList,
+		@BettypeList = @BettypeList,
+		@LeagueGroupList = @LeagueGroupList,
+		@LeagueList = @LeagueList,
+		@ErrorCode = @ErrorCode OUTPUT,
+		@ErrorMsg = @ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0 
+	BEGIN
+		RETURN
+	END 
+
+	SELECT * FROM #ValidData
+
+	--> add more 59 seconds and 999 miliseconds
+	SELECT @EndTime = DATEADD(ms,59999,@EndTime)
+	DECLARE @Insert TABLE (BetLimitTypeID INT)
+
+	INSERT INTO BetLimitControlType(BetLimitType,BeginTime,EndTime,LiveIndicator,RestrictVIP)
+	OUTPUT Inserted.BetLimitTypeID INTO @Insert(BetLimitTypeID)
+	SELECT @BetLimitType,@BeginTime,@EndTime,@LiveIndicator,@RestrictVIP
+
+	INSERT INTO BetLimitControlTypeDetail(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
+	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID
+	FROM #ValidData v
+		CROSS APPLY @Insert i
+
+	DROP TABLE #ValidData
 END
 GO
 

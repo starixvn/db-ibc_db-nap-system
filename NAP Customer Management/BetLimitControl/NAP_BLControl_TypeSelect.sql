@@ -1,10 +1,11 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect] 
-	@ProductList VARCHAR(200) = '',
-	@SporttypeList VARCHAR(MAX) = '',
-	@BettypeList VARCHAR(MAX) =  '',
-	--@BetLimitType VARCHAR(100) = '',
-	@LiveIndicator	TINYINT = NULL
+	@BetLimitTypeID INT = 0,
+	@ProductID TINYINT = NULL,
+	@Sporttype SMALLINT = NULL,
+	@Bettype SMALLINT = NULL,
+	@LiveIndicator	TINYINT = NULL,
+	@UserId INT = 0 
 AS
 /*
 	Created: 20200525@Eden
@@ -20,9 +21,9 @@ AS
 
 	Example: 
 	EXEC NAP_BLControl_TypeSelect 
-		@ProductList = '0',
-		@SporttypeList = '0',
-		@BettypeList = '0',
+		@ProductID = 0,
+		@Sporttype = 0,
+		@Bettype = 0,
 		--@BetLimitType = 'TypeA',
 		@LiveIndicator = 3
 
@@ -108,10 +109,11 @@ BEGIN
 
 	SELECT * 
 	FROM #BetLimitControlType t
-	WHERE (CHARINDEX( ',' +  @ProductList + ',',',' +  t.ProductList + ',') > 0 OR @ProductList = '0')
-		AND (CHARINDEX( ',' +  @SporttypeList + ',',',' +  t.SportTypeList + ',') > 0 OR @SporttypeList = '0')
-		AND (CHARINDEX( ',' +  @BettypeList + ',',',' +  t.BetTypeList + ',') > 0 OR @BettypeList = '0')
+	WHERE (CHARINDEX( ',' +  CONVERT(VARCHAR,@ProductID) + ',',',' +  t.ProductList + ',') > 0 OR @ProductID = 0)
+		AND (CHARINDEX( ',' +  CONVERT(VARCHAR,@Sporttype) + ',',',' +  t.SportTypeList + ',') > 0 OR @Sporttype = 0)
+		AND (CHARINDEX( ',' +  CONVERT(VARCHAR,@Bettype) + ',',',' +  t.BetTypeList + ',') > 0 OR @Bettype = 0)
 		AND (t.LiveIndicator = @LiveIndicator OR @LiveIndicator = 3)
+		AND (t.BetLimitTypeID = @BetLimitTypeID OR @BetLimitTypeID = 0 )
 
 	DROP TABLE #BTC_SportBettypeReference
 	DROP TABLE #BetLimitControlType
