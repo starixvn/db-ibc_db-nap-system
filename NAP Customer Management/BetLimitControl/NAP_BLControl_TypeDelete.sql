@@ -2,7 +2,9 @@
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeDelete] 
 	@BetLimitTypeID INT,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(100) = '' OUTPUT 
+	@ErrorMsg VARCHAR(100) = '' OUTPUT,
+	@UserId INT = 0 ,
+	@IP	VARCHAR(15) = '' 
 AS
 /*
 	Created: 20200525@Eden
@@ -29,10 +31,20 @@ AS
 
 	*/
 BEGIN
+	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
+		@UserId=@userid,
+		@SiteKey='CustomerManagement',
+		@FunctionKey='BetLimitTypeControl',
+		@ErrCode=@ErrorCode OUTPUT,
+		@ErrMsg=@ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0
+		RETURN
+
 	IF NOT EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitTypeID = @BetLimitTypeID )
 	BEGIN
 		SELECT @ErrorCode = 1 ,
-			@ErrorMsg = 'The bet limit type is no longer exists.'
+			@ErrorMsg = 'The bet limit type does not exist.'
 
 		RETURN
 	END

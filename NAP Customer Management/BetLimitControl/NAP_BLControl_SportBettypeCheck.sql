@@ -44,6 +44,7 @@ BEGIN
 		INNER JOIN dbo.f_StringSplit(@ProductList,',') p1 ON m.ProductID = p1.val OR @ProductList = '0'
 		LEFT JOIN dbo.f_StringSplit(@SporttypeList,',') sp ON m.Sporttype = sp.val OR @SporttypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
+	OPTION (MAXRECURSION 0)
 
 	SELECT DISTINCT 
 		m.ProductID,
@@ -54,7 +55,7 @@ BEGIN
 		INNER JOIN dbo.f_StringSplit(@SporttypeList,',') p1 ON m.Sporttype = p1.val OR @SporttypeList = '0'
 		LEFT JOIN dbo.f_StringSplit(@BettypeList,',') bt ON m.Bettype = bt.val OR @BettypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
-
+	OPTION (MAXRECURSION 0)
 
 	DECLARE @ErrorProducts VARCHAR(MAX) = '',
 			@ErrorSporttypes VARCHAR(MAX) = '',
@@ -95,6 +96,7 @@ BEGIN
 	SELECT val AS LeagueID 
 	INTO #League
 	FROM dbo.f_StringSplit(@LeagueList,',') le
+	OPTION (MAXRECURSION 0)
 
 	SELECT l.Sporttype,l.LeagueID
 	INTO #SportLeague

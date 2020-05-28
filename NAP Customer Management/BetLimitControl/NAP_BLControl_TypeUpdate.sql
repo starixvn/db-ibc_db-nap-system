@@ -11,7 +11,9 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_TypeUpdate]
 	@EndTime TIME = NULL,
 	@RestrictVIP BIT = NULL,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(100) = '' OUTPUT 
+	@ErrorMsg VARCHAR(100) = '' OUTPUT,
+	@UserId INT = 0 ,
+	@IP	VARCHAR(15) = ''
 AS
 /*
 	Created: 20200525@Eden
@@ -47,10 +49,20 @@ AS
 
 	*/
 BEGIN
+	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
+		@UserId=@userid,
+		@SiteKey='CustomerManagement',
+		@FunctionKey='BetLimitTypeControl',
+		@ErrCode=@ErrorCode OUTPUT,
+		@ErrMsg=@ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0
+		RETURN
+
 	IF NOT EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitTypeID = @BetLimitTypeID )
 	BEGIN
 		SELECT @ErrorCode = 1 ,
-			@ErrorMsg = 'The bet limit type is no longer exists.'
+			@ErrorMsg = 'The bet limit type does not exist.'
 
 		RETURN
 	END
@@ -88,22 +100,17 @@ BEGIN
 	FROM BetLimitControlType bc WITH(ROWLOCK,UPDLOCK)
 
 	--> Reresh BetLimitControlTypeDetail
-	;WITH t AS(
-		SELECT @BetLimitTypeID AS BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID
-		FROM #ValidData
-	)
 	MERGE BetLimitControlTypeDetail bc
-	USING t 
-		ON bc.BetLimitTypeID = t.BetLimitTypeID
-		AND bc.ProductID = t.ProductID 
+	USING #ValidData t
+		ON bc.ProductID = t.ProductID 
 		AND bc.Sporttype = t.Sporttype
 		AND bc.Bettype = t.Bettype 
 		AND bc.LeagueGroupID = t.LeagueGroupID
 		AND bc.LeagueID = t.LeagueID
 	WHEN NOT MATCHED THEN INSERT (BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
-						VALUES( t.BetLimitTypeID,t.ProductID,t.Sporttype,t.Bettype,t.LeagueGroupID,t.LeagueID)
+						VALUES( @BetLimitTypeID,t.ProductID,t.Sporttype,t.Bettype,t.LeagueGroupID,t.LeagueID)
 
-	WHEN NOT MATCHED BY SOURCE 
+	WHEN NOT MATCHED BY SOURCE AND bc.BetLimitTypeID = @BetLimitTypeID
 		THEN DELETE; 
 END
 GO

@@ -5,7 +5,9 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect]
 	@Sporttype SMALLINT = NULL,
 	@Bettype SMALLINT = NULL,
 	@LiveIndicator	TINYINT = NULL,
-	@UserId INT = 0 
+	@UserId INT = 0,
+	@ErrorCode INT = 0 OUTPUT,
+	@ErrorMsg VARCHAR(MAX) = '' OUTPUT
 AS
 /*
 	Created: 20200525@Eden
@@ -24,11 +26,20 @@ AS
 		@ProductID = 0,
 		@Sporttype = 0,
 		@Bettype = 0,
-		--@BetLimitType = 'TypeA',
 		@LiveIndicator = 3
 
 	*/
 BEGIN
+	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
+		@UserId=@userid,
+		@SiteKey='CustomerManagement',
+		@FunctionKey='BetLimitTypeControl',
+		@ErrCode=@ErrorCode OUTPUT,
+		@ErrMsg=@ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0
+		RETURN
+
 	CREATE TABLE #BTC_SportBettypeReference(
 		ProductID INT, 
 		Sporttype INT, 
@@ -85,7 +96,7 @@ BEGIN
 			--							 GROUP BY lg.GroupID
 			--							 ORDER BY lg.GroupID
 			--							 FOR XML PATH ('')),2,10000),
-			LeagueIDList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
+			LeagueList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
 										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueID <> 0
 										 GROUP BY b.leagueid
