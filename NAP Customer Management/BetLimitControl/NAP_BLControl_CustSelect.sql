@@ -10,7 +10,7 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustSelect]
 	@PageIndex	INT = 1,
 	@TotalItems	INT = 0 OUTPUT,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(MAX) = '' OUTPUT
+	@ErrorMsg VARCHAR(200) = '' OUTPUT
 AS
 /*
 	Created: 20200528@Eden
@@ -41,7 +41,7 @@ AS
 
 	*/
 BEGIN
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
+	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
 		@UserId=@userid,
 		@SiteKey='CustomerManagement',
 		@FunctionKey='BetLimitTypeControl',
