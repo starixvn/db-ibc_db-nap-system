@@ -1,10 +1,10 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_SportBettypeSel] 
 AS
 /*
 	Created: 20200525@Eden
 	Task : Bet Limit Control - select Sport bettype matrix use Betlimit control function 
-	DB: DBCUST/CustDB
+	DB: DBACC-bodb02
 	Original:
 
 	Revisions:  

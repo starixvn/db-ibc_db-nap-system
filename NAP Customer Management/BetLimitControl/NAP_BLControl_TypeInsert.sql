@@ -84,7 +84,7 @@ BEGIN
 		LeagueID INT
 	)
 
-	EXEC NAP_BLControl_SportBettypeCheck 
+	EXEC DBACC.bodb02.dbo.NAP_BLControl_SportBettypeCheck 
 		@ProductList = @ProductList,
 		@SporttypeList = @SporttypeList,
 		@BettypeList = @BettypeList,

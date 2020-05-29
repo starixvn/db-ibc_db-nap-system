@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB,DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect] 
 	@BetLimitTypeID INT = 0,
 	@ProductID TINYINT = NULL,
@@ -12,7 +12,7 @@ AS
 /*
 	Created: 20200525@Eden
 	Task : Bet Limit Control - select Type Detail 
-	DB: DBCUST/CustDB
+	DB: DBCUST/CustDB,DBACC/bodb02
 	Original:
 
 	Revisions:  

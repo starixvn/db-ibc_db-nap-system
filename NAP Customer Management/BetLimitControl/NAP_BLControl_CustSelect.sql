@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustSelect] 
 	@LevelID TINYINT = NULL,
 	@Currency INT = NULL,
@@ -15,7 +15,7 @@ AS
 /*
 	Created: 20200528@Eden
 	Task : Bet Limit Control - select CustSetting Detail 
-	DB: DBCUST/CustDB
+	DB: DBACC-bodb02
 	Original:
 
 	Revisions:  
