@@ -125,6 +125,7 @@ BEGIN
 		AND (CHARINDEX( ',' +  CONVERT(VARCHAR,@Bettype) + ',',',' +  t.BetTypeList + ',') > 0 OR @Bettype = 0)
 		AND (t.LiveIndicator = @LiveIndicator OR @LiveIndicator = 3)
 		AND (t.BetLimitTypeID = @BetLimitTypeID OR @BetLimitTypeID = 0 )
+	ORDER BY t.BetLimitType
 
 	DROP TABLE #BTC_SportBettypeReference
 	DROP TABLE #BetLimitControlType

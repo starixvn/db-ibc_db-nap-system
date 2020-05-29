@@ -12,7 +12,7 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_TypeUpdate]
 	@EndTime TIME = NULL,
 	@RestrictVIP BIT = NULL,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(100) = '' OUTPUT,
+	@ErrorMsg VARCHAR(MAX) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = ''
 AS
@@ -31,11 +31,11 @@ AS
 		1: The bet limit type is no longer exists.
 
 	Example: 
-	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(100) = '' 
+	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
 	EXEC NAP_BLControl_TypeUpdate 
 		@BetLimitTypeID = 1,
 		@BetLimitType = 'TypeAA',
-		@ProductList = '0',
+		@ProductList = '0', 
 		@SporttypeList = '0',
 		@BettypeList = '0',
 		@LiveIndicator = 3,
@@ -53,6 +53,15 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31751
+	DECLARE @Old_BetLimitType VARCHAR(50),
+			@Old_BeginTime TIME,
+			@Old_EndTime TIME,
+			@Old_LiveIndicator TINYINT,
+			@Old_RestrictVIP BIT,
+			@Old_ProductList VARCHAR(200),
+			@Old_SportTypeList VARCHAR(MAX),
+			@Old_BetTypeList VARCHAR(MAX),
+			@Old_LeagueList VARCHAR(MAX)
 
 	SET @StartRun = GETDATE()
 
@@ -70,6 +79,18 @@ BEGIN
 	BEGIN
 		SELECT @ErrorCode = 1 ,
 			@ErrorMsg = 'The bet limit type does not exist.'
+
+		RETURN
+	END
+
+	SELECT @Old_BetLimitType = BetLimitType  
+	FROM  BetLimitControlType t WITH(NOLOCK) 
+	WHERE t.BetLimitTypeID = @BetLimitTypeID
+
+	IF EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitType = @BetLimitType ) AND @Old_BetLimitType <> @BetLimitType
+	BEGIN
+		SELECT @ErrorCode = 1 ,
+			@ErrorMsg = 'The bet limit type exist already.'
 
 		RETURN
 	END
@@ -140,18 +161,7 @@ BEGIN
 		@BetLimitTypeID = @BetLimitTypeID,
 		@UserId = @UserId
 
-	DECLARE @Old_BetLimitType VARCHAR(50),
-			@Old_BeginTime TIME,
-			@Old_EndTime TIME,
-			@Old_LiveIndicator TINYINT,
-			@Old_RestrictVIP BIT,
-			@Old_ProductList VARCHAR(200),
-			@Old_SportTypeList VARCHAR(MAX),
-			@Old_BetTypeList VARCHAR(MAX),
-			@Old_LeagueList VARCHAR(MAX)
-
-	SELECT   @Old_BetLimitType  		= BetLimitType  
-			,@Old_BeginTime     		= BeginTime     
+	SELECT   @Old_BeginTime     		= BeginTime     
 			,@Old_EndTime       		= EndTime       
 			,@Old_LiveIndicator 		= LiveIndicator 
 			,@Old_RestrictVIP   		= RestrictVIP   
@@ -179,6 +189,7 @@ BEGIN
 		AND bc.Bettype = t.Bettype 
 		AND bc.LeagueGroupID = t.LeagueGroupID
 		AND bc.LeagueID = t.LeagueID
+		AND bc.BetLimitTypeID = @BetLimitTypeID
 	WHEN NOT MATCHED THEN INSERT (BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
 						VALUES( @BetLimitTypeID,t.ProductID,t.Sporttype,t.Bettype,t.LeagueGroupID,t.LeagueID)
 

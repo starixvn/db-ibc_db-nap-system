@@ -104,15 +104,15 @@ BEGIN
 
 	DECLARE @OldLogData VARCHAR(500),@NewLogData VARCHAR(500)
 	SELECT  @OldLogData = '<R '
-						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
-						+ 'maxb="'+ coalesce(cast(@OldMaxBet as varchar(50)),space(1)) + '" ' 
+						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" '
 						+ 'mpm="'+ coalesce(cast(@OldMaxPerMatch as varchar(50)),space(1)) + '" ' 
+						+ 'maxb="'+ coalesce(cast(@OldMaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@NewLogData = '<R '
 						+ 'Type="'+ coalesce(cast(@NewBetLimitType as varchar(50)),space(1)) + '" ' 
-						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
+						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 
