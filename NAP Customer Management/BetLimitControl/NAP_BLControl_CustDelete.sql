@@ -33,7 +33,7 @@ AS
 
 	*/
 BEGIN
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 0
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31755
 	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50)
 
 	SET @StartRun = GETDATE()
@@ -59,7 +59,7 @@ BEGIN
 	IF @@ROWCOUNT = 0
 	BEGIN
 		SET @ErrorCode = 4
-		SELECT @ErrorMsg = 'This record no longer exists in the Bet Limit Control List.'
+		SELECT @ErrorMsg = 'This record does not exists in the Bet Limit Control List.'
 		RETURN
 	END
 

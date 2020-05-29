@@ -1,6 +1,7 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeUpdate] 
 	@BetLimitTypeID INT,
+	@BetLimitType VARCHAR(50) = NULL,
 	@ProductList VARCHAR(200) = '',
 	@SporttypeList VARCHAR(MAX) = '',
 	@BettypeList VARCHAR(MAX) =  '',
@@ -33,6 +34,7 @@ AS
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(100) = '' 
 	EXEC NAP_BLControl_TypeUpdate 
 		@BetLimitTypeID = 1,
+		@BetLimitType = 'TypeAA',
 		@ProductList = '0',
 		@SporttypeList = '0',
 		@BettypeList = '0',
@@ -41,14 +43,19 @@ AS
 		@LeagueList =  '',
 		@BeginTime = NULL,
 		@EndTime = NULL,
-		@RestrictVIP = NULL,
+		@RestrictVIP = 1,
 		@ErrorCode = @ErrorCode OUTPUT,
-		@ErrorMsg = @ErrorMsg OUTPUT
+		@ErrorMsg = @ErrorMsg OUTPUT,
+		@UserId = 8
 
 	SELECT @ErrorCode,@ErrorMsg
 
 	*/
 BEGIN
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31751
+
+	SET @StartRun = GETDATE()
+
 	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
 		@UserId=@userid,
 		@SiteKey='CustomerManagement',
@@ -91,13 +98,78 @@ BEGIN
 
 	SELECT @EndTime = DATEADD(ms,59999,@EndTime)
 
+	CREATE TABLE #OLdbetLimitTypeTbl
+	(
+		BetLimitTypeID INT,
+		BetLimitType VARCHAR(50),
+		BeginTime TIME,
+		EndTime TIME,
+		LiveIndicator TINYINT,
+		RestrictVIP BIT,
+		ProductList VARCHAR(200),
+		SportTypeList VARCHAR(MAX),
+		BetTypeList VARCHAR(MAX),
+		LeagueList VARCHAR(MAX),
+		IsAllProduct BIT,
+		IsAllSporttype BIT,
+		IsAllBettype BIT,
+		IsAllLeague BIT
+	)
+
+	INSERT INTO #OLdbetLimitTypeTbl(
+		 BetLimitTypeID
+		,BetLimitType  
+		,BeginTime     
+		,EndTime       
+		,LiveIndicator 
+		,RestrictVIP   
+		,ProductList   
+		,SportTypeList 
+		,BetTypeList   
+		,LeagueList    
+		,IsAllProduct  
+		,IsAllSporttype
+		,IsAllBettype  
+		,IsAllLeague   
+	)
+	EXEC NAP_BLControl_TypeSelect 
+		@ProductID = 0,
+		@Sporttype = 0,
+		@Bettype = 0,
+		@LiveIndicator = 3,
+		@BetLimitTypeID = @BetLimitTypeID,
+		@UserId = @UserId
+
+	DECLARE @Old_BetLimitType VARCHAR(50),
+			@Old_BeginTime TIME,
+			@Old_EndTime TIME,
+			@Old_LiveIndicator TINYINT,
+			@Old_RestrictVIP BIT,
+			@Old_ProductList VARCHAR(200),
+			@Old_SportTypeList VARCHAR(MAX),
+			@Old_BetTypeList VARCHAR(MAX),
+			@Old_LeagueList VARCHAR(MAX)
+
+	SELECT   @Old_BetLimitType  		= BetLimitType  
+			,@Old_BeginTime     		= BeginTime     
+			,@Old_EndTime       		= EndTime       
+			,@Old_LiveIndicator 		= LiveIndicator 
+			,@Old_RestrictVIP   		= RestrictVIP   
+			,@Old_ProductList   		= CASE WHEN IsAllProduct = 1 THEN '0' ELSE ProductList  END
+			,@Old_SportTypeList 		= CASE WHEN IsAllSporttype = 1 THEN '0' ELSE SportTypeList  END  
+			,@Old_BetTypeList   		= CASE WHEN IsAllBettype = 1 THEN '0' ELSE BetTypeList  END     
+			,@Old_LeagueList    		= CASE WHEN IsAllLeague = 1 THEN '' ELSE LeagueList  END      
+	FROM #OLdbetLimitTypeTbl
+
 	--> Update BetLimitControlType
 	UPDATE bc
 	SET BeginTime = @BeginTime,
 		EndTime = @EndTime,
 		LiveIndicator = @LiveIndicator,
-		RestrictVIP = @RestrictVIP
+		RestrictVIP = @RestrictVIP,
+		BetLimitType = @BetLimitType
 	FROM BetLimitControlType bc WITH(ROWLOCK,UPDLOCK)
+	WHERE BetLimitTypeID = @BetLimitTypeID
 
 	--> Reresh BetLimitControlTypeDetail
 	MERGE BetLimitControlTypeDetail bc
@@ -112,6 +184,45 @@ BEGIN
 
 	WHEN NOT MATCHED BY SOURCE AND bc.BetLimitTypeID = @BetLimitTypeID
 		THEN DELETE; 
+
+	SET @EndRun = GETDATE()
+	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+
+
+	DECLARE @OldLogData VARCHAR(500),@NewLogData VARCHAR(500)
+	SELECT  @NewLogData = '<R '
+						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
+						+ 'Product="'+ coalesce(cast(@ProductList as varchar(50)),space(1)) + '" ' 
+						+ 'Sport="'+ coalesce(cast(@SporttypeList as varchar(50)),space(1)) + '" ' 
+						+ 'BetType="'+ coalesce(cast(@BettypeList as varchar(50)),space(1)) + '" '
+						+ 'LiveIndicator="'+ coalesce(cast(@LiveIndicator as varchar(50)),space(1)) + '" '  
+						+ 'LeagueID="'+ coalesce(cast(@LeagueList as varchar(50)),space(1)) + '" ' 
+						+ 'SpecificTime="'+ coalesce(cast(CASE WHEN @BeginTime IS NOT NULL THEN 1 ELSE 0 END as varchar(50)),space(1)) + '" ' 
+						+ 'FromTime="'+ coalesce(cast(@BeginTime as varchar(50)),space(1)) + '" ' 
+						+ 'ToTime="'+ coalesce(cast(@EndTime as varchar(50)),space(1)) + '" ' 
+						+ 'RestrictVIP="'+ coalesce(cast(@RestrictVIP as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
+						+ ' />',
+			 @OldLogData = '<R '
+						+ 'Type="'+ coalesce(cast(@Old_BetLimitType as varchar(50)),space(1)) + '" ' 
+						+ 'Product="'+ coalesce(cast(@Old_ProductList as varchar(50)),space(1)) + '" ' 
+						+ 'Sport="'+ coalesce(cast(@Old_SporttypeList as varchar(50)),space(1)) + '" ' 
+						+ 'BetType="'+ coalesce(cast(@Old_BettypeList as varchar(50)),space(1)) + '" '
+						+ 'LiveIndicator="'+ coalesce(cast(@Old_LiveIndicator as varchar(50)),space(1)) + '" '  
+						+ 'LeagueID="'+ coalesce(cast(@Old_LeagueList as varchar(50)),space(1)) + '" ' 
+						+ 'SpecificTime="'+ coalesce(cast(CASE WHEN @Old_BeginTime IS NOT NULL THEN 1 ELSE 0 END as varchar(50)),space(1)) + '" ' 
+						+ 'FromTime="'+ coalesce(cast(@Old_BeginTime as varchar(50)),space(1)) + '" ' 
+						+ 'ToTime="'+ coalesce(cast(@Old_EndTime as varchar(50)),space(1)) + '" ' 
+						+ 'RestrictVIP="'+ coalesce(cast(@Old_RestrictVIP as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
+						+ ' />'
+
+	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+		@UserId				= @UserId,
+		@ActionId			= @ActionID,
+		@TrackingValue		= @NewLogData,
+		@TrackingValue2		= @OldLogData,
+		@Duration			= @Duration
 END
 GO
 

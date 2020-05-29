@@ -37,7 +37,7 @@ AS
 
 	*/
 BEGIN
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 0
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31753
 	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50)
 
 	SET @StartRun = GETDATE()

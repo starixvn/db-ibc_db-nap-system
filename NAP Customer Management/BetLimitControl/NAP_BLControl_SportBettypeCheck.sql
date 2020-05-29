@@ -152,7 +152,7 @@ BEGIN
 	FROM #Sport s 
 		INNER JOIN #Bettype bt ON s.Sporttype = bt.Sporttype
 	WHERE bt.Bettype IS NOT NULL AND s.ProductID <> 1
-	UNION ALL
+	UNION
 	SELECT DISTINCT 
 		CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
 		CASE WHEN @SporttypeList = '0' THEN 0 ELSE s.sporttype END AS sporttype,

@@ -41,14 +41,23 @@ AS
 		@LeagueList =  '',
 		@BeginTime = NULL,
 		@EndTime = NULL,
-		@RestrictVIP = NULL,
+		@RestrictVIP = 1,
 		@ErrorCode = @ErrorCode OUTPUT,
-		@ErrorMsg = @ErrorMsg OUTPUT
+		@ErrorMsg = @ErrorMsg OUTPUT,
+		@UserId = 8,
+		@IP = '1.1.1.1'
 
 	SELECT @ErrorCode,@ErrorMsg
 
 	*/
 BEGIN
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31750
+	--DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50)
+
+	SET @StartRun = GETDATE()
+
+	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+
 	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
 		@UserId=@userid,
 		@SiteKey='CustomerManagement',
@@ -101,6 +110,30 @@ BEGIN
 	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID
 	FROM #ValidData v
 		CROSS APPLY @Insert i
+
+	SET @EndRun = GETDATE()
+	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+
+	DECLARE @LogData VARCHAR(500),@NewLogData VARCHAR(500)
+	SELECT  @LogData = '<R '
+						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
+						+ 'Product="'+ coalesce(cast(@ProductList as varchar(50)),space(1)) + '" ' 
+						+ 'Sport="'+ coalesce(cast(@SporttypeList as varchar(50)),space(1)) + '" ' 
+						+ 'BetType="'+ coalesce(cast(@BettypeList as varchar(50)),space(1)) + '" '
+						+ 'LiveIndicator="'+ coalesce(cast(@LiveIndicator as varchar(50)),space(1)) + '" '  
+						+ 'LeagueID="'+ coalesce(cast(@LeagueList as varchar(50)),space(1)) + '" ' 
+						+ 'SpecificTime="'+ coalesce(cast(CASE WHEN @BeginTime IS NOT NULL THEN 1 ELSE 0 END as varchar(50)),space(1)) + '" ' 
+						+ 'FromTime="'+ coalesce(cast(@BeginTime as varchar(50)),space(1)) + '" ' 
+						+ 'ToTime="'+ coalesce(cast(@EndTime as varchar(50)),space(1)) + '" ' 
+						+ 'RestrictVIP="'+ coalesce(cast(@RestrictVIP as varchar(50)),space(1)) + '" ' 
+						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
+						+ ' />'
+
+	EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+		@UserId				= @UserId,
+		@ActionId			= @ActionID,
+		@TrackingValue		= @LogData,
+		@Duration			= @Duration
 
 	DROP TABLE #ValidData
 END

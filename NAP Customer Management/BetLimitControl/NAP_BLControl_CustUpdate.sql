@@ -26,8 +26,9 @@ AS
 	Example: 
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
 	EXEC NAP_BLControl_CustUpdate 
-		@CustID = 1,
+		@CustID = 1176092,
 		@BetLimitTypeID  = 1,
+		@NewBetLimitTypeID  = 1,
 		@MaxBet  = 100,
 		@MaxPerMatch  = 1000,
 		@ErrorCode = @ErrorCode OUTPUT,
@@ -38,8 +39,8 @@ AS
 
 	*/
 BEGIN
-	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 0
-	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50)
+	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31754
+	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50),@NewBetLimitType VARCHAR(50)
 
 	SET @StartRun = GETDATE()
 
@@ -64,7 +65,7 @@ BEGIN
 	IF @@ROWCOUNT = 0
 	BEGIN
 		SET @ErrorCode = 4
-		SELECT @ErrorMsg = 'This record no longer exists in the Bet Limit Control List.'
+		SELECT @ErrorMsg = 'This record does not exists in the Bet Limit Control List.'
 		RETURN
 	END
 
@@ -96,6 +97,7 @@ BEGIN
 
 	SELECT @site = Site FROM Customer c WITH(NOLOCK) WHERE c.custid = @CustID
 	SELECT @BetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @BetLimitTypeID
+	SELECT @NewBetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @NewBetLimitTypeID
 
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
@@ -108,7 +110,7 @@ BEGIN
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@NewLogData = '<R '
-						+ 'Type="'+ coalesce(cast(@NewBetLimitTypeID as varchar(50)),space(1)) + '" ' 
+						+ 'Type="'+ coalesce(cast(@NewBetLimitType as varchar(50)),space(1)) + '" ' 
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '

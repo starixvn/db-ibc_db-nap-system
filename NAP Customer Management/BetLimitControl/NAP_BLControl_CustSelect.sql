@@ -32,7 +32,7 @@ AS
 		@SiteID = 1,
 		@Username = '',
 		@BetLimitTypeID = 0,
-		@PageSize	= 2,
+		@PageSize	= 50,
 		@PageIndex	= 1,
 		@TotalItems = @TotalItems OUTPUT,
 		@UserId = 8
@@ -67,6 +67,7 @@ BEGIN
 		e.Currency,
 		sp.Site,
 		b.BetLimitType,
+		b.BetLimitTypeID,
 		bc.MaxBet,
 		bc.MaxPerMatch,
 		agbc.MaxBet AS Agent_MaxBet,
