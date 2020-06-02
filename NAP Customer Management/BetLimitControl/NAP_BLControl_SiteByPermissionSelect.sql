@@ -1,5 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_BLControl_AllTypeSelect] 
+ALTER PROCEDURE [dbo].[NAP_BLControl_SiteByPermissionSelect] 
 	@UserID INT = 0
 AS
 /*
@@ -14,7 +14,7 @@ AS
 	Parameter explanation:
 
 	Example: 
-	EXEC NAP_BLControl_AllTypeSelect @UserID = 8
+	EXEC NAP_BLControl_SiteByPermissionSelect @UserID = 8
 
 	*/
 BEGIN
