@@ -18,7 +18,6 @@ AS
 
 	Parameter explanation:
 	- @ErrorCode: 
-		1: The bet limit type exist already.
 
 	Example: 
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
