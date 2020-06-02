@@ -44,7 +44,7 @@ BEGIN
 	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
 		@UserId=@userid,
 		@SiteKey='CustomerManagement',
-		@FunctionKey='BetLimitTypeControl',
+		@FunctionKey='BetLimitControl',
 		@ErrCode=@ErrorCode OUTPUT,
 		@ErrMsg=@ErrorMsg OUTPUT
 
