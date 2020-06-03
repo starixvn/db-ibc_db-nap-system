@@ -133,10 +133,11 @@ BEGIN
 				OR (sp.site != 'CN88' AND spSite.isLicensee = 0 AND @HasCredit_Permission = 1 ) 
 				)
 
-	CREATE NONCLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
+	CREATE CLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
 
-	SELECT @TotalItems = COUNT(1) 
+	SELECT TOP 1 @TotalItems = RowNumber
 	FROM #Cust
+	ORDER BY RowNumber DESC
 
 	SELECT * 
 	FROM #Cust

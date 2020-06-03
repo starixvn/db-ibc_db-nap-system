@@ -82,7 +82,7 @@ BEGIN
 	IF @@ROWCOUNT = 0
 	BEGIN
 		SET @ErrorCode = 4
-		SELECT @ErrorMsg = 'This record does not exists in the Bet Limit Control List.'
+		SELECT @ErrorMsg = 'The bet limit does not exist.'
 		RETURN
 	END
 
