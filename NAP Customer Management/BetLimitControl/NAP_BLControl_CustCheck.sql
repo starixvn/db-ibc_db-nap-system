@@ -2,9 +2,11 @@
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustCheck] 
 	@Username VARCHAR(30) = NULL,
 	@BetLimitTypeID INT = NULL,
+	@userid INT = 0,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(MAX) = '' OUTPUT,
-	@CustID	INT = NULL OUTPUT
+	@ErrorMsg VARCHAR(200) = '' OUTPUT,
+	@CustID	INT = NULL OUTPUT,
+	@site NVARCHAR(50) = NULL OUTPUT
 AS
 /*
 	Created: 20200525@Eden
@@ -22,7 +24,7 @@ AS
 		3 - Invalid Bet Limit Type. Please try again.
 
 	Example: 
-	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
+	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(200) = '' 
 	EXEC NAP_BLControl_CustCheck 
 		@Username = 'member01',
 		@BetLimitTypeID  = 1,
@@ -33,6 +35,8 @@ AS
 
 	*/
 BEGIN
+	DECLARE @IsLicensee BIT
+
 	SET @ErrorCode = 0
 
 	SELECT @CustID = CustID 
@@ -41,6 +45,36 @@ BEGIN
 		  AND roleid IN (1,2,3,4)
 
 	IF @CustID IS NULL
+	BEGIN
+		SELECT @ErrorCode = 1
+			  ,@ErrorMsg = 'Invalid Username'
+
+		RETURN
+	END
+
+	SELECT @site = s.Site, 
+		@IsLicensee = st.isLicensee
+	FROM Customer c WITH(NOLOCK) 
+		INNER JOIN Customer s WITH(NOLOCK) ON c.srecommend = s.custid
+		INNER JOIN Site st WITH(NOLOCK) On st.site = s.site
+	WHERE c.custid = @CustID
+
+	DECLARE @FunctionKey NVARCHAR(50)
+
+	SELECT @FunctionKey = CASE  WHEN @site = 'CN88' THEN 'BLC_CN88Site'
+								WHEN @IsLicensee = 1 THEN 'BLC_LicenseeSite'
+								ELSE 'BLC_Credit' 
+							END
+
+	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
+			@UserId=@userid,
+			@SiteKey='CustomerManagement',
+			@FunctionKey=@FunctionKey,
+			@Policy=1,
+			@ErrCode=@ErrorCode OUTPUT,
+			@ErrMsg=@ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0
 	BEGIN
 		SELECT @ErrorCode = 1
 			  ,@ErrorMsg = 'Invalid Username'

@@ -5,7 +5,7 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert]
 	@MaxBet MONEY = NULL,
 	@MaxPerMatch MONEY = NULL,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(MAX) = '' OUTPUT,
+	@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = ''
 AS
@@ -23,7 +23,7 @@ AS
 		1: The bet limit type exist already.
 
 	Example: 
-	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
+	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(200) = '' 
 	EXEC NAP_BLControl_CustInsert 
 		@Username = 'member01',
 		@BetLimitTypeID  = 1,
@@ -56,18 +56,19 @@ BEGIN
 
 	EXEC NAP_BLControl_CustCheck 
 		@Username = @Username,
+		@userid = @userid,
 		@BetLimitTypeID = @BetLimitTypeID,
 		@ErrorCode = @ErrorCode OUTPUT,
 		@ErrorMsg = @ErrorMsg OUTPUT,
-		@CustID = @CustID OUTPUT
+		@CustID = @CustID OUTPUT,
+		@Site = @site OUTPUT
 
 	IF @ErrorCode <> 0
 		RETURN
-
+	
 	INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch)
 	SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch
 
-	SELECT @site = Site FROM Customer c WITH(NOLOCK) WHERE c.custid = @CustID
 	SELECT @BetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @BetLimitTypeID
 
 	SET @EndRun = GETDATE()

@@ -51,6 +51,39 @@ BEGIN
 	IF @ErrorCode <> 0
 		RETURN
 
+	DECLARE @HasCN88_Permission BIT = 0,
+		@HasCredit_Permission BIT = 0,
+		@HasLicensee_Permission BIT = 0
+
+	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
+			@UserId=@userid,
+			@SiteKey='CustomerManagement',
+			@FunctionKey='BLC_CN88Site',
+			@Policy=1,
+			@ErrCode=@ErrorCode OUTPUT
+
+	IF @ErrorCode = 0 SET @HasCN88_Permission = 1
+
+	SET @ErrorCode = 0
+	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
+			@UserId=@userid,
+			@SiteKey='CustomerManagement',
+			@FunctionKey='BLC_Credit',
+			@Policy=1,
+			@ErrCode=@ErrorCode OUTPUT
+
+	IF @ErrorCode = 0 SET @HasCredit_Permission = 1
+
+	SET @ErrorCode = 0
+	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
+			@UserId=@userid,
+			@SiteKey='CustomerManagement',
+			@FunctionKey='BLC_LicenseeSite',
+			@Policy=1,
+			@ErrCode=@ErrorCode OUTPUT
+
+	IF @ErrorCode = 0 SET @HasLicensee_Permission = 1
+
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
@@ -95,6 +128,10 @@ BEGIN
 		  AND spSite.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE spSite.SiteID END 
 		  AND c.Currency = CASE WHEN ISNULL(@Currency,0) <> 0 THEN @Currency ELSE c.Currency END
 		  AND bc.BetLimitTypeID = CASE WHEN ISNULL(@BetLimitTypeID,0) <> 0 THEN @BetLimitTypeID ELSE bc.BetLimitTypeID END
+		  AND ((sp.site = 'CN88' AND @HasCN88_Permission = 1) 
+				OR (sp.site != 'CN88' AND spSite.isLicensee = 1 AND @HasLicensee_Permission = 1 ) 
+				OR (sp.site != 'CN88' AND spSite.isLicensee = 0 AND @HasCredit_Permission = 1 ) 
+				)
 
 	CREATE NONCLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
 

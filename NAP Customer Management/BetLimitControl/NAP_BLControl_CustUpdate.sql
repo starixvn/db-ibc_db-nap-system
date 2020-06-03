@@ -6,7 +6,7 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustUpdate]
 	@MaxBet MONEY = NULL,
 	@MaxPerMatch MONEY = NULL,
 	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(MAX) = '' OUTPUT,
+	@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = ''
 AS
@@ -24,7 +24,7 @@ AS
 		3: Invalid Bet Limit Type. Please try again.
 		4: This record no longer exists in the Bet Limit Control List.
 	Example: 
-	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
+	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(200) = '' 
 	EXEC NAP_BLControl_CustUpdate 
 		@CustID = 1176092,
 		@BetLimitTypeID  = 1,
@@ -40,7 +40,7 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31754
-	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50),@NewBetLimitType VARCHAR(50)
+	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50),@NewBetLimitType VARCHAR(50),@IsLicensee BIT
 
 	SET @StartRun = GETDATE()
 
@@ -50,6 +50,30 @@ BEGIN
 		@FunctionKey='BetLimitControl',
 		@ErrCode=@ErrorCode OUTPUT,
 		@ErrMsg=@ErrorMsg OUTPUT
+
+	IF @ErrorCode <> 0
+		RETURN
+
+	SELECT @site = s.Site,@IsLicensee = st.isLicensee
+	FROM Customer c WITH(NOLOCK) 
+		INNER JOIN Customer s WITH(NOLOCK) ON c.srecommend = s.custid
+		INNER JOIN Site st WITH(NOLOCK) On st.site = s.site
+	WHERE c.custid = @CustID
+
+	DECLARE @FunctionKey NVARCHAR(50)
+
+	SELECT @FunctionKey = CASE  WHEN @site = 'CN88' THEN 'BLC_CN88Site'
+								WHEN @IsLicensee = 1 THEN 'BLC_LicenseeSite'
+								ELSE 'BLC_Credit' 
+							END
+
+	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
+			@UserId=@userid,
+			@SiteKey='CustomerManagement',
+			@FunctionKey=@FunctionKey,
+			@Policy=1,
+			@ErrCode=@ErrorCode OUTPUT,
+			@ErrMsg=@ErrorMsg OUTPUT
 
 	IF @ErrorCode <> 0
 		RETURN
@@ -95,7 +119,6 @@ BEGIN
 	FROM BetLimitControlCustSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE t.CustID = @CustID AND t.BetLimitTypeID = @BetLimitTypeID
 
-	SELECT @site = Site FROM Customer c WITH(NOLOCK) WHERE c.custid = @CustID
 	SELECT @BetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @BetLimitTypeID
 	SELECT @NewBetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @NewBetLimitTypeID
 
