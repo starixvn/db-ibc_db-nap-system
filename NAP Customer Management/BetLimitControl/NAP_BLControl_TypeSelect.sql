@@ -34,6 +34,7 @@ BEGIN
 		@UserId=@userid,
 		@SiteKey='CustomerManagement',
 		@FunctionKey='BetLimitTypeControl',
+		@Policy=1,
 		@ErrCode=@ErrorCode OUTPUT,
 		@ErrMsg=@ErrorMsg OUTPUT
 
