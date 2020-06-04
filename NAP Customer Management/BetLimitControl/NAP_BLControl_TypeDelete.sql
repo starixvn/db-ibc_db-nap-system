@@ -124,6 +124,23 @@ BEGIN
 	FROM BetLimitControlType WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
+	SELECT CustID
+	INTO #TempCust
+	FROM BetLimitControlCustSetting WITH(NOLOCK)
+	WHERE BetLimitTypeID = @BetLimitTypeID
+
+	WHILE 1 = 1
+	BEGIN
+		DELETE TOP (1000) bc
+		FROM BetLimitControlCustSetting bc WITH(ROWLOCK)
+			INNER JOIN #TempCust t ON t.CustID = bc.CustID 
+		WHERE bc.BetLimitTypeID = @BetLimitTypeID
+		
+		IF @@ROWCOUNT = 0
+		BREAK;
+		WAITFOR DELAY '00:00:00.010'
+	END
+
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
