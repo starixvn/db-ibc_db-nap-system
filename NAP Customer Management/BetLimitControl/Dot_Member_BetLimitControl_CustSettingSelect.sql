@@ -27,9 +27,16 @@ AS
 BEGIN 
 	DECLARE @bettime TIME = GETDATE()
 
+	DECLARE @IsVIP BIT = 0
+
+	SELECT @IsVIP = 1 
+	FROM Dep_CustVIP vip WITH(NOLOCK) 
+	WHERE vip.CustID = @CustID
+
+	--> option 2
 	SELECT MIN(c.MaxBet) AS MaxBet,MIN(c.MaxPerMatch) AS MaxPerMatch
 	FROM custinfo ci WITH(NOLOCK) 
-		INNER JOIN BetLimitControlCustSetting c WITH(NOLOCK) ON c.CustID IN (ci.custid,ci.recommend,ci.mrecommend,ci.srecommend)
+		INNER JOIN BetLimitControlCustSetting c WITH(NOLOCK,FORCESEEK) ON c.CustID IN (ci.custid,ci.recommend,ci.mrecommend,ci.srecommend)
 		INNER JOIN BetLimitControlType bt WITH(NOLOCK) ON c.BetLimitTypeID = bt.BetLimitTypeID
 		INNER JOIN BetLimitControlTypeDetail btd WITH(NOLOCK) ON bt.BetLimitTypeID = btd.BetLimitTypeID
 	WHERE ci.CustID = @CustID
@@ -41,6 +48,7 @@ BEGIN
 			AND btd.Bettype IN (@Bettype,0)
 			AND btd.LeagueID IN (@LeagueID,0)
 			AND btd.LeagueGroupID IN (@LeagueGroupID,0)
+			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
 	OPTION (FORCE ORDER)
 END
 GO
