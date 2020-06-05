@@ -29,7 +29,7 @@ BEGIN
 			@custid INT,
 			@username VARCHAR(30)			
 		
-	CREATE TABLE #tmpCustVoidTicket(custid INT,transid BIGINT, matchid INT, reasonid TINYINT)
+	CREATE TABLE #tmpCustVoidTicket(custid INT,transid BIGINT, matchid INT, reasonid TINYINT, ReasonName VARCHAR(100))
 	CREATE TABLE #tmpCust (CustId INT, 
 							username VARCHAR(30), 
 							currency INT, 
@@ -38,8 +38,6 @@ BEGIN
 							isDeposit BIT DEFAULT 0, 
 							isVip BIT DEFAULT 0, 
 							ActionID TINYINT,
-							ReasonId TINYINT, 
-							ReasonName VARCHAR(100), 
 							IsAcknowledgement BIT, 
 							MaxBet MONEY, 
 							MaxPerEvent MONEY, 
@@ -62,8 +60,8 @@ BEGIN
 		FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction v WITH (NOLOCK)
 		WHERE v.Id > @MinId AND v.Id <= @MaxId AND v.IssueTypeID = 11
 		
-		INSERT INTO #tmpCust (CustId,username,currency,site,srecommend,reasonID,ActionID)
-		SELECT DISTINCT c.CustId,c.username,c.currency,ISNULL(c.site,''),c.srecommend,v.reasonID,1--Default None
+		INSERT INTO #tmpCust (CustId,username,currency,site,srecommend,ActionID)
+		SELECT DISTINCT c.CustId,c.username,c.currency,ISNULL(c.site,''),c.srecommend,1--Default None
 		FROM #tmpCustVoidTicket v
 			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
 			
@@ -76,7 +74,7 @@ BEGIN
 		
 		UPDATE t
 		SET t.ReasonName = p.ReasonName
-		FROM #tmpCust t 
+		FROM #tmpCustVoidTicket t 
 			INNER JOIN ProblemAccountReason p WITH(NOLOCK) ON t.ReasonID = p.ReasonID
 			
 		--processing for CN88
@@ -106,7 +104,6 @@ BEGIN
 				UPDATE TOP (1) t1
 				SET @username = username,
 					@custid = t1.custid,
-					@ReasonName = ISNULL(t1.ReasonName,''),
 					isLogNew = 1
 				FROM #tmpCust t1
 					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
@@ -115,6 +112,13 @@ BEGIN
 				IF @@ROWCOUNT =0
 					BREAK;
 					
+				SELECT @ReasonName = ''
+				SELECT @ReasonName = STUFF((
+											SELECT DISTINCT ',' + ReasonName
+											FROM #tmpCustVoidTicket 
+											WHERE custid = @custid
+											FOR XML PATH('')), 1,1,'')
+
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'								
 								+ ' Reason="'+@ReasonName+'"'
@@ -160,7 +164,6 @@ BEGIN
 				UPDATE TOP (1) t1
 				SET @username = username,
 					@custid = t1.custid,
-					@ReasonName = ISNULL(t1.ReasonName,''),					
 					isLogNew = 1
 				FROM #tmpCust t1
 					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
@@ -169,6 +172,13 @@ BEGIN
 				IF @@ROWCOUNT =0
 					BREAK;
 					
+				SELECT @ReasonName = ''
+				SELECT @ReasonName = STUFF((
+											SELECT DISTINCT ',' + ReasonName
+											FROM #tmpCustVoidTicket 
+											WHERE custid = @custid
+											FOR XML PATH('')), 1,1,'')
+
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'								
 								+ ' Reason="' + @ReasonName + '"'
@@ -294,7 +304,6 @@ BEGIN
 					@custid = t1.custid,
 					@MaxBet = t2.MaxBet,
 					@MaxPerEvent = t2.MaxPerEvent,
-					@ReasonName = ISNULL(t1.ReasonName,''),
 					isLogNew = 1
 				FROM #tmpCust t1
 					INNER JOIN @tmpCustInsert t2 ON t1.custid = t2.custid
@@ -303,6 +312,13 @@ BEGIN
 				IF @@ROWCOUNT =0
 					BREAK;
 					
+				SELECT @ReasonName = ''
+				SELECT @ReasonName = STUFF((
+											SELECT DISTINCT ',' + ReasonName
+											FROM #tmpCustVoidTicket 
+											WHERE custid = @custid
+											FOR XML PATH('')), 1,1,'')
+
 				SELECT  @LogData = '<R'
 								+ ' Username="' + @UserName + '"'								
 								+ ' MPM="' + COALESCE(dbo.f_FomatNumber (CAST (@MaxPerEvent AS VARCHAR(50))), SPACE(1)) + '"'
