@@ -121,7 +121,7 @@ BEGIN
 		BEGIN
 			SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,2,'')
 			SELECT @ErrorCode = 4,
-				@ErrorMsg = 'None of the input league belong to ' + @ErrorSporttypes
+				@ErrorMsg = 'None of the input league belong to ' + @ErrorSporttypes + '.'
 
 			RETURN
 		END
