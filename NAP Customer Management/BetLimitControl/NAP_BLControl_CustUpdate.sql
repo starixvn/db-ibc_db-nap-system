@@ -89,7 +89,7 @@ BEGIN
 	IF @@ROWCOUNT = 0
 	BEGIN
 		SET @ErrorCode = 4
-		SELECT @ErrorMsg = 'The bet limit does not exist.'
+		SELECT @ErrorMsg = 'The Bet Limit does not exist.'
 		RETURN
 	END
 
@@ -108,7 +108,7 @@ BEGIN
 				AND @NewBetLimitTypeID <> @BetLimitTypeID
 	BEGIN
 		SELECT @ErrorCode = 2
-			  ,@ErrorMsg = 'The selected user has this bet limit type already.'
+			  ,@ErrorMsg = 'The selected user has this Bet Limit Type already.'
 		RETURN
 	END
 

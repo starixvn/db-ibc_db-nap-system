@@ -47,7 +47,7 @@ BEGIN
 	IF @CustID IS NULL
 	BEGIN
 		SELECT @ErrorCode = 1
-			  ,@ErrorMsg = 'Invalid Username'
+			  ,@ErrorMsg = 'Invalid username.'
 
 		RETURN
 	END
@@ -77,7 +77,7 @@ BEGIN
 	IF @ErrorCode <> 0
 	BEGIN
 		SELECT @ErrorCode = 1
-			  ,@ErrorMsg = 'Invalid Username'
+			  ,@ErrorMsg = 'Invalid username.'
 
 		RETURN
 	END
@@ -87,7 +87,7 @@ BEGIN
 				WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID )
 	BEGIN
 		SELECT @ErrorCode = 2
-			  ,@ErrorMsg = 'The selected user has this bet limit type already.'
+			  ,@ErrorMsg = 'The selected user has this Bet Limit Type already.'
 		RETURN
 	END
 

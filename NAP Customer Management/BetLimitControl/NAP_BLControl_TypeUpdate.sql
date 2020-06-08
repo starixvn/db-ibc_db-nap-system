@@ -78,7 +78,7 @@ BEGIN
 	IF NOT EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitTypeID = @BetLimitTypeID )
 	BEGIN
 		SELECT @ErrorCode = 1 ,
-			@ErrorMsg = 'The bet limit type does not exist.'
+			@ErrorMsg = 'The Bet Limit Type does not exist.'
 
 		RETURN
 	END
@@ -90,7 +90,7 @@ BEGIN
 	IF EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitType = @BetLimitType ) AND @Old_BetLimitType <> @BetLimitType
 	BEGIN
 		SELECT @ErrorCode = 1 ,
-			@ErrorMsg = 'The bet limit type exist already.'
+			@ErrorMsg = 'The Bet Limit Type exists already.'
 
 		RETURN
 	END

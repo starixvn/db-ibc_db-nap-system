@@ -18,7 +18,7 @@ AS
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
-		1: The bet limit type is no longer exists.
+		1: The Bet Limit Type does not exist.
 
 	Example: 
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(100) = '' 
@@ -48,7 +48,7 @@ BEGIN
 	IF NOT EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitTypeID = @BetLimitTypeID )
 	BEGIN
 		SELECT @ErrorCode = 1 ,
-			@ErrorMsg = 'The bet limit type does not exist.'
+			@ErrorMsg = 'The Bet Limit Type does not exist.'
 
 		RETURN
 	END

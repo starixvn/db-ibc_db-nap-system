@@ -27,7 +27,7 @@ AS
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
-		1: The bet limit type exist already.
+		1: The Bet Limit Type exists already.
 
 	Example: 
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(MAX) = '' 
@@ -71,7 +71,7 @@ BEGIN
 	IF EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitType = @BetLimitType )
 	BEGIN
 		SELECT @ErrorCode = 1 ,
-			@ErrorMsg = 'The bet limit type exist already.'
+			@ErrorMsg = 'The Bet Limit Type exists already.'
 
 		RETURN
 	END
