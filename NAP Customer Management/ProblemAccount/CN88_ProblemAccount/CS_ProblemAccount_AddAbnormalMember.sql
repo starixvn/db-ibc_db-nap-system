@@ -13,6 +13,7 @@ AS
 		- 20200121@Johnson: Add deposit & credit customer [redine:#128077]
 		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
 		- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
+		- 20200608@Elodie: Cannot insert Problem Account if customer got more than one reason [Redmine: #135444]
 
 	Parameter's explaination: 
 	
