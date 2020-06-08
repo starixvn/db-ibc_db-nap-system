@@ -62,7 +62,7 @@ BEGIN
 			@ErrorLeagueIDs VARCHAR(MAX) = '' 
 
 	--> <Product> has no sport.
-	SELECT @ErrorProducts = @ErrorProducts + ',' + MAX(p.ProductName) --+ CONVERT(VARCHAR,s.ProductID)   
+	SELECT @ErrorProducts = @ErrorProducts + ', ' + MAX(p.ProductName) --+ CONVERT(VARCHAR,s.ProductID)   
 	FROM #Sport s
 		INNER JOIN DBPRO.bodb02.dbo.products p WITH(NOLOCK) ON s.ProductID = p.ProductID
 	GROUP BY s.ProductID
@@ -70,7 +70,7 @@ BEGIN
 
 	IF @ErrorProducts <> ''
 	BEGIN
-		SELECT @ErrorProducts = STUFF(@ErrorProducts,1,1,'')
+		SELECT @ErrorProducts = STUFF(@ErrorProducts,1,2,'')
 		SELECT @ErrorCode = 2,
 			@ErrorMsg = @ErrorProducts + ' has no sport.'
 
@@ -78,7 +78,7 @@ BEGIN
 	END
 	
 	--><Sport> has no bet type.
-	SELECT @ErrorSporttypes = @ErrorSporttypes + ',' + MAX(s.SportName)  
+	SELECT @ErrorSporttypes = @ErrorSporttypes + ', ' + MAX(s.SportName)  
 	FROM #Bettype bt
 		INNER JOIN DBPRO.bodb02.dbo.sports s WITH(NOLOCK) ON bt.Sporttype = s.Sporttype
 	GROUP BY bt.Sporttype
@@ -86,7 +86,7 @@ BEGIN
 
 	IF @ErrorSporttypes <> ''
 	BEGIN
-		SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,1,'')
+		SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,2,'')
 		SELECT @ErrorCode = 3,
 			@ErrorMsg = @ErrorSporttypes + ' has no bet type.'
 
@@ -108,7 +108,7 @@ BEGIN
 	IF ISNULL(@LeagueList,'') <> ''
 	BEGIN
 		--> None of the input league belong to <Sport>.
-		SELECT @ErrorSporttypes = @ErrorSporttypes + ',' + MAX(s.SportName)
+		SELECT @ErrorSporttypes = @ErrorSporttypes + ', ' + MAX(s.SportName)
 		FROM #Sport sp
 			INNER JOIN DBPRO.bodb02.dbo.sports s WITH(NOLOCK) ON sp.Sporttype = s.Sporttype
 			LEFT JOIN #SportLeague l ON sp.Sporttype = l.Sporttype
@@ -119,7 +119,7 @@ BEGIN
 
 		IF @ErrorSporttypes <> ''
 		BEGIN
-			SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,1,'')
+			SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,2,'')
 			SELECT @ErrorCode = 4,
 				@ErrorMsg = 'None of the input league belong to ' + @ErrorSporttypes
 
@@ -127,14 +127,14 @@ BEGIN
 		END
 
 		--> League <league ID> belong to none of the selected sport.
-		SELECT @ErrorLeagueIDs = @ErrorLeagueIDs + ',' + le.LeagueID
+		SELECT @ErrorLeagueIDs = @ErrorLeagueIDs + ', ' + le.LeagueID
 		FROM #League le
 			LEFT JOIN #SportLeague l ON le.LeagueID = l.LeagueID
 		WHERE l.LeagueID IS NULL
 
 		IF @ErrorLeagueIDs <> ''
 		BEGIN
-			SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,1,'')
+			SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,2,'')
 			SELECT @ErrorCode = 5,
 				@ErrorMsg = 'League '+ @ErrorLeagueIDs + ' belong to none of the selected sport.' 
 
