@@ -46,13 +46,14 @@ BEGIN
 		ProductID INT, 
 		Sporttype INT, 
 		Bettype   INT, 
-		IsLive    BIT, 
-		IsActive  BIT,
+		IsLive    BIT
 		PRIMARY KEY (ProductID,Sporttype,Bettype,IsLive)
 	)
-	INSERT INTO #BTC_SportBettypeReference(ProductID,Sporttype,Bettype,IsLive,IsActive)
-	SELECT ProductID,Sporttype,Bettype,IsLive,1 
-	FROM DBEXT.bodb02.dbo.SportBettypeMatrix WITH(NOLOCK) 
+	INSERT INTO #BTC_SportBettypeReference(ProductID,Sporttype,Bettype,IsLive)
+	SELECT m.ProductID,m.Sporttype,m.Bettype,m.IsLive
+	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) 
+		INNER JOIN DBEXT.bodb02.dbo.sports sp WITH(NOLOCK) ON m.Sporttype = sp.Sporttype
+		INNER JOIN DBEXT.bodb02.dbo.Bettype s WITH(NOLOCK) ON m.Bettype = s.typeid
 	WHERE ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 	
 	SELECT  BetLimitTypeID,

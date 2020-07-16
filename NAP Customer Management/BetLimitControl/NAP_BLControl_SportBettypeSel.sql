@@ -19,17 +19,18 @@ BEGIN
 	SELECT c.ProductID, 
 		p.ProductName
 	FROM BetLimitControlProduct c WITH(NOLOCK) 
-		INNER JOIN DBPRO.bodb02.dbo.products p WITH(NOLOCK) ON c.ProductID = p.ProductID
+		INNER JOIN dbo.products p WITH(NOLOCK) ON c.ProductID = p.ProductID
 	ORDER BY c.ProductID
 	
 	SELECT DISTINCT m.ProductID,m.Sporttype,SportName
-	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
-		INNER JOIN DBPRO.bodb02.dbo.sports s WITH(NOLOCK) ON m.Sporttype = s.Sporttype
+	FROM dbo.SportBettypeMatrix m WITH(NOLOCK)
+		INNER JOIN dbo.sports s WITH(NOLOCK) ON m.Sporttype = s.Sporttype
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 
 	SELECT DISTINCT m.ProductID,m.Sporttype,m.Bettype,s.typenamee AS BettypeName
-	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
-		INNER JOIN DBPRO.bodb02.dbo.Bettype s WITH(NOLOCK) ON m.Bettype = s.typeid
+	FROM dbo.SportBettypeMatrix m WITH(NOLOCK)
+		INNER JOIN dbo.sports sp WITH(NOLOCK) ON m.Sporttype = sp.Sporttype
+		INNER JOIN dbo.Bettype s WITH(NOLOCK) ON m.Bettype = s.typeid
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 END
 GO
