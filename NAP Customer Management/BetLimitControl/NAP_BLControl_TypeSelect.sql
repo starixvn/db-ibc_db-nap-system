@@ -26,7 +26,8 @@ AS
 		@ProductID = 0,
 		@Sporttype = 0,
 		@Bettype = 0,
-		@LiveIndicator = 3
+		@LiveIndicator = 3,
+		@UserId = 8
 
 	*/
 BEGIN
@@ -74,6 +75,7 @@ BEGIN
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
 														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 														WHERE (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
+															AND (b.ProductID = c.ProductID OR b.ProductID = 0)
 															AND BetLimitTypeID = t.BetLimitTypeID) sp
 										 GROUP BY c.Sporttype
 										 ORDER BY c.Sporttype
@@ -83,6 +85,8 @@ BEGIN
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
 														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 														WHERE (b.Bettype = c.Bettype OR b.Bettype = 0)
+															AND (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
+															AND (b.ProductID = c.ProductID OR b.ProductID = 0)
 															AND BetLimitTypeID = t.BetLimitTypeID) bt
 										 GROUP BY c.BetType
 										 ORDER BY c.Bettype
