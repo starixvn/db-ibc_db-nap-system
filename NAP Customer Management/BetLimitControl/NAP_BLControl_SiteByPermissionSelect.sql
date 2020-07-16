@@ -65,6 +65,7 @@ BEGIN
 	SELECT SiteID,Site
 	FROM dbo.[Site] WITH(NOLOCK)
 	WHERE Site <> 'CN88' AND isLicensee = 0 AND @HasCredit_Permission = 1
+	ORDER BY Site
 END
 GO
 
