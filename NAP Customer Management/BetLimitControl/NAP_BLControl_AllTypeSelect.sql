@@ -20,6 +20,7 @@ BEGIN
 	SELECT  BetLimitTypeID,
 			BetLimitType
 	FROM BetLimitControlType t WITH(NOLOCK)
+	ORDER BY BetLimitType
 END
 GO
 

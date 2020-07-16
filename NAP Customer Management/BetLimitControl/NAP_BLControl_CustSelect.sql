@@ -99,7 +99,7 @@ BEGIN
 						ELSE 'N/A'
 				END,
 		e.Currency,
-		sp.Site,
+		COALESCE(s.Site,ag.site,'') AS Site,
 		b.BetLimitType,
 		b.BetLimitTypeID,
 		bc.MaxBet,
@@ -123,15 +123,16 @@ BEGIN
 		LEFT JOIN BetLimitControlCustSetting mtbc WITH(NOLOCK) ON mtbc.CustID = mt.custid AND mtbc.BetLimitTypeID = bc.BetLimitTypeID AND mtbc.CustID <> bc.CustID
 		LEFT JOIN Customer sp WITH(NOLOCK) ON sp.custid = c.srecommend
 		LEFT JOIN BetLimitControlCustSetting spbc WITH(NOLOCK) ON spbc.CustID = sp.custid AND spbc.BetLimitTypeID = bc.BetLimitTypeID AND spbc.CustID <> bc.CustID
-		LEFT JOIN Site spSite WITH(NOLOCK) ON spSite.site = sp.site
+		LEFT JOIN Site s WITH(NOLOCK) ON s.site = c.site AND s.site <> ''
+		LEFT JOIN Site agSite WITH(NOLOCK) ON agSite.site = ag.site	
 	WHERE c.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE c.username END
 		  AND c.roleid = CASE WHEN ISNULL(@LevelID,0) <> 0 THEN @LevelID ELSE c.roleid END
-		  AND spSite.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE spSite.SiteID END 
+		  AND ISNULL(s.SiteID,agSite.siteid) = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE ISNULL(s.SiteID,agSite.siteid) END 
 		  AND c.Currency = CASE WHEN ISNULL(@Currency,0) <> 0 THEN @Currency ELSE c.Currency END
 		  AND bc.BetLimitTypeID = CASE WHEN ISNULL(@BetLimitTypeID,0) <> 0 THEN @BetLimitTypeID ELSE bc.BetLimitTypeID END
-		  AND ((sp.site = 'CN88' AND @HasCN88_Permission = 1) 
-				OR (sp.site != 'CN88' AND spSite.isLicensee = 1 AND @HasLicensee_Permission = 1 ) 
-				OR (sp.site != 'CN88' AND spSite.isLicensee = 0 AND @HasCredit_Permission = 1 ) 
+		  AND ((COALESCE(s.Site,ag.site,'')  = 'CN88' AND @HasCN88_Permission = 1) 
+				OR (COALESCE(s.Site,ag.site,'')  != 'CN88' AND COALESCE(s.isLicensee,agSite.isLicensee) = 1 AND @HasLicensee_Permission = 1 ) 
+				OR (COALESCE(s.Site,ag.site,'')  != 'CN88' AND COALESCE(s.isLicensee,agSite.isLicensee) = 0 AND @HasCredit_Permission = 1 ) 
 				)
 
 	CREATE CLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
