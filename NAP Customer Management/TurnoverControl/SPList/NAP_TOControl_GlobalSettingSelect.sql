@@ -31,7 +31,7 @@ BEGIN
 		,t.MaxTurnOver
 		,t.ProfileID AS ProfileID
 		,pf.ProfileName AS  ProfileName
-		,t.IsLockIncreasingTOLimit
+		,t.IsGlobalLockTOLimit
 	FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK) 
 		INNER JOIN dbo.CustInfo ci WITH(NOLOCK) ON ci.CustID = t.CustID
 		INNER JOIN dbo.Exchange ex WITH(NOLOCK) ON ex.exchangeid = ci.currency

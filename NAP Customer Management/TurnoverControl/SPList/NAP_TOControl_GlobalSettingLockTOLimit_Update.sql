@@ -2,7 +2,7 @@
 CREATE PROCEDURE [dbo].[NAP_TOControl_GlobalSettingLockTOLimit_Update]
 (
 	@CustID INT,
-	@IsLockIncreasingTOLimit BIT,
+	@IsGlobalLockTOLimit BIT,
 	@SportType SMALLINT = 1,
 	@UserID INT,
 	@IP	VARCHAR(40),
@@ -27,7 +27,7 @@ AS
 BEGIN 
 	SET NOCOUNT ON
 	
-	DECLARE @IsLockIncreasingTOLimit_Old BIT
+	DECLARE @IsGlobalLockTOLimit_Old BIT
 	
 	DECLARE @startRun	DATETIME,
 		@endRun		DATETIME,
@@ -48,7 +48,7 @@ BEGIN
 		RETURN
 	
 
-	SET @IsLockIncreasingTOLimit_Old = ( SELECT DISTINCT t.IsLockIncreasingTOLimit
+	SET @IsGlobalLockTOLimit_Old = ( SELECT DISTINCT t.IsGlobalLockTOLimit
 										FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK)
 										WHERE t.CustID = @CustID
 									)
@@ -59,12 +59,12 @@ BEGIN
 	END
 
 	UPDATE dbo.TOControl_GlobalSetting WITH(ROWLOCK, UPDLOCK) 
-	SET IsLockIncreasingTOLimit = @IsLockIncreasingTOLimit 
+	SET IsGlobalLockTOLimit = @IsGlobalLockTOLimit
 	WHERE CustID = @CustID AND Sporttype = @SportType
 	
 	UPDATE t
 		SET 
-			t.IsGlobalLockTOLimit = @IsLockIncreasingTOLimit		
+			t.IsGlobalLockTOLimit = @IsGlobalLockTOLimit		
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 	WHERE t.CustID = @CustID
 
@@ -76,26 +76,22 @@ BEGIN
 
 	SELECT @LogData = '<NAP_TOControl_GlobalSettingLockTOLimit_Update CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ @ProfileName + '="' + COALESCE(CAST(@MaxTurnover AS VARCHAR(20)), SPACE(1)) + '" '  
-					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ 'GlobalLock="' + COALESCE(CAST(@IsGlobalLockTOLimit AS VARCHAR(20)), SPACE(1)) + '" '  
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
-					+ 'AffectedMatch="' + COALESCE(@AffectedMatch,space(1)) + '" '
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" />'
 	-- For old value
-	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingUpdate CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
+	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingLockTOLimit_Update CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ @ProfileName + '="' + COALESCE(CAST(@MaxTurnover_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
-					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ 'GlobalLock="' + COALESCE(CAST(@IsGlobalLockTOLimit_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
-					+ 'AffectedMatch="' + COALESCE(@AffectedMatch,space(1)) + '" '
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" />'
 	
 	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
 				@Userid = @UserID,
 				@CustID = @CustID,
-				@ActionID = 669,
+				@ActionID = 761,
 				@TrackingValue = @LogData,
 				@TrackingValue2 = @TrackingValue2,
 				@Duration = @duration
