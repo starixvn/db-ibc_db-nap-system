@@ -5,6 +5,7 @@ CREATE PROCEDURE [dbo].[NAP_TOControl_MatchTurnoverLockTOLimit_Update]
 	@MatchID INT,
 	@SportType SMALLINT = 1,
 	@IsEventLockTOLimit BIT,
+	@IsGroupHeadline BIT = 0,
 	@UserID INT,
 	@IP	VARCHAR(40),
 	@ErrCode INT = 0 OUTPUT,
@@ -56,12 +57,12 @@ BEGIN
 
 	SELECT @IsEventLockTOLimit_Old = t.IsEventLockTOLimit
 	FROM dbo.TOControl_Setting t WITH (NOLOCK)
-	WHERE CustID = @CustID AND matchid = @MatchID
+	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
 	
 	UPDATE dbo.TOControl_Setting WITH(ROWLOCK, UPDLOCK)
 	SET 
 		IsEventLockTOLimit = @IsEventLockTOLimit
-	WHERE CustID = @CustID AND matchid = @MatchID
+	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
 	
 
 	SELECT @ProfileName = REPLACE(REPLACE(REPLACE(@ProfileName , '&',''), ' ', ''), ',', ' ')
@@ -70,6 +71,7 @@ BEGIN
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'MatchID="' + COALESCE(CAST(@MatchID AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'EventLock="' + COALESCE(CAST(@IsEventLockTOLimit AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" '
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1))+ '" />'
@@ -79,6 +81,7 @@ BEGIN
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'MatchID="' + COALESCE(CAST(@MatchID AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'EventLock="' + COALESCE(CAST(@IsEventLockTOLimit_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(10)), SPACE(1)) + '" ' 
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" '
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1))+ '" />'

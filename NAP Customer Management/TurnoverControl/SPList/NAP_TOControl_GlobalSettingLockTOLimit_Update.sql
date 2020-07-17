@@ -4,6 +4,7 @@ CREATE PROCEDURE [dbo].[NAP_TOControl_GlobalSettingLockTOLimit_Update]
 	@CustID INT,
 	@IsGlobalLockTOLimit BIT,
 	@SportType SMALLINT = 1,
+	@IsGroupHeadLine BIT = 0,
 	@UserID INT,
 	@IP	VARCHAR(40),
 	@ErrCode int = 0 OUTPUT,
@@ -50,7 +51,7 @@ BEGIN
 
 	SET @IsGlobalLockTOLimit_Old = ( SELECT DISTINCT t.IsGlobalLockTOLimit
 										FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK)
-										WHERE t.CustID = @CustID
+										WHERE t.CustID = @CustID AND t.IsGroupHeadLine= @IsGroupHeadLine
 									)
 	IF @CustID <= 0
 	BEGIN
@@ -60,13 +61,13 @@ BEGIN
 
 	UPDATE dbo.TOControl_GlobalSetting WITH(ROWLOCK, UPDLOCK) 
 	SET IsGlobalLockTOLimit = @IsGlobalLockTOLimit
-	WHERE CustID = @CustID AND Sporttype = @SportType
+	WHERE CustID = @CustID AND Sporttype = @SportType AND IsGroupHeadLine= @IsGroupHeadLine
 	
 	UPDATE t
 		SET 
 			t.IsGlobalLockTOLimit = @IsGlobalLockTOLimit		
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
-	WHERE t.CustID = @CustID
+	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadLine
 
 	DECLARE @LogData NVARCHAR(4000), @TrackingValue2 NVARCHAR(4000)
 
@@ -77,6 +78,7 @@ BEGIN
 	SELECT @LogData = '<NAP_TOControl_GlobalSettingLockTOLimit_Update CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'GlobalLock="' + COALESCE(CAST(@IsGlobalLockTOLimit AS VARCHAR(20)), SPACE(1)) + '" '  
+					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" />'
@@ -84,6 +86,7 @@ BEGIN
 	SELECT @TrackingValue2 = '<NAP_TOControl_GlobalSettingLockTOLimit_Update CustID="' + COALESCE(CAST(@CustID AS VARCHAR(10)), SPACE(1)) + '" ' 					
 					+ 'SportType="' + COALESCE(CAST(@SportType AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'GlobalLock="' + COALESCE(CAST(@IsGlobalLockTOLimit_Old AS VARCHAR(20)), SPACE(1)) + '" ' 
+					+ 'IsGroupHeadline="' + COALESCE(CAST(@IsGroupHeadline AS VARCHAR(20)), SPACE(1)) + '" ' 
 					+ 'IP="'+ COALESCE(CAST(@IP as varchar(15)),space(1)) + '" '
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" />'
