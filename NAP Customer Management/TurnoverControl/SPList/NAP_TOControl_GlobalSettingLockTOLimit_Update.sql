@@ -49,9 +49,9 @@ BEGIN
 		RETURN
 	
 
-	SET @IsGlobalLockTOLimit_Old = ( SELECT DISTINCT t.IsGlobalLockTOLimit
+	SET @IsGlobalLockTOLimit_Old = ( SELECT DISTINCT ISNULL(t.IsGlobalLockTOLimit,0)
 										FROM dbo.TOControl_GlobalSetting t WITH(NOLOCK)
-										WHERE t.CustID = @CustID AND t.IsGroupHeadLine= @IsGroupHeadLine
+										WHERE t.CustID = @CustID AND t.IsGroupHeadLine= @IsGroupHeadLine AND Sporttype = @SportType
 									)
 	IF @CustID <= 0
 	BEGIN

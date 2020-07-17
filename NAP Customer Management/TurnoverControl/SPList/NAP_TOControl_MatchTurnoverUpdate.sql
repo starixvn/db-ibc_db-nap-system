@@ -24,6 +24,7 @@ AS
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
+		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 		
 	Parameter's explaination:
 		
@@ -81,7 +82,9 @@ BEGIN
 		SET 
 			MaxTurnover = @MaxTurnover,
 			IsNotified = 0
-		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
+		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID 
+			AND IsEventLockTOLimit = 0
+			AND IsGlobalLockTOLimit = 0
 	END
 	ELSE
 	BEGIN
@@ -99,6 +102,8 @@ BEGIN
 										),0) 
 						
 		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID
+			AND IsEventLockTOLimit = 0
+			AND IsGlobalLockTOLimit = 0
 		
 	END
 

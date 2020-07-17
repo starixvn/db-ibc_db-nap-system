@@ -26,6 +26,7 @@ AS
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
+		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 		
 	Parameter's explaination:
 	 
@@ -113,6 +114,7 @@ BEGIN
 	UPDATE dbo.TOControl_GlobalSetting WITH(ROWLOCK, UPDLOCK) 
 	SET MaxTurnOver = @MaxTurnover 
 	WHERE CustID = @CustID AND Sporttype = @SportType AND IsGroupHeadLine = @IsGroupHeadLine AND ProfileID = @ProfileID
+		AND IsGlobalLockTOLimit = 0
 	
 	UPDATE t
 		SET 
@@ -127,6 +129,8 @@ BEGIN
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
 	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadLine AND t.ProfileID = @ProfileID
+		AND IsEventLockTOLimit = 0
+		AND IsGlobalLockTOLimit = 0
 
 	DECLARE @LogData NVARCHAR(4000), @TrackingValue2 NVARCHAR(4000)
 
