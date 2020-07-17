@@ -144,8 +144,8 @@ BEGIN
 		, ts.PercentageUsed
 		, s.SumHouseTurnover AS TotalHouseTurnover
 		, s.SumTotalTurnOver AS TotalMemberTurnover
-		, pf.IsEventLockTOLimit
-		, pf.IsGlobalLockTOLimit
+		, ISNULL(pf.IsEventLockTOLimit,0) AS IsEventLockTOLimit
+		, ISNULL(pf.IsGlobalLockTOLimit,0) AS IsGlobalLockTOLimit
 	FROM (
 			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.IsEventLockTOLimit, ct.IsGlobalLockTOLimit
 			FROM (
