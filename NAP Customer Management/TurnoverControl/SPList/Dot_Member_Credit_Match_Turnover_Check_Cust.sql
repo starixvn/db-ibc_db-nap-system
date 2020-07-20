@@ -13,7 +13,10 @@ ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 	@ExchangeID			INT,
 	@Sporttype          SMALLINT = NULL,
 	@Bettype            SMALLINT = NULL,
-	@liveindicator      BIT = NULL
+	@liveindicator      BIT = NULL,
+	@odds				SMALLMONEY = 0,
+	@betteam			NVARCHAR(20)='h'
+	
 )	
 AS
 /*
@@ -27,6 +30,7 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20200114@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		- 20200318@Helen : Get profile tuning code [Redmine : 125076]
+		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		
 	Parameter's explaination:
 	
@@ -35,7 +39,7 @@ BEGIN
 	SET NOCOUNT ON
 	
 	DECLARE @GroupHeadlineList TABLE (CustID INT PRIMARY KEY, ID INT IDENTITY (1,1))
-	DECLARE @Start INT, @Stop INT, @CustID_Headline INT, @ExtraPT DECIMAL(9,8)
+	DECLARE @Start INT, @Stop INT, @CustID_Headline INT, @ExtraPT DECIMAL(9,8), @Stake_tmp MONEY
 	
 	DECLARE @NewMatchTurnover MONEY, @MaxMatchTurnover_Setting MONEY, @adjHouseTurnover MONEY
 	DECLARE @StopFlag TINYINT
@@ -80,8 +84,17 @@ BEGIN
 	/* For Rollback Plan:
 	SET @ExtraPT = 0
 	*/
-	
-	SET @adjHouseTurnover = (@Stake * (1 - @TPositionTaking- @ExtraPT))
+	SET @Stake_tmp = (SELECT 
+							CASE 
+								WHEN @betteam = 'h' AND @bettype IN (1,3,7,8,20,21) 
+										THEN (@stake * CASE WHEN @odds < 0 THEN 1 ELSE @odds END)
+								WHEN @betteam = 'a' AND @bettype IN (1,3,7,8,20,21) 
+										THEN - (@stake * CASE WHEN @odds < 0 THEN 1 ELSE @odds END)							
+								ELSE ABS(@stake) 
+							END	
+						) 
+							
+	SET @adjHouseTurnover = (@Stake_tmp * (1 - @TPositionTaking- @ExtraPT))
 	
 	IF (@Recommend > -1) AND EXISTS (SELECT 1 FROM dbo.TOControl_GlobalSetting WITH (NOLOCK) WHERE CustID = @Recommend AND IsGroupHeadLine = 0 AND ProfileID = @ProfileID)
 	BEGIN
@@ -95,7 +108,7 @@ BEGIN
 			AND tos.ProfileID = @ProfileID
 
 		IF (@@ROWCOUNT > 0)
-			IF (@NewMatchTurnover > @MaxMatchTurnover_Setting)
+			IF (ABS(@NewMatchTurnover) > @MaxMatchTurnover_Setting)
 				SELECT @StopFlag = 1
 	END
 
@@ -111,7 +124,7 @@ BEGIN
 			AND tos.ProfileID = @ProfileID
 			
 		IF (@@ROWCOUNT > 0)
-			IF (@NewMatchTurnover > @MaxMatchTurnover_Setting)
+			IF (ABS(@NewMatchTurnover) > @MaxMatchTurnover_Setting)
 				SELECT @StopFlag = 1
 	END
 
@@ -128,7 +141,7 @@ BEGIN
 			AND tos.ProfileID = @ProfileID
 			
 		IF (@@ROWCOUNT > 0)
-			IF (@NewMatchTurnover > @MaxMatchTurnover_Setting)
+			IF (ABS(@NewMatchTurnover) > @MaxMatchTurnover_Setting)
 				SELECT @StopFlag = 1
 	END 
 	
@@ -156,7 +169,7 @@ BEGIN
 				SET @actualrate = 1
 			END
 			
-			SET @adjHouseTurnover = (@Stake * @actualrate * (1 - @TPositionTaking- @ExtraPT))
+			SET @adjHouseTurnover = (@Stake_tmp * @actualrate * (1 - @TPositionTaking- @ExtraPT))
 			
 			IF EXISTS (SELECT TOP 1 1
 						FROM @GroupHeadlineList GHL
@@ -165,7 +178,7 @@ BEGIN
 										 WHERE tos.custid = GHL.CustID 
 												AND	tos.matchid = @MatchID
 												AND tos.IsGroupHeadLine = 1
-												AND tos.HouseTurnover + @adjHouseTurnover > tos.MaxTurnOver
+												AND ABS(tos.HouseTurnover + @adjHouseTurnover) > tos.MaxTurnOver
 												AND tos.ProfileID = @ProfileID
 										) AS TO_tmp		
 						)				

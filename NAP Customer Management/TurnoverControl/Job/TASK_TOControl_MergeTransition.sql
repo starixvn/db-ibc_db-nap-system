@@ -14,6 +14,7 @@ Revisions:
 	- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 	- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
 	- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
+	- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 
 Param explanation:
 */
@@ -84,7 +85,7 @@ BEGIN
 							TARGET.PercentLevel = CASE WHEN TARGET.MaxTurnOver = 0 THEN	@MaxLevel 
 														ELSE ISNULL((SELECT MAX(PercentLevel) 
 																	FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
-																	WHERE (TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver) * 100 / TARGET.MaxTurnOver >= PercentValue
+																	WHERE ABS((TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver)) * 100 / TARGET.MaxTurnOver >= PercentValue
 														  
 																	),0)
 													END				
@@ -95,7 +96,7 @@ BEGIN
 						CASE WHEN SOURCE.MaxTurnOver = 0 THEN @MaxLevel 
 							ELSE ISNULL((SELECT MAX(PercentLevel) 
 										FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
-										WHERE (SOURCE.adjusted_HouseTurnOver) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)
+										WHERE ABS((SOURCE.adjusted_HouseTurnOver)) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)
 						END, SOURCE.ProfileID				
 						);
 						

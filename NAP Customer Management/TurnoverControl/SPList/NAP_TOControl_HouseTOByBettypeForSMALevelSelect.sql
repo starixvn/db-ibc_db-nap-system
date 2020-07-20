@@ -17,6 +17,7 @@ AS
 	Revisions:
 		- 20180316@Helen: Integrate Super Live product - [Redmine: 89986]
 		- 20180619@Helen: Support to format turnover number in detail page - [Redmine: 97096]
+		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		
 	Parameter's explaination: 
 	
@@ -29,8 +30,10 @@ BEGIN
 	IF @IsGroupHeadline = 1 RETURN
 	
 	CREATE TABLE #HouseTO_1_3_5_7_8_15 (liveindicator TINYINT, bettype SMALLINT, betteam_h MONEY, betteam_a MONEY,betteam_1 MONEY,betteam_x MONEY, betteam_2 MONEY )
+	CREATE TABLE #HouseTO_1_3_5_7_8_15_Final (liveindicator TINYINT, bettype SMALLINT, betteam_h MONEY, betteam_a MONEY,betteam_1 MONEY,betteam_x MONEY, betteam_2 MONEY )
 	
 	CREATE TABLE #HouseTO_99 (liveindicator TINYINT, bettype SMALLINT, total MONEY )
+	CREATE TABLE #HouseTO_99_Final (liveindicator TINYINT, bettype SMALLINT, total MONEY )
 	
 	DECLARE @RoleID INT , @ExtraPT DECIMAL(9,8), @srecommend INT, @EventDate_min DATETIME
 	
@@ -64,13 +67,23 @@ BEGIN
 			
 			INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_h,betteam_a,betteam_1,betteam_x,betteam_2)
 			SELECT b.liveindicator, b.bettype
-				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_h
-				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_a
-				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_1
-				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_x
-				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_2
+				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_h
+				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_a
+				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_1
+				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_x
+				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_2
 			FROM bettrans b WITH(NOLOCK)
-				INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = b.bettype 
+				INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = b.bettype
+				CROSS APPLY (SELECT 
+									CASE 
+										WHEN b.betteam = 'h' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)
+										WHEN b.betteam = 'a' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)							
+										ELSE ABS(b.stake) -- normal
+									END	
+									AS stake																							
+							) AS t 
 			WHERE b.matchid = @matchid
 				AND b.srecommend = @custid
 				AND b.statusid NOT IN (101,102,103)
@@ -80,11 +93,21 @@ BEGIN
 			
 			INSERT INTO #HouseTO_99 (liveindicator,bettype,total)
 			SELECT b.liveindicator,-1 bettype,
-				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*abs(stake),0)) BalanceInfo
+				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*(b.stake),0)) BalanceInfo
 			FROM (		
-				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,bet.stake
+				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,t.stake
 				FROM bettrans bet WITH(NOLOCK)
-					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype 
+					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype
+					CROSS APPLY (SELECT 
+									CASE 
+										WHEN bet.betteam = 'h' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)
+										WHEN bet.betteam = 'a' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)							
+										ELSE ABS(bet.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
 				WHERE bet.matchid = @matchid
 					AND bet.srecommend = @CustID
 					AND bet.statusid NOT IN (101,102,103)
@@ -93,7 +116,7 @@ BEGIN
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
-				SELECT  liveindicator,-1 bettype,tpositiontaking,stake
+				SELECT  liveindicator,-1 bettype,tpositiontaking,ABS(stake) AS stake
 				FROM  translog WITH(NOLOCK)
 				WHERE eventID = @matchid
 					AND srecommend = @CustID
@@ -110,12 +133,23 @@ BEGIN
 		BEGIN
 			INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_h,betteam_a,betteam_1,betteam_x,betteam_2)
 			SELECT b.liveindicator, b.bettype
-				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_h
-				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_a
-				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_1
-				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_x
-				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_2
+				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_h
+				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_a
+				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_1
+				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_x
+				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_2
 			FROM bettrans b WITH(NOLOCK) 
+				CROSS APPLY (SELECT 
+									CASE 
+										WHEN b.betteam = 'h' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)
+										WHEN b.betteam = 'a' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)							
+										ELSE ABS(b.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
+							
 			WHERE b.matchid = @matchid
 				AND b.mrecommend = @custid
 				AND b.statusid NOT IN (101,102,103)
@@ -125,11 +159,21 @@ BEGIN
 			
 			INSERT INTO #HouseTO_99 (liveindicator,bettype,total)
 			SELECT b.liveindicator,-1 bettype,
-				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*abs(stake),0)) BalanceInfo
+				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*(stake),0)) BalanceInfo
 			FROM (		
-				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,bet.stake
+				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,t.stake
 				FROM bettrans bet WITH(NOLOCK)
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype 
+					CROSS APPLY (SELECT 
+									CASE 
+										WHEN bet.betteam = 'h' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)
+										WHEN bet.betteam = 'a' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)							
+										ELSE ABS(bet.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
 				WHERE bet.matchid = @matchid
 					AND bet.mrecommend = @CustID
 					AND bet.statusid NOT IN (101,102,103)
@@ -138,7 +182,7 @@ BEGIN
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
-				SELECT  liveindicator,-1 bettype,tpositiontaking,stake
+				SELECT  liveindicator,-1 bettype,tpositiontaking,ABS(stake)
 				FROM  translog WITH(NOLOCK)
 				WHERE eventID = @matchid
 					AND mrecommend = @CustID
@@ -154,12 +198,23 @@ BEGIN
 		BEGIN
 			INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_h,betteam_a,betteam_1,betteam_x,betteam_2)
 			SELECT b.liveindicator, b.bettype
-				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_h
-				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_a
-				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_1
-				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_x
-				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_2
+				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_h
+				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_a
+				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_1
+				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_x
+				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_2
 			FROM bettrans b WITH(NOLOCK) 
+				CROSS APPLY (SELECT 
+									CASE 
+										WHEN b.betteam = 'h' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)
+										WHEN b.betteam = 'a' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)							
+										ELSE ABS(b.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
+							
 			WHERE b.matchid = @matchid
 				AND b.recommend = @custid
 				AND b.statusid NOT IN (101,102,103)
@@ -169,11 +224,21 @@ BEGIN
 			
 			INSERT INTO #HouseTO_99 (liveindicator,bettype,total)
 			SELECT b.liveindicator,-1 bettype,
-				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*abs(stake),0)) BalanceInfo
+				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*(stake),0)) BalanceInfo
 			FROM (		
-				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,bet.stake
+				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,t.stake
 				FROM bettrans bet WITH(NOLOCK)
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype 
+					CROSS APPLY (SELECT 
+									CASE 
+										WHEN bet.betteam = 'h' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)
+										WHEN bet.betteam = 'a' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)							
+										ELSE ABS(bet.stake) -- normal
+									END	
+									AS stake																							
+							) AS t
 				WHERE bet.matchid = @matchid
 					AND bet.recommend = @CustID
 					AND bet.statusid NOT IN (101,102,103)
@@ -182,7 +247,7 @@ BEGIN
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
-				SELECT  liveindicator,-1 bettype,tpositiontaking,stake
+				SELECT  liveindicator,-1 bettype,tpositiontaking,ABS(stake)
 				FROM  translog WITH(NOLOCK)
 				WHERE eventID = @matchid
 					AND recommend = @CustID
@@ -201,12 +266,22 @@ BEGIN
 		BEGIN
 			INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_h,betteam_a,betteam_1,betteam_x,betteam_2)
 			SELECT b.liveindicator, b.bettype
-				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_h
-				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_a
-				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_1
-				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_x
-				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_2
+				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_h
+				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_a
+				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_1
+				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_x
+				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_2
 			FROM bettrans14 b WITH(NOLOCK) 
+				CROSS APPLY (SELECT 
+									CASE 
+										WHEN b.betteam = 'h' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)
+										WHEN b.betteam = 'a' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)							
+										ELSE ABS(b.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
 			WHERE b.matchid = @matchid
 				AND b.srecommend = @custid
 				AND b.statusid NOT IN (101,102,103)
@@ -217,11 +292,21 @@ BEGIN
 			
 			INSERT INTO #HouseTO_99 (liveindicator,bettype,total)
 			SELECT b.liveindicator,-1 bettype,
-				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*abs(stake),0)) BalanceInfo
+				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*(stake),0)) BalanceInfo
 			FROM (		
-				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,bet.stake
+				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,t.stake
 				FROM bettrans14 bet WITH(NOLOCK)
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype 
+					CROSS APPLY (SELECT 
+									CASE 
+										WHEN bet.betteam = 'h' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)
+										WHEN bet.betteam = 'a' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)							
+										ELSE ABS(bet.stake) -- normal
+									END	
+									AS stake																							
+							) AS t
 				WHERE bet.matchid = @matchid
 					AND bet.srecommend = @CustID
 					AND bet.statusid NOT IN (101,102,103)
@@ -230,7 +315,7 @@ BEGIN
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
-				SELECT  liveindicator,-1 bettype,tpositiontaking,stake
+				SELECT  liveindicator,-1 bettype,tpositiontaking,ABS(stake)
 				FROM  translog14 WITH(NOLOCK)
 				WHERE eventID = @matchid
 					AND srecommend = @CustID
@@ -246,12 +331,22 @@ BEGIN
 		BEGIN
 			INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_h,betteam_a,betteam_1,betteam_x,betteam_2)
 			SELECT b.liveindicator, b.bettype
-				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_h
-				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_a
-				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_1
-				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_x
-				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_2
+				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_h
+				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_a
+				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_1
+				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_x
+				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_2
 			FROM bettrans14 b WITH(NOLOCK) 
+				CROSS APPLY (SELECT 
+									CASE 
+										WHEN b.betteam = 'h' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)
+										WHEN b.betteam = 'a' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)							
+										ELSE ABS(b.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
 			WHERE b.matchid = @matchid
 				AND b.mrecommend = @custid
 				AND b.statusid NOT IN (101,102,103)
@@ -262,11 +357,21 @@ BEGIN
 			
 			INSERT INTO #HouseTO_99 (liveindicator,bettype,total)
 			SELECT b.liveindicator,-1 bettype,
-				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*abs(stake),0)) BalanceInfo
+				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*(stake),0)) BalanceInfo
 			FROM (		
-				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,bet.stake
+				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,t.stake
 				FROM bettrans14 bet WITH(NOLOCK)
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype 
+					CROSS APPLY (SELECT 
+									CASE 
+										WHEN bet.betteam = 'h' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)
+										WHEN bet.betteam = 'a' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)							
+										ELSE ABS(bet.stake) -- normal
+									END	
+									AS stake																							
+							) AS t
 				WHERE bet.matchid = @matchid
 					AND bet.mrecommend = @CustID
 					AND bet.statusid NOT IN (101,102,103)
@@ -275,7 +380,7 @@ BEGIN
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
-				SELECT  liveindicator,-1 bettype,tpositiontaking,stake
+				SELECT  liveindicator,-1 bettype,tpositiontaking,ABS(stake)
 				FROM  translog14 WITH(NOLOCK)
 				WHERE eventID = @matchid
 					AND mrecommend = @CustID
@@ -291,12 +396,22 @@ BEGIN
 		BEGIN
 			INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_h,betteam_a,betteam_1,betteam_x,betteam_2)
 			SELECT b.liveindicator, b.bettype
-				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_h
-				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_a
-				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_1
-				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_x
-				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*abs(stake) ELSE 0 END,0)) AS betteam_2
+				, SUM(ISNULL(CASE WHEN b.betteam='h' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_h
+				, SUM(ISNULL(CASE WHEN b.betteam='a' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_a
+				, SUM(ISNULL(CASE WHEN b.betteam='1' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_1
+				, SUM(ISNULL(CASE WHEN b.betteam='x' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_x
+				, SUM(ISNULL(CASE WHEN b.betteam='2' THEN (1-tpositiontaking - @ExtraPT)*(t.stake) ELSE 0 END,0)) AS betteam_2
 			FROM bettrans14 b WITH(NOLOCK) 
+				CROSS APPLY (SELECT 
+									CASE 
+										WHEN b.betteam = 'h' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)
+										WHEN b.betteam = 'a' AND b.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN b.odds < 0 THEN 1 ELSE b.odds END)							
+										ELSE ABS(b.stake) -- normal
+									END	
+									AS stake																							
+							) AS t  
 			WHERE b.matchid = @matchid
 				AND b.recommend = @custid
 				AND b.statusid NOT IN (101,102,103)
@@ -307,11 +422,21 @@ BEGIN
 			
 			INSERT INTO #HouseTO_99 (liveindicator,bettype,total)
 			SELECT b.liveindicator,-1 bettype,
-				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*abs(stake),0)) BalanceInfo
+				SUM(ISNULL((1-tpositiontaking- @ExtraPT)*(stake),0)) BalanceInfo
 			FROM (		
-				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,bet.stake
+				SELECT bet.liveindicator,-1 bettype,bet.tpositiontaking,t.stake
 				FROM bettrans14 bet WITH(NOLOCK)
 					INNER JOIN #SportBettype bt WITH (NOLOCK) ON bt.Bettype = bet.bettype 
+					CROSS APPLY (SELECT 
+									CASE 
+										WHEN bet.betteam = 'h' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN (stake * CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)
+										WHEN bet.betteam = 'a' AND bet.bettype IN (1,3,7,8,20,21) 
+												THEN - (stake *	CASE WHEN bet.odds < 0 THEN 1 ELSE bet.odds END)							
+										ELSE ABS(bet.stake) -- normal
+									END	
+									AS stake																							
+							) AS t
 				WHERE bet.matchid = @matchid
 					AND bet.recommend = @CustID
 					AND bet.statusid NOT IN (101,102,103)
@@ -320,7 +445,7 @@ BEGIN
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
-				SELECT  liveindicator,-1 bettype,tpositiontaking,stake
+				SELECT  liveindicator,-1 bettype,tpositiontaking,ABS(stake)
 				FROM  translog14 WITH(NOLOCK)
 				WHERE eventID = @matchid
 					AND recommend = @CustID
@@ -333,13 +458,21 @@ BEGIN
 		END
 	END
 	-- Insert Total by bettype	
-	INSERT INTO #HouseTO_1_3_5_7_8_15 (liveindicator,bettype,betteam_1,betteam_2,betteam_x,betteam_h,betteam_a)	
-	SELECT 2,bettype, SUM(betteam_1),SUM(betteam_2),SUM(betteam_x),SUM(betteam_h),SUM(betteam_a)
+	INSERT INTO #HouseTO_1_3_5_7_8_15_Final(liveindicator,bettype,betteam_1,betteam_2,betteam_x,betteam_h,betteam_a)	
+	SELECT liveindicator,bettype,ABS(betteam_1),ABS(betteam_2),ABS(betteam_x),ABS(betteam_h),ABS(betteam_a)
+	FROM #HouseTO_1_3_5_7_8_15
+	
+	INSERT INTO #HouseTO_1_3_5_7_8_15_Final (liveindicator,bettype,betteam_1,betteam_2,betteam_x,betteam_h,betteam_a)	
+	SELECT 2,bettype, ABS(SUM(betteam_1)),ABS(SUM(betteam_2)),ABS(SUM(betteam_x)),ABS(SUM(betteam_h)),ABS(SUM(betteam_a))
 	FROM #HouseTO_1_3_5_7_8_15
 	GROUP BY bettype
-
-	INSERT INTO #HouseTO_99 (liveindicator,bettype,total)	
-	SELECT 2,bettype, SUM(total)
+	
+	INSERT INTO #HouseTO_99_Final(liveindicator,bettype,total)
+	SELECT liveindicator,bettype,ABS(total)
+	FROM #HouseTO_99
+	
+	INSERT INTO #HouseTO_99_Final (liveindicator,bettype,total)	
+	SELECT 2,bettype, ABS(SUM(total))
 	FROM #HouseTO_99
 	GROUP BY bettype
 	
@@ -368,7 +501,7 @@ BEGIN
 					
 					
 			  END AS value
-	  FROM #HouseTO_1_3_5_7_8_15 BT1 WITH (NOLOCK)
+	  FROM #HouseTO_1_3_5_7_8_15_Final BT1 WITH (NOLOCK)
 	  
 	  UNION All
 	  
@@ -378,7 +511,7 @@ BEGIN
 			, Bettype
 			, CAST(CONVERT(VARCHAR, CAST(Total AS MONEY), 1) AS VARCHAR)
 		
-	 FROM #HouseTO_99 WITH (NOLOCK)
+	 FROM #HouseTO_99_Final WITH (NOLOCK)
 	) tmp
 	PIVOT
 	(
@@ -389,6 +522,8 @@ BEGIN
 	DROP TABLE #HouseTO_1_3_5_7_8_15
 	DROP TABLE #HouseTO_99
 	DROP TABLE #SportBettype
+	DROP TABLE #HouseTO_1_3_5_7_8_15_Final
+	DROP TABLE #HouseTO_99_Final
 	
 	
 END

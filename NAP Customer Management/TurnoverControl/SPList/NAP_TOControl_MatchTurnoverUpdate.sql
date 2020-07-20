@@ -25,6 +25,7 @@ AS
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		- 20190102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
+		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		
 	Parameter's explaination:
 		
@@ -93,12 +94,12 @@ BEGIN
 				MaxTurnover = @MaxTurnover,
 				IsNotified =  ISNULL((SELECT MAX(PercentValue) 
 										FROM dbo.TOControl_LevelSetting WITH(NOLOCK) 
-										WHERE (HouseTurnOver*100/@MaxTurnover) >= PercentValue AND IsNotified = 1
+										WHERE (ABS(HouseTurnOver)*100/@MaxTurnover) >= PercentValue AND IsNotified = 1
 											AND SiteID = @SiteID
 									),0),
 				PercentLevel = ISNULL((SELECT MAX(PercentLevel) 
 										FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
-										WHERE (HouseTurnOver*100/@MaxTurnover) >= PercentValue
+										WHERE (ABS(HouseTurnOver)*100/@MaxTurnover) >= PercentValue
 										),0) 
 						
 		WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline AND ProfileID = @ProfileID

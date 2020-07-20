@@ -98,7 +98,7 @@ BEGIN
 	   SELECT tb.CustID, tb.matchid, tb.IsGroupHeadLine, tb.IsEventLockTOLimit, tb.IsGlobalLockTOLimit
 	   FROM (
 			SELECT t.CustID, t.matchid,
-				   CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.HouseTurnover*100/t.MaxTurnover END AS PercentageUsed,
+				   CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.HouseTurnover)*100/t.MaxTurnover END AS PercentageUsed,
 				   t.IsGroupHeadLine, t.IsEventLockTOLimit, t.IsGlobalLockTOLimit
 			FROM dbo.TOControl_Setting t WITH(NOLOCK) 
 				INNER JOIN dbo.custInfo c WITH (NOLOCK) ON t.custID = c.custid
@@ -109,8 +109,8 @@ BEGIN
 
 	),CTE_SettingList AS (
 		SELECT 
-			t.CustID, t.matchid, t.MaxTurnover, t.TotalTurnover, t.HouseTurnover
-			, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.HouseTurnover*100/t.MaxTurnover END AS PercentageUsed
+			t.CustID, t.matchid, t.MaxTurnover, t.TotalTurnover, t.HouseTurnover AS HouseTurnover
+			, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.HouseTurnover)*100/t.MaxTurnover END AS PercentageUsed
 			, t.IsGroupHeadLine
 			, t.ProfileID 
 			, t.PercentLevel
@@ -118,7 +118,7 @@ BEGIN
 		WHERE EXISTS( SELECT 1 FROM CTE_Filter tf  WITH(NOLOCK) WHERE t.CustID = tf.CustID AND t.IsGroupHeadLine = tf.IsGroupHeadLine AND t.matchid = tf.matchid) AND t.ProfileID IS NOT NULL	
 		
 	), CTE_Sum AS(
-	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,SUM(t.HouseTurnover) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
+	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,ABS(SUM(t.HouseTurnover)) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
 		   FROM CTE_SettingList t WITH (NOLOCK)
 		   GROUP BY t.matchid, t.CustID, t.IsGroupHeadLine
 	)
@@ -140,7 +140,7 @@ BEGIN
 		, pf.GroupName
 		, ts.MaxTurnOver
 		, ts.TotalTurnOver
-		, ts.HouseTurnover
+		, ABS(ts.HouseTurnover) AS HouseTurnover
 		, ts.PercentageUsed
 		, s.SumHouseTurnover AS TotalHouseTurnover
 		, s.SumTotalTurnOver AS TotalMemberTurnover
