@@ -1,0 +1,14 @@
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeSelect.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeInsert.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeDelete.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_SportBettypeSel.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_SportBettypeCheck.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_SiteByPermissionSelect.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_CustUpdate.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_CustSelect.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_CustInsert.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_CustDelete.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_CustCheck.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_AllTypeSelect.sql
+NAP Customer Management\BetLimitControl\Dot_Member_BetLimitControl_CustSettingSelect.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeUpdate.sql

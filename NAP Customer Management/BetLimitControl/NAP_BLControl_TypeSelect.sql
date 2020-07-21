@@ -26,7 +26,8 @@ AS
 		@ProductID = 0,
 		@Sporttype = 0,
 		@Bettype = 0,
-		@LiveIndicator = 3
+		@LiveIndicator = 3,
+		@UserId = 8
 
 	*/
 BEGIN
@@ -45,13 +46,14 @@ BEGIN
 		ProductID INT, 
 		Sporttype INT, 
 		Bettype   INT, 
-		IsLive    BIT, 
-		IsActive  BIT,
+		IsLive    BIT
 		PRIMARY KEY (ProductID,Sporttype,Bettype,IsLive)
 	)
-	INSERT INTO #BTC_SportBettypeReference(ProductID,Sporttype,Bettype,IsLive,IsActive)
-	SELECT ProductID,Sporttype,Bettype,IsLive,1 
-	FROM DBEXT.bodb02.dbo.SportBettypeMatrix WITH(NOLOCK) 
+	INSERT INTO #BTC_SportBettypeReference(ProductID,Sporttype,Bettype,IsLive)
+	SELECT m.ProductID,m.Sporttype,m.Bettype,m.IsLive
+	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK) 
+		INNER JOIN DBEXT.bodb02.dbo.sports sp WITH(NOLOCK) ON m.Sporttype = sp.Sporttype
+		INNER JOIN DBEXT.bodb02.dbo.Bettype s WITH(NOLOCK) ON m.Bettype = s.typeid
 	WHERE ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 	
 	SELECT  BetLimitTypeID,
@@ -74,6 +76,7 @@ BEGIN
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
 														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 														WHERE (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
+															AND (b.ProductID = c.ProductID OR b.ProductID = 0)
 															AND BetLimitTypeID = t.BetLimitTypeID) sp
 										 GROUP BY c.Sporttype
 										 ORDER BY c.Sporttype
@@ -83,6 +86,8 @@ BEGIN
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
 														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 														WHERE (b.Bettype = c.Bettype OR b.Bettype = 0)
+															AND (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
+															AND (b.ProductID = c.ProductID OR b.ProductID = 0)
 															AND BetLimitTypeID = t.BetLimitTypeID) bt
 										 GROUP BY c.BetType
 										 ORDER BY c.Bettype
