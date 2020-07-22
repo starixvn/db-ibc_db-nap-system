@@ -114,7 +114,6 @@ BEGIN
 	UPDATE dbo.TOControl_GlobalSetting WITH(ROWLOCK, UPDLOCK) 
 	SET MaxTurnOver = @MaxTurnover 
 	WHERE CustID = @CustID AND Sporttype = @SportType AND IsGroupHeadLine = @IsGroupHeadLine AND ProfileID = @ProfileID
-		AND IsGlobalLockTOLimit = 0
 	
 	UPDATE t
 		SET 
