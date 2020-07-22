@@ -5,8 +5,10 @@ ALTER PROCEDURE [dbo].[Dot_Member_BetLimitControl_CustSettingSelect]
 	 ,@Bettype		SMALLINT
 	 ,@LeagueID		INT
 	 ,@LeagueGroupID INT = 0
+	 ,@LiveIndicator BIT = NULL
 AS
 /*
+
 	Created: 20200602@Eden
 	Task : get bet limit setting for member site
 	DB: DBCUST-CUSTDB
@@ -48,6 +50,7 @@ BEGIN
 			AND btd.Bettype IN (@Bettype,0)
 			AND btd.LeagueID IN (@LeagueID,0)
 			AND btd.LeagueGroupID IN (@LeagueGroupID,0)
+			AND bt.LiveIndicator IN(@LiveIndicator,2)
 			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
 	OPTION (FORCE ORDER)
 END
