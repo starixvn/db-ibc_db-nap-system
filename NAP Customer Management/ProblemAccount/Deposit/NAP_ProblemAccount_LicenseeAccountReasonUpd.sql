@@ -5,7 +5,11 @@ ALTER PROCEDURE NAP_ProblemAccount_LicenseeAccountReasonUpd
 	@ActionId		TINYINT,
 	@ReasonID		TINYINT,
 	@Comment		NVARCHAR(600)='',
-
+	@VoidTime		VARCHAR(50) = '',
+	@LimitAmount	MONEY = 0,
+	@UpdateTime		BIT = 0,
+	@UpdateLimitAmount BIT = 0,
+	
 	@UserID			INT,
 	@IP				VARCHAR(15),
 	@ErrCode		INT = 0 OUTPUT,
@@ -19,7 +23,7 @@ AS
 
 	Revisions:
 		- 20200221@Johnson: Initial SP [Redmine:#128077]
-
+		- 20200721@Johnson: add void time & limit amount [redmine: #135253]
 	Parameter's explaination: 
 	
 */
@@ -31,15 +35,25 @@ BEGIN
 			@Old_ActionName VARCHAR(100), 
 			@Old_ReasonName VARCHAR(100),
 			@Old_Comment NVARCHAR(600),
+			@Old_VoidTime VARCHAR(50),
+			@Old_LimitAmount MONEY,
 			@ActionName VARCHAR(100), 
 			@ReasonName VARCHAR(100)
 			
-	DECLARE @tmpCust TABLE (Username NVARCHAR(50), CustId INT, Comment NVARCHAR(600), ActionName VARCHAR(100), ReasonName VARCHAR(100), IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCust TABLE (Username NVARCHAR(50), 
+							CustId INT, 
+							Currency INT,
+							Comment NVARCHAR(600), 
+							ActionName VARCHAR(100), 
+							ReasonName VARCHAR(100), 
+							VoidTime VARCHAR(50),
+							LimitAmount MONEY,
+							IsFinished BIT DEFAULT(0))
 
 	SET	@startRun = GETDATE()
 
-	INSERT INTO @tmpCust(Username, CustID)
-	SELECT ci.Username, ci.custid
+	INSERT INTO @tmpCust(Username, CustID, currency)
+	SELECT ci.Username, ci.custid, ci.currency
 	FROM dbo.strSplit(@CustomerList, ',') f
 		INNER JOIN dbo.customer ci WITH (NOLOCK) ON f.val = ci.username
 		INNER JOIN Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
@@ -56,12 +70,20 @@ BEGIN
 	   SELECT @ErrCode = 101, @ErrMsg = 'Invalid account(s): ' + @ErrMsg	   
 	   RETURN
     END
-		
+	
+	IF (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
+	BEGIN
+		SELECT @ErrCode = 102, @ErrMsg = 'Multiple currencies selected. To save Limit Amount, all selected accounts must belong to one currency.'
+		RETURN
+	END
+	
 	--get old ActionID & ReasonID
 	UPDATE t 
 	SET t.ReasonName = pr.ReasonName,
 		t.ActionName = pa.ActionName,
-		t.Comment = p.Comment
+		t.Comment = p.Comment,
+		t.VoidTime = p.VoidTime,
+		t.LimitAmount = p.LimitAmount
 	FROM dbo.ProblemAccount p WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = p.CustId
 		INNER JOIN ProblemAccountReason pr WITH(NOLOCK) ON p.ReasonID = pr.ReasonID
@@ -72,7 +94,9 @@ BEGIN
 	SET pa.ActionID = @ActionID,
 		pa.ReasonID = @ReasonID,
 		pa.Comment = @Comment,
-		pa.SubIssueTypeId = CASE WHEN @ActionID= 2 THEN 38 ELSE NULL END
+		pa.SubIssueTypeId = CASE WHEN @ActionID= 2 THEN 38 ELSE NULL END,
+		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime ELSE pa.VoidTime END,
+		pa.LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE pa.LimitAmount END
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
@@ -92,7 +116,9 @@ BEGIN
 			@UserName = Username,
 			@Old_ActionName = ActionName,
 			@Old_ReasonName = ReasonName,
-			@Old_comment = Comment
+			@Old_comment = Comment,
+			@Old_VoidTime = VoidTime,
+			@Old_LimitAmount = LimitAmount
 		WHERE isfinished = 0
 				
 		IF @@ROWCOUNT = 0 BREAK	
@@ -102,6 +128,10 @@ BEGIN
 						+ ' PreventiveAction="' + COALESCE(@Old_ActionName, SPACE(1)) + '"'
 						+ ' Reason="' + COALESCE(@Old_ReasonName, SPACE(1)) + '"'
 						+ ' Comment="' + COALESCE(@Old_Comment, SPACE(1)) + '"'
+						+ ' UpdateTime="' + COALESCE(CAST(@UpdateTime as VARCHAR(10)), SPACE(1)) + '"'							
+						+ ' UpdateLimitAmount="' + COALESCE(CAST(@UpdateLimitAmount as VARCHAR(10)), SPACE(1)) + '"'							
+						+ ' VoidTime="' + COALESCE(@Old_VoidTime, SPACE(1)) + '"'							
+						+ ' LimitAmount="' + COALESCE(CASE WHEN @Old_LimitAmount = 0 THEN 'Unlimited' ELSE dbo.f_FomatNumber (CAST(@Old_LimitAmount AS VARCHAR(10))) END, SPACE(1)) + '"'						
 						+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 						+ ' />'
 		
@@ -110,6 +140,10 @@ BEGIN
 							+ ' PreventiveAction="' + COALESCE(@ActionName, SPACE(1)) + '"'
 							+ ' Reason="' + COALESCE(@ReasonName, SPACE(1)) + '"'
 							+ ' Comment="' + COALESCE(@Comment, SPACE(1)) + '"'
+							+ ' UpdateTime="' + COALESCE(CAST(@UpdateTime as VARCHAR(10)), SPACE(1)) + '"'							
+							+ ' UpdateLimitAmount="' + COALESCE(CAST(@UpdateLimitAmount as VARCHAR(10)), SPACE(1)) + '"'							
+							+ ' VoidTime="' + COALESCE(@VoidTime, SPACE(1)) + '"'							
+							+ ' LimitAmount="' + COALESCE(CASE WHEN @LimitAmount = 0 THEN 'Unlimited' ELSE dbo.f_FomatNumber (CAST(@LimitAmount AS VARCHAR(10))) END, SPACE(1)) + '"'						
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'	
 							

@@ -5,7 +5,9 @@ ALTER PROCEDURE [dbo].[Nap_ProblemAccount_AddCustomer]
 	@ReasonId			TINYINT,
 	@PreventActionId	TINYINT,
 	@Comment			NVARCHAR(300) = '',
-
+	@VoidTime			VARCHAR(50) = '',
+	@LimitAmount		MONEY = 0,
+		
 	@UserID				INT,
 	@IP					VARCHAR(15),
 	@ErrCode			INT = 0 OUTPUT,
@@ -21,8 +23,9 @@ AS
 
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
-
+		- 20200720@Johnson: Void Winning Ticket by Time and Limited Amount [redmine:#135253]
 	Parameter's explaination: 
+		- @LimitAmount = 0: unlimited
 	
 */
 BEGIN
@@ -31,14 +34,14 @@ BEGIN
 	DECLARE @WrongUserName VARCHAR(MAX), @CustNumber INT, @CustId INT, @UserName VARCHAR(30), @ReasonName VARCHAR(100), @ActionName VARCHAR(100)
 	DECLARE @IsSuccess BIT, @SuccessDownlineList VARCHAR(MAX) = ''
 	DECLARE @tmpList TABLE (Username VARCHAR(MAX))	
-	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))	
+	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))	
 
 	INSERT INTO @tmpList(Username)
 	SELECT Val
 	FROM dbo.f_StringSplit(@CustomerList, ',') f
 
-	INSERT INTO @tmpCust(Username, CustID, RoleId)
-	SELECT c.Username, c.custid, c.roleid
+	INSERT INTO @tmpCust(Username, CustID, currency, RoleId)
+	SELECT c.Username, c.custid, currency, c.roleid
 	FROM @tmpList t
 		INNER JOIN dbo.customer c WITH (NOLOCK) ON t.Username = c.username		
 	WHERE c.site <> 'CN88' 
@@ -79,7 +82,13 @@ BEGIN
 	   SELECT @ErrCode = 103, @ErrMsg = 'Existing directly marked problem account(s): ' + @WrongUserName	   
 	   RETURN
     END	
-
+	
+	IF (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
+	BEGIN
+		SELECT @ErrCode = 105, @ErrMsg = 'Multiple currencies selected. To save Limit Amount, all selected accounts must belong to one currency.'
+		RETURN
+	END
+	
 	SELECT @CustNumber = COUNT(1) FROM @tmpCust c
 
 	IF @CustNumber > 100
@@ -110,6 +119,8 @@ BEGIN
 			@PreventActionId = @PreventActionId,
 			@Comment = @Comment,
 			@Action = 'MarkProblem',
+			@VoidTime = @VoidTime,
+			@LimitAmount = @LimitAmount,
 			@IsSuccess = @IsSuccess OUTPUT,
 			@SuccessDownlineList = @SuccessDownlineList OUTPUT
 	
@@ -126,6 +137,8 @@ BEGIN
 							+ ' Username="' + @UserName + '"'
 							+ ' Reason="' + @ReasonName + '"'
 							+ ' PreventiveAction="' + @ActionName + '"'
+							+ ' Time="' + COALESCE(@VoidTime, SPACE(1)) + '"'
+							+ ' LimitAmount="' + COALESCE(CASE WHEN @LimitAmount = 0 THEN 'Unlimited' ELSE dbo.f_FomatNumber (CAST(@LimitAmount AS VARCHAR(10))) END, SPACE(1)) + '"'
 							+ ' Comment="' + @Comment + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'

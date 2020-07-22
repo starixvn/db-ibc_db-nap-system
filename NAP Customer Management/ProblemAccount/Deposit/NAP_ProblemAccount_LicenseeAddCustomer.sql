@@ -4,7 +4,9 @@ ALTER PROCEDURE [dbo].[NAP_ProblemAccount_LicenseeAddCustomer]
 	@ReasonId		TINYINT,
 	@ActionId		TINYINT,
 	@Comment		NVARCHAR(300) = '',
-
+	@VoidTime		VARCHAR(50) = '',
+	@LimitAmount 	MONEY = 0,
+	
 	@UserID			INT,
 	@IP				VARCHAR(15),
 	@ErrCode		INT = 0 OUTPUT,
@@ -18,6 +20,7 @@ AS
 	Revisions:
 		- 20200218@Johnson: Initial SP [Redmine:#128077]
 		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
+		- 20200721@Johnson: add void time & limit amount [redmine:#135253]
 	Parameter's explaination: 
 	
 */
@@ -35,7 +38,14 @@ BEGIN
 			@MaxPerEvent MONEY, 
 			@SubIssueTypeId TINYINT
 			
-	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, isVip BIT, isAcknowledgement BIT, MaxBet MONEY, MaxPerEvent MONEY, IsFinished BIT DEFAULT(0))
+	DECLARE @tmpCust TABLE (Username VARCHAR(30), 
+							CustId INT, 
+							currency INT, 
+							isVip BIT, 
+							isAcknowledgement BIT, 
+							MaxBet MONEY, 
+							MaxPerEvent MONEY, 
+							IsFinished BIT DEFAULT(0))
 	
 	SELECT @startRun = GETDATE()
 	
@@ -77,12 +87,18 @@ BEGIN
 	   SELECT @ErrCode = 102, @ErrMsg = 'Existing directly marked problem account(s): ' + @WrongUserName	   
 	   RETURN
     END	
-
+	
+	IF (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
+	BEGIN
+		SELECT @ErrCode = 103, @ErrMsg = 'Multiple currencies selected. To save Limit Amount, all selected accounts must belong to one currency.'
+		RETURN
+	END
+	
 	SELECT @CustNumber = COUNT(1) FROM @tmpCust c
 
 	IF @CustNumber > 100
     BEGIN
-		SELECT @ErrCode = 103, @ErrMsg = 'The function can only mark up to 100 accounts per request.'
+		SELECT @ErrCode = 104, @ErrMsg = 'The function can only mark up to 100 accounts per request.'
 		RETURN
     END	
 		
@@ -102,8 +118,8 @@ BEGIN
 		AND isAcknowledgement = 1
 		AND isVip = 0
 		
-	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, SubIssueTypeId)	
-	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0, @SubIssueTypeId
+	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, SubIssueTypeId, VoidTime, LimitAmount)	
+	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0, @SubIssueTypeId, @VoidTime, @LimitAmount
 	FROM @tmpCust t
 	WHERE custid IS NOT NULL
 	
@@ -130,6 +146,8 @@ BEGIN
 							+ ' Comment="' + @Comment + '"'
 							+ ' MaxBet="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxBet AS VARCHAR(10))), SPACE(1))+'"'
 							+ ' MaxPerMatch="'+COALESCE(dbo.f_FomatNumber (CAST(@MaxPerEvent AS VARCHAR(10))), SPACE(1))+'"'
+							+ ' Time="' + COALESCE(@VoidTime, SPACE(1)) + '"'
+							+ ' LimitAmount="' + COALESCE(CASE WHEN @LimitAmount = 0 THEN 'Unlimited' ELSE dbo.f_FomatNumber (CAST(@LimitAmount AS VARCHAR(10))) END, SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'
 	
