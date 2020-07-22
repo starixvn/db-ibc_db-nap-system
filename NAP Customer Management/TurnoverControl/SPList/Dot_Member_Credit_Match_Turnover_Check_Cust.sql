@@ -13,7 +13,9 @@ ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 	@ExchangeID			INT,
 	@Sporttype          SMALLINT = NULL,
 	@Bettype            SMALLINT = NULL,
-	@liveindicator      BIT = NULL
+	@liveindicator      BIT = NULL,
+	@odds				SMALLMONEY = 0,
+	@betteam			NVARCHAR(20)='h'
 )	
 AS
 /*
@@ -27,6 +29,7 @@ AS
 		- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20200114@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		- 20200318@Helen : Get profile tuning code [Redmine : 125076]
+		- 20200722@Max : Support TW test - SMA TOControl change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		
 	Parameter's explaination:
 	
