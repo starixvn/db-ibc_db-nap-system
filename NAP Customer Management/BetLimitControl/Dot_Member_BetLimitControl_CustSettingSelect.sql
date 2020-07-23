@@ -27,7 +27,7 @@ AS
 		@LeagueID = 1
 	*/
 BEGIN 
-	DECLARE @bettime TIME = DATEADD(hh,12,GETDATE())
+	DECLARE @bettime TIME = DATEADD(hh,12,GETDATE()) -- convert to GMT+8
 
 	DECLARE @IsVIP BIT = 0
 
