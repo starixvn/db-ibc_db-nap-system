@@ -123,6 +123,7 @@ BEGIN
 				
 		IF @@ROWCOUNT = 0 BREAK	
 		
+		SELECT @VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime ELSE @Old_VoidTime END
 		SELECT @LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE @Old_LimitAmount END
 		
 		SELECT  @LogDataOld = '<R'
