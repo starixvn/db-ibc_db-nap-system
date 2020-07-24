@@ -122,7 +122,9 @@ BEGIN
 		WHERE isfinished = 0
 				
 		IF @@ROWCOUNT = 0 BREAK	
-
+		
+		SELECT @LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE @Old_LimitAmount END
+		
 		SELECT  @LogDataOld = '<R'
 						+ ' Username="' + @UserName + '"'
 						+ ' PreventiveAction="' + COALESCE(@Old_ActionName, SPACE(1)) + '"'

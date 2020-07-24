@@ -119,7 +119,8 @@ BEGIN
 
 		SELECT @Old_ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @Old_ReasonId
 		SELECT @Old_ActionName = ActionName FROM dbo.ProblemAccountAction WITH (NOLOCK) WHERE ActionID = @Old_PreventActionId
-
+		SELECT @LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE @Old_LimitAmount END
+		
 		-- Write log
 		DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
 		SELECT  @LogDataOld = '<R'
