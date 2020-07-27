@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[Dot_Member_BetLimitControl_CustSettingSelect]
 	 ,@LeagueID		INT
 	 ,@LeagueGroupID INT = 0
 	 ,@LiveIndicator BIT = NULL
+	 ,@ProductID TINYINT = NULL
 AS
 /*
 
@@ -52,6 +53,7 @@ BEGIN
 			AND btd.LeagueGroupID IN (@LeagueGroupID,0)
 			AND bt.LiveIndicator IN(@LiveIndicator,2)
 			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
+			AND btd.ProductID IN (@ProductID,0)
 	OPTION (FORCE ORDER)
 END
 GO
