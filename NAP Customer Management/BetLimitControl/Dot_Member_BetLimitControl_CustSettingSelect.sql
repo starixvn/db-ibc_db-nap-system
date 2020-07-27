@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="Dot_Member" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="Dot_Member,dot_intg" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Member_BetLimitControl_CustSettingSelect] 
 	  @CustID		INT
 	 ,@SportType    SMALLINT
@@ -22,15 +22,20 @@ AS
 
 	Example: 
 	EXEC Dot_Member_BetLimitControl_CustSettingSelect 
-		@CustID = 1176092,
-		@SportType = 1,
-		@Bettype = 1,
-		@LeagueID = 1
+		@CustID = 1176092,@SportType = 1,
+		@Bettype = 1,@LeagueID = 1,
+		@LiveIndicator = 1,@ProductID = 1
 	*/
 BEGIN 
 	DECLARE @bettime TIME = DATEADD(hh,12,GETDATE()) -- convert to GMT+8
 
 	DECLARE @IsVIP BIT = 0
+
+	IF NOT EXISTS ( SELECT TOP 1 1 FROM BetLimitControlProduct WITH(NOLOCK) WHERE ProductID = @ProductID)
+	BEGIN
+		SELECT CAST( NULL AS MONEY) AS MaxBet, CAST( NULL AS MONEY) AS MaxPerMatch
+		RETURN
+	END
 
 	SELECT @IsVIP = 1 
 	FROM Dep_CustVIP vip WITH(NOLOCK) 
