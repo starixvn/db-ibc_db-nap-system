@@ -178,15 +178,15 @@ BEGIN
 						,adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator) 
 				SELECT srecommend AS 'super', mrecommend AS 'master', recommend AS 'agent',custid AS 'player', matchid AS 'mid', winlostdate AS 'wld'
 								   
-					, SUM(b.stake) AS 'adjTO'
+					, SUM(t.stake) AS 'adjTO'
 								   
-					, SUM(ABS(b.stake)) AS 'adjTOwithABS'
+					, SUM(ABS(t.stake)) AS 'adjTOwithABS'
 								   
 					, SUM((1-tpositiontaking)* t.stake) AS 'adjHTONoExtraPT'
 								   
-					, CONVERT(MONEY, SUM(b.stake*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_RM'
+					, CONVERT(MONEY, SUM(t.stake*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_RM'
 								   
-					, CONVERT(MONEY, SUM(ABS(b.stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTOwithABS_RM'
+					, CONVERT(MONEY, SUM(ABS(t.stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTOwithABS_RM'
 								   
 					, CONVERT(MONEY, SUM((1-tpositiontaking) * t.stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjHTONoExtraPT_RM'
 					, m.IsInsert AS 'IsInsert', b.bettype AS 'bettype', b.liveindicator AS 'liveindicator'
@@ -238,15 +238,15 @@ BEGIN
 						, adjTO, adjTOwithABS, adjHTONoExtraPT
 						, adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, bettype, liveindicator)
 			SELECT b.srecommend, b.mrecommend, b.recommend, 0 AS player, b.matchid, b.winlostdate, 
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(b.stake) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(b.stake) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(b.stake) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_withABS,
 					
@@ -256,15 +256,15 @@ BEGIN
 						 ELSE 0
 					END) AS adj_HouseTO,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_RM,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE b.actualrate END)) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE b.actualrate END)) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_withABS_RM,
 					
@@ -287,24 +287,24 @@ BEGIN
 									AS stake																							
 							) AS tmp
 			GROUP BY b.srecommend, b.mrecommend, b.recommend, b.matchid, b.winlostdate, b.bettype, b.liveindicator
-			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
+			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
 						 ELSE 0
 						END) <> 0 --Only get changed stake
 		
 			UNION ALL
 		
 			SELECT b.srecommend, b.mrecommend, b.recommend, b.custid AS player, b.matchid, b.winlostdate, 
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(b.stake) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(b.stake) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(b.stake) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_withABS,
 					
@@ -314,15 +314,15 @@ BEGIN
 						 ELSE 0
 					END) AS adj_HouseTO,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)  --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)  --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_RM,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_withABS_RM,
 					
@@ -347,9 +347,9 @@ BEGIN
 							
 			WHERE EXISTS (SELECT 1 FROM bodb02.dbo.custAccount ca WITH (NOLOCK) WHERE ca.CustID = b.custid)
 			GROUP BY b.srecommend, b.mrecommend, b.recommend, b.custid, b.matchid, b.winlostdate, b.bettype, b.liveindicator
-			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
+			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
 						 ELSE 0
 						END) <> 0 --Only get changed stake
 					
