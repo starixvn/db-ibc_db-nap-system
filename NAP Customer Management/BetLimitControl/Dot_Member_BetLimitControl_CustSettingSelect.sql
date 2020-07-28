@@ -54,7 +54,7 @@ BEGIN
 				)
 			AND btd.Sporttype IN (@SportType,0)
 			AND btd.Bettype IN (@Bettype,0)
-			AND btd.LeagueID IN (@LeagueID,0)
+			AND btd.LeagueID IN (ISNULL(@LeagueID,btd.LeagueID),0)
 			AND btd.LeagueGroupID IN (@LeagueGroupID,0)
 			AND bt.LiveIndicator IN(@LiveIndicator,2)
 			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
