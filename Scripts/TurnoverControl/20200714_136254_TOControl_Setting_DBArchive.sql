@@ -4,7 +4,7 @@
 	DB: DBARC/bodb_Archive
 */
 
-USE CustDB
+USE bodb_Archive
 GO
 
 ALTER TABLE [dbo].TOControl_Setting_bk 
