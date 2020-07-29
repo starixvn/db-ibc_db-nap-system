@@ -54,7 +54,7 @@ BEGIN
 	DECLARE @tblMsg AS TABLE (
 		super INT, [master] INT, agent INT, player INT,
 		mid INT, wld SMALLDATETIME, 
-		adjTO MONEY, adjTOwithABS MONEY, adjHTONoExtraPT MONEY, adjTO_RM MONEY, adjTOwithABS_RM MONEY, adjHTONoExtraPT_RM MONEY, IsInsert BIT, bettype smallint, liveindicator bit)
+		adjTO MONEY, adjTO_Exposure MONEY, adjHTONoExtraPT MONEY, adjTO_RM MONEY, adjTO_Exposure_RM MONEY, adjHTONoExtraPT_RM MONEY, IsInsert BIT, bettype smallint, liveindicator bit)
 	 
 	WAITFOR (RECEIVE TOP (@ReceiveMax)
 					conversation_handle,
@@ -108,19 +108,19 @@ BEGIN
 			BEGIN
 
 				-- SuperLive on bettrans
-				INSERT INTO @tblMsg (super, master, agent, player, mid, wld, adjTO, adjTOwithABS, adjHTONoExtraPT
-											,adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator)
+				INSERT INTO @tblMsg (super, master, agent, player, mid, wld, adjTO, adjTO_Exposure, adjHTONoExtraPT
+											,adjTO_RM, adjTO_Exposure_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator)
 					SELECT srecommend AS 'super', mrecommend AS 'master', recommend AS 'agent', custid AS 'player', matchid AS 'mid', winlostdate AS 'wld'
 								   
 						, - SUM(stake) AS 'adjTO'
 								   
-						, - SUM(ABS(stake)) AS 'adjTOwithABS'
+						, - SUM(ABS(stake)) AS 'adjTO_Exposure'
 								   
 						, - SUM((1-tpositiontaking)*ABS(stake)) AS 'adjHTONoExtraPT'
 								   
 						, CONVERT(MONEY, - SUM(stake*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_RM'
 								   
-						, CONVERT(MONEY, - SUM(ABS(-stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTOwithABS_RM'
+						, CONVERT(MONEY, - SUM(ABS(-stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTO_Exposure_RM'
 								   
 						, CONVERT(MONEY, - SUM((1-tpositiontaking)*ABS(-stake)*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjHTONoExtraPT_RM'
 						, m.IsInsert AS 'IsInsert', b.bettype AS 'bettype', b.liveindicator AS 'liveindicator'
@@ -140,19 +140,19 @@ BEGIN
 						GROUP BY srecommend, mrecommend, recommend, custid, matchid, winlostdate, m.IsInsert, b.bettype,b.liveindicator
 
 				-- SuperLive on translog
-				INSERT INTO @tblMsg (super, master, agent, player, mid, wld, adjTO, adjTOwithABS, adjHTONoExtraPT
-						,adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator) 
+				INSERT INTO @tblMsg (super, master, agent, player, mid, wld, adjTO, adjTO_Exposure, adjHTONoExtraPT
+						,adjTO_RM, adjTO_Exposure_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator) 
 					SELECT srecommend AS 'super', mrecommend AS 'master', recommend AS 'agent',custid AS 'player', eventID AS 'mid', winlostdate AS 'wld'
 								   
 							, SUM(stake) AS 'adjTO'
 								   
-							, SUM(ABS(stake)) AS 'adjTOwithABS'
+							, SUM(ABS(stake)) AS 'adjTO_Exposure'
 								   
 							, SUM((1-tpositiontaking)*ABS(stake)) AS 'adjHTONoExtraPT'
 								   
 							, CONVERT(MONEY, SUM(stake*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_RM'
 								   
-							, CONVERT(MONEY, SUM(ABS(stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTOwithABS_RM'
+							, CONVERT(MONEY, SUM(ABS(stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTO_Exposure_RM'
 								   
 							, CONVERT(MONEY, SUM((1-tpositiontaking)*ABS(stake)*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjHTONoExtraPT_RM'
 							, m.IsInsert AS 'IsInsert', gameID AS 'bettype', b.liveindicator
@@ -174,19 +174,19 @@ BEGIN
 			END
 
 			-- Sportbook without SuperLive
-			INSERT INTO @tblMsg (super, master, agent, player, mid, wld, adjTO, adjTOwithABS, adjHTONoExtraPT
-						,adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator) 
+			INSERT INTO @tblMsg (super, master, agent, player, mid, wld, adjTO, adjTO_Exposure, adjHTONoExtraPT
+						,adjTO_RM, adjTO_Exposure_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator) 
 				SELECT srecommend AS 'super', mrecommend AS 'master', recommend AS 'agent',custid AS 'player', matchid AS 'mid', winlostdate AS 'wld'
 								   
-					, SUM(t.stake) AS 'adjTO'
+					, SUM(b.stake) AS 'adjTO'
 								   
-					, SUM(ABS(t.stake)) AS 'adjTOwithABS'
+					, SUM(t.stake) AS 'adjTO_Exposure'
 								   
 					, SUM((1-tpositiontaking)* t.stake) AS 'adjHTONoExtraPT'
 								   
-					, CONVERT(MONEY, SUM(t.stake*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_RM'
+					, CONVERT(MONEY, SUM(b.stake*(CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_RM'
 								   
-					, CONVERT(MONEY, SUM(ABS(t.stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END )))) AS 'adjTOwithABS_RM'
+					, CONVERT(MONEY, SUM(t.stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjTO_Exposure_RM'
 								   
 					, CONVERT(MONEY, SUM((1-tpositiontaking) * t.stake * (CASE WHEN currency = 20 THEN 1 ELSE  actualrate END ))) AS 'adjHTONoExtraPT_RM'
 					, m.IsInsert AS 'IsInsert', b.bettype AS 'bettype', b.liveindicator AS 'liveindicator'
@@ -216,8 +216,8 @@ BEGIN
 				GROUP BY srecommend, mrecommend, recommend, custid, matchid, winlostdate, m.IsInsert, b.bettype, b.liveindicator
 
 
-			SET @xml_TOControl = (	SELECT	super, master, agent, player, mid, wld, adjTO, adjTOwithABS, adjHTONoExtraPT
-											,adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator
+			SET @xml_TOControl = (	SELECT	super, master, agent, player, mid, wld, adjTO, adjTO_Exposure, adjHTONoExtraPT
+											,adjTO_RM, adjTO_Exposure_RM, adjHTONoExtraPT_RM, IsInsert, bettype, liveindicator
 									FROM @tblMsg					
 									FOR XML PATH ('r'), ROOT)
 
@@ -235,20 +235,20 @@ BEGIN
 							) msd
 
 			INSERT INTO @tblMsg (super, master, agent, player, mid, wld
-						, adjTO, adjTOwithABS, adjHTONoExtraPT
-						, adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, bettype, liveindicator)
+						, adjTO, adjTO_Exposure, adjHTONoExtraPT
+						, adjTO_RM, adjTO_Exposure_RM, adjHTONoExtraPT_RM, bettype, liveindicator)
 			SELECT b.srecommend, b.mrecommend, b.recommend, 0 AS player, b.matchid, b.winlostdate, 
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
+						 ELSE 0
+					END) AS adj_TO,
+			
 				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
 						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
 						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
 						 ELSE 0
-					END) AS adj_TO,
-			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake) -- undo or calculate after refund
-						 ELSE 0
-					END) AS adj_TO_withABS,
+					END) AS adjTO_Exposure,
 					
 				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -(1-b.tpositiontaking)*tmp.stake --delete ticket
 						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN (1-b.tpositiontaking)*tmp.stake --recover ticket
@@ -256,17 +256,17 @@ BEGIN
 						 ELSE 0
 					END) AS adj_HouseTO,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_RM,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE b.actualrate END)) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN (tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN (tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE b.actualrate END)) -- undo or calculate after refund
 						 ELSE 0
-					END) AS adj_TO_withABS_RM,
+					END) AS adjTO_Exposure_RM,
 					
 				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -(1-b.tpositiontaking)*tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
 						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN (1-b.tpositiontaking)*tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
@@ -296,17 +296,17 @@ BEGIN
 			UNION ALL
 		
 			SELECT b.srecommend, b.mrecommend, b.recommend, b.custid AS player, b.matchid, b.winlostdate, 
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
+						 ELSE 0
+					END) AS adj_TO,
+			
 				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
 						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
 						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
 						 ELSE 0
-					END) AS adj_TO,
-			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake) -- undo or calculate after refund
-						 ELSE 0
-					END) AS adj_TO_withABS,
+					END) AS adjTO_Exposure,
 					
 				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -(1-b.tpositiontaking)*tmp.stake --delete ticket
 						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN (1-b.tpositiontaking)*tmp.stake --recover ticket
@@ -314,17 +314,17 @@ BEGIN
 						 ELSE 0
 					END) AS adj_HouseTO,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)  --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)  --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
 						 ELSE 0
 					END) AS adj_TO_RM,
 			
-				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN ABS(tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END)) -- undo or calculate after refund
+				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) -- undo or calculate after refund
 						 ELSE 0
-					END) AS adj_TO_withABS_RM,
+					END) AS adjTO_Exposure_RM,
 					
 				SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -(1-b.tpositiontaking)*tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --delete ticket
 						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN (1-b.tpositiontaking)*tmp.stake * (CASE WHEN b.currency = 20 THEN 1 ELSE  b.actualrate END) --recover ticket
@@ -355,8 +355,8 @@ BEGIN
 					
 		
 			SET @xml_TOControl = (
-				SELECT super, master, agent, player, mid, wld, adjTO, adjTOwithABS, adjHTONoExtraPT
-					, adjTO_RM, adjTOwithABS_RM, adjHTONoExtraPT_RM, 0 AS IsInsert, bettype, liveindicator
+				SELECT super, master, agent, player, mid, wld, adjTO, adjTO_Exposure, adjHTONoExtraPT
+					, adjTO_RM, adjTO_Exposure_RM, adjHTONoExtraPT_RM, 0 AS IsInsert, bettype, liveindicator
 				FROM @tblMsg					
 				FOR XML PATH ('r'), ROOT)
 		
