@@ -124,7 +124,7 @@ BEGIN
 		
 				, SUM(t.adjusted_TurnOver ) AS adjusted_TurnOver
 				
-				, SUM (t.adjusted_HTOWithoutExtraPT - t.adjusted_TurnOver_withABS * ISNULL(ExtraPT_tmp.ExtraPT,0))	AS adjusted_HouseTurnOver
+				, SUM (t.adjusted_HTOWithoutExtraPT - t.adjusted_TurnOver * ISNULL(ExtraPT_tmp.ExtraPT,0))	AS adjusted_HouseTurnOver
 				
 				, 0 AS IsGroupHeadLine
 				, t.liveindicator AS  liveindicator
@@ -150,7 +150,7 @@ BEGIN
 				
 				, SUM(t.adjusted_TurnOver_RM ) AS adjusted_TurnOver
 				
-				, SUM (t.adjusted_HTOWithoutExtraPT_RM - t.adjusted_TurnOver_withABS_RM * ISNULL(ExtraPT_tmp.ExtraPT,0))	AS adjusted_HouseTurnOver
+				, SUM (t.adjusted_HTOWithoutExtraPT_RM - t.adjusted_TurnOver_RM * ISNULL(ExtraPT_tmp.ExtraPT,0))	AS adjusted_HouseTurnOver
 				
 				, 1  AS IsGroupHeadLine
 				, t.liveindicator AS  liveindicator
