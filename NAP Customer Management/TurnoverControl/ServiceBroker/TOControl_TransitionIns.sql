@@ -14,6 +14,7 @@ AS
 		- 20171110@Helen: Enhance performance for TO - [Redmine: 86052]
 		- 20190708@Patrick: Move to DB052 - [Redmine:#112219]
 		- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
+		- 20200729@Max: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 
 	Param explanation:
 
