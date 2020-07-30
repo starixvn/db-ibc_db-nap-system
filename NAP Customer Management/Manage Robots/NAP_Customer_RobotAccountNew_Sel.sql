@@ -24,6 +24,7 @@ AS
 			- 20191125@Johnson: change request [redmine:]
 			- 20200318@Egan: and date filter [redmine:129835]
 			- 20200313@Johnson: get site from upline instead of RobotUsers [redmine:#129509]
+			- 20200730@Johnson: fix site for robot [redmine:#138471]
 		Parameter's Explanation:	
 			-@currency = NULL : all currency
 			-@counter = 0: all values
@@ -79,8 +80,7 @@ BEGIN
 				LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid		
 			WHERE c.roleid = ISNULL(@level,c.roleid)
 				AND c.username = @username
-				AND c.currency = ISNULL(@currency, c.currency)
-				AND ISNULL(r.site,'') IN (SELECT ISNULL(NULLIF(site,'NULL'),'') FROM @tmpSite)
+				AND c.currency = ISNULL(@currency, c.currency)				
 				AND 1 = CASE WHEN @counter = 0 THEN 1
 							WHEN @counter = 1 AND counter >= 10 THEN 1
 							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
