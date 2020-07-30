@@ -118,7 +118,7 @@ BEGIN
 		WHERE EXISTS( SELECT 1 FROM CTE_Filter tf  WITH(NOLOCK) WHERE t.CustID = tf.CustID AND t.IsGroupHeadLine = tf.IsGroupHeadLine AND t.matchid = tf.matchid) AND t.ProfileID IS NOT NULL	
 		
 	), CTE_Sum AS(
-	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,ABS(SUM(t.HouseTurnover)) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
+	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,SUM(ABS(t.HouseTurnover)) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
 		   FROM CTE_SettingList t WITH (NOLOCK)
 		   GROUP BY t.matchid, t.CustID, t.IsGroupHeadLine
 	)
