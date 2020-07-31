@@ -4,6 +4,8 @@
 	DB: DBCUST/CustDB & bodb02 - Replicated Server FOR CustDB_ExchangeDaily
 */
 
-ALTER TABLE [dbo].TOControl_GlobalSetting ADD IsGlobalLockTOLimit BIT NULL DEFAULT(0)
+ALTER TABLE [dbo].[TOControl_GlobalSetting] ADD IsGlobalLockTOLimit BIT NULL DEFAULT(0)
 GO
 
+ALTER TABLE [dbo].[TOControl_GlobalSetting] ADD  CONSTRAINT [DF_TOControl_GlobalSetting_IsGlobalLockTOLimit]  DEFAULT ((0)) FOR [IsGlobalLockTOLimit]
+GO
