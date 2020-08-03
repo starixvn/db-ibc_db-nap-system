@@ -1,12 +1,15 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="Dot_Member" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="Dot_Member,dot_intg" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Member_BetLimitControl_CustSettingSelect] 
 	  @CustID		INT
 	 ,@SportType    SMALLINT
 	 ,@Bettype		SMALLINT
 	 ,@LeagueID		INT
 	 ,@LeagueGroupID INT = 0
+	 ,@LiveIndicator BIT = NULL
+	 ,@ProductID TINYINT = NULL
 AS
 /*
+
 	Created: 20200602@Eden
 	Task : get bet limit setting for member site
 	DB: DBCUST-CUSTDB
@@ -19,15 +22,20 @@ AS
 
 	Example: 
 	EXEC Dot_Member_BetLimitControl_CustSettingSelect 
-		@CustID = 1176092,
-		@SportType = 1,
-		@Bettype = 1,
-		@LeagueID = 1
+		@CustID = 1176092,@SportType = 1,
+		@Bettype = 1,@LeagueID = 1,
+		@LiveIndicator = 1,@ProductID = 1
 	*/
 BEGIN 
-	DECLARE @bettime TIME = GETDATE()
+	DECLARE @bettime TIME = DATEADD(hh,12,GETDATE()) -- convert to GMT+8
 
 	DECLARE @IsVIP BIT = 0
+
+	IF NOT EXISTS ( SELECT TOP 1 1 FROM BetLimitControlProduct WITH(NOLOCK) WHERE ProductID = @ProductID)
+	BEGIN
+		SELECT CAST( NULL AS MONEY) AS MaxBet, CAST( NULL AS MONEY) AS MaxPerMatch
+		RETURN
+	END
 
 	SELECT @IsVIP = 1 
 	FROM Dep_CustVIP vip WITH(NOLOCK) 
@@ -46,9 +54,11 @@ BEGIN
 				)
 			AND btd.Sporttype IN (@SportType,0)
 			AND btd.Bettype IN (@Bettype,0)
-			AND btd.LeagueID IN (@LeagueID,0)
+			AND btd.LeagueID IN (ISNULL(@LeagueID,btd.LeagueID),0)
 			AND btd.LeagueGroupID IN (@LeagueGroupID,0)
+			AND bt.LiveIndicator IN(@LiveIndicator,2)
 			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
+			AND btd.ProductID IN (@ProductID,0)
 	OPTION (FORCE ORDER)
 END
 GO

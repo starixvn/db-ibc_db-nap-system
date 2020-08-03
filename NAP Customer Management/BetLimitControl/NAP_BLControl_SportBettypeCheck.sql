@@ -164,6 +164,14 @@ BEGIN
 		LEFT JOIN #SportLeague sl ON s.Sporttype = sl.Sporttype
 	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1
 
+	IF @ProductList = '0' AND @SporttypeList = '0' AND @BettypeList = '0' AND ISNULL(@LeagueList,'') <> ''
+		DELETE 
+		FROM #ValidData 
+		WHERE ProductID = 0 
+			AND Sporttype = 0 
+			AND Bettype = 0 
+			AND LeagueID = 0
+
 	DROP TABLE #Bettype
 	DROP TABLE #Sport
 	DROP TABLE #League
