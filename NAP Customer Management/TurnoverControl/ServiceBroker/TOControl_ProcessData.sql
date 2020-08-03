@@ -287,9 +287,9 @@ BEGIN
 									AS stake																							
 							) AS tmp
 			GROUP BY b.srecommend, b.mrecommend, b.recommend, b.matchid, b.winlostdate, b.bettype, b.liveindicator
-			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
+			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
 						 ELSE 0
 						END) <> 0 --Only get changed stake
 		
@@ -347,9 +347,9 @@ BEGIN
 							
 			WHERE EXISTS (SELECT 1 FROM bodb02.dbo.custAccount ca WITH (NOLOCK) WHERE ca.CustID = b.custid)
 			GROUP BY b.srecommend, b.mrecommend, b.recommend, b.custid, b.matchid, b.winlostdate, b.bettype, b.liveindicator
-			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -tmp.stake --delete ticket
-						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN tmp.stake --recover ticket
-						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN tmp.stake -- undo or calculate after refund
+			HAVING SUM(CASE WHEN t.statusid IN (101,102,103) AND t.statusIDDeleted IN (0,1,111,112,113) THEN -b.stake --delete ticket
+						 WHEN t.statusid = 0 AND t.statusIDDeleted = 102 THEN b.stake --recover ticket
+						 WHEN t.statusIDDeleted  = 103 AND t.statusid IN (0,111,112,113) THEN b.stake -- undo or calculate after refund
 						 ELSE 0
 						END) <> 0 --Only get changed stake
 					
