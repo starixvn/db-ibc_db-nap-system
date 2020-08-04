@@ -106,7 +106,7 @@ BEGIN
 			WHERE b.matchid = @matchid
 				AND b.srecommend IN (SELECT custid FROM @GroupHeadlineList GHL WHERE RoleID = 4)
 				AND b.statusid NOT IN (101,102,103)
-				AND b.bettype IN(1,3,5,7,8,15)
+				AND b.bettype IN(1,3,5,7,8,15,20,21)
 				AND b.betfrom <> 'p'
 			GROUP BY b.liveindicator,b.bettype
 			
@@ -131,7 +131,7 @@ BEGIN
 					AND bet.srecommend IN (SELECT custid FROM @GroupHeadlineList GHL WHERE RoleID = 4)
 					AND bet.statusid NOT IN (101,102,103)
 					AND bet.bettype NOT IN(SELECT bettype FROM dbo.f_VSHorseRacingByBettype())
-					AND bet.bettype NOT IN (1,3,5,7,8,15)
+					AND bet.bettype NOT IN (1,3,5,7,8,15,20,21)
 					AND bet.bettype NOT BETWEEN 801 AND 899
 					AND bet.betfrom <> 'p'
 				UNION ALL
