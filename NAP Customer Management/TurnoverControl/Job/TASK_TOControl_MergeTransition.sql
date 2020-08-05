@@ -27,7 +27,7 @@ BEGIN
 	
 	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT, liveindicator BIT, bettype SMALLINT)
 	
-	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT, ProfileID SMALLINT)
+	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT, ProfileID SMALLINT, IsGlobalLockTOLimit BIT)
 	
 	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype, bettype, liveindicator)
 	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid, IsGroupHeadline, sporttype, ProfileID)
@@ -63,7 +63,7 @@ BEGIN
 
 
 	UPDATE t 
-		SET MaxTurnOver = gl.MaxTurnOver
+		SET MaxTurnOver = gl.MaxTurnOver, IsGlobalLockTOLimit = gl.IsGlobalLockTOLimit
 	FROM #TmpTable t
 		INNER JOIN dbo.TOControl_GlobalSetting gl WITH (NOLOCK) ON t.CustID = gl.CustID 
 							AND t.IsGroupHeadline = gl.IsGroupHeadLine 
@@ -73,8 +73,8 @@ BEGIN
 	DELETE #TmpTable WHERE MaxTurnOver IS NULL
 		
 	MERGE dbo.TOControl_Setting AS TARGET
-			USING (SELECT CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID FROM #TmpTable)
-			   AS SOURCE (CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID)
+			USING (SELECT CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit FROM #TmpTable)
+			   AS SOURCE (CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit)
 				ON (TARGET.CustID = SOURCE.CustID AND TARGET.matchid = SOURCE.matchid AND TARGET.IsGroupHeadLine = SOURCE.IsGroupHeadLine AND TARGET.ProfileID = SOURCE.ProfileID)
 			WHEN MATCHED THEN 
 				 UPDATE SET 
@@ -88,16 +88,17 @@ BEGIN
 																	WHERE ABS((TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver)) * 100 / TARGET.MaxTurnOver >= PercentValue
 														  
 																	),0)
-													END				
+													END,
+							TARGET.IsGlobalLockTOLimit = SOURCE.IsGlobalLockTOLimit
 								
 			WHEN NOT MATCHED THEN	
-				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID)
+				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID, IsGlobalLockTOLimit)
 				VALUES (SOURCE.CustID, SOURCE.matchid,SOURCE.IsGroupHeadLine, SOURCE.MaxTurnOver, SOURCE.adjusted_TurnOver, SOURCE.adjusted_HouseTurnOver, 0, 
 						CASE WHEN SOURCE.MaxTurnOver = 0 THEN @MaxLevel 
 							ELSE ISNULL((SELECT MAX(PercentLevel) 
 										FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
 										WHERE ABS((SOURCE.adjusted_HouseTurnOver)) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)
-						END, SOURCE.ProfileID				
+						END, SOURCE.ProfileID, SOURCE.IsGlobalLockTOLimit				
 						);
 						
 	IF @@ERROR = 0
