@@ -8,7 +8,7 @@ USE bodb_Archive
 GO
 
 ALTER TABLE [dbo].[TOControl_Setting_bk] 
-	ADD IsEventLockTOLimit BIT NULL DEFAULT(0), IsGlobalLockTOLimit BIT NULL DEFAULT(0);
+	ADD IsEventLockTOLimit BIT NULL, IsGlobalLockTOLimit BIT NULL;
 GO
 
 ALTER TABLE [dbo].[TOControl_Setting_bk] ADD  CONSTRAINT [DF_TOControl_Setting_IsEventLockTOLimit]  DEFAULT ((0)) FOR [IsEventLockTOLimit]
