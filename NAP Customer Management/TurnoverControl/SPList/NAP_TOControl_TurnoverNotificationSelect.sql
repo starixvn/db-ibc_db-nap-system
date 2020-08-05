@@ -38,7 +38,7 @@ BEGIN
 	
 	;WITH cte_ AS (
 		SELECT t.custid, t.matchid, t.totalturnover, t.MaxTurnover, ABS(t.houseturnover) AS houseturnover, t.IsNotified
-				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/t.MaxTurnover END AS PercentageUsed
+				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/ABS(t.MaxTurnover) END AS PercentageUsed
 				, t.IsGroupHeadline
 				, t.ProfileID
 				, st.siteid
@@ -104,7 +104,7 @@ BEGIN
 		, pf.TotalHouseTurnover
 		, pf.IsGroupHeadline
 		, c.site AS SiteName 
-		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover/rs.MaxTurnover END AS PercentageUsed
+		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE ABS(rs.houseturnover/rs.MaxTurnover) END AS PercentageUsed
 		, pf.rn AS DisplayGroup
 	FROM (
 			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
