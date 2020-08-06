@@ -7,10 +7,12 @@
 
 WHILE 1=1
 BEGIN
+	WAITFOR DELAY '00:00:00.500'
+	
 	UPDATE TOP(2000) s
 	SET  IsGlobalLockTOLimit = CASE WHEN IsGlobalLockTOLimit IS NULL THEN 0 ELSE IsGlobalLockTOLimit END
 	FROM TOControl_GlobalSetting s with(ROWLOCK)
 	WHERE IsGlobalLockTOLimit IS NULL
 	
-	IF @@ROWCOUNT = 0 BREAK
+	IF @@ROWCOUNT = 0 BREAK	
 END
