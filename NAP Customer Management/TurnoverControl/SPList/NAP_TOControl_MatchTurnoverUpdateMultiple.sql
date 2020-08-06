@@ -19,6 +19,7 @@ AS
 		- 20171215@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
+		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 		
 	Parameter's explaination:
 		Sample data for @GlobalSetting: 
@@ -60,6 +61,7 @@ BEGIN
 							AND GS_tmp.MaxTurnover <> GS.MaxTurnOver
 							AND GS_tmp.SportType = GS.Sporttype
 							AND GS_tmp.ProfileID = GS.ProfileID
+							AND GS.IsGlobalLockTOLimit = 0
 					)
 	
 	-- Process for UPDATE multiple MaxTurnOver

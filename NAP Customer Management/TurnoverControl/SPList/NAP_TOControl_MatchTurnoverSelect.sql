@@ -22,7 +22,8 @@ AS
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
 		- 20171215@Helen: Implement some change request from OPS Team - [Redmine: 85638]
 		- 20200115@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
-		- 20200120@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841] 
+		- 20200120@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
+		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 	
 	Parameter's explaination: 
 	HARDCODE for @PercentLevel
@@ -94,11 +95,11 @@ BEGIN
 
 	/* Get list of Super/Master/Agent turnover */
 	;WITH CTE_Filter AS (
-	   SELECT tb.CustID, tb.matchid, tb.IsGroupHeadLine
+	   SELECT tb.CustID, tb.matchid, tb.IsGroupHeadLine, tb.IsEventLockTOLimit, tb.IsGlobalLockTOLimit
 	   FROM (
 			SELECT t.CustID, t.matchid,
-				   CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.HouseTurnover*100/t.MaxTurnover END AS PercentageUsed,
-				   t.IsGroupHeadLine
+				   CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.HouseTurnover)*100/t.MaxTurnover END AS PercentageUsed,
+				   t.IsGroupHeadLine, t.IsEventLockTOLimit, t.IsGlobalLockTOLimit
 			FROM dbo.TOControl_Setting t WITH(NOLOCK) 
 				INNER JOIN dbo.custInfo c WITH (NOLOCK) ON t.custID = c.custid
 			WHERE t.PercentLevel >= @PercentLevel AND
@@ -108,8 +109,8 @@ BEGIN
 
 	),CTE_SettingList AS (
 		SELECT 
-			t.CustID, t.matchid, t.MaxTurnover, t.TotalTurnover, t.HouseTurnover
-			, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.HouseTurnover*100/t.MaxTurnover END AS PercentageUsed
+			t.CustID, t.matchid, t.MaxTurnover, t.TotalTurnover, t.HouseTurnover AS HouseTurnover
+			, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.HouseTurnover)*100/t.MaxTurnover END AS PercentageUsed
 			, t.IsGroupHeadLine
 			, t.ProfileID 
 			, t.PercentLevel
@@ -117,7 +118,7 @@ BEGIN
 		WHERE EXISTS( SELECT 1 FROM CTE_Filter tf  WITH(NOLOCK) WHERE t.CustID = tf.CustID AND t.IsGroupHeadLine = tf.IsGroupHeadLine AND t.matchid = tf.matchid) AND t.ProfileID IS NOT NULL	
 		
 	), CTE_Sum AS(
-	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,SUM(t.HouseTurnover) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
+	       SELECT t.CustID,t.matchid,t.IsGroupHeadLine,SUM(ABS(t.HouseTurnover)) AS SumHouseTurnover, SUM(t.TotalTurnOver) AS  SumTotalTurnOver
 		   FROM CTE_SettingList t WITH (NOLOCK)
 		   GROUP BY t.matchid, t.CustID, t.IsGroupHeadLine
 	)
@@ -139,14 +140,16 @@ BEGIN
 		, pf.GroupName
 		, ts.MaxTurnOver
 		, ts.TotalTurnOver
-		, ts.HouseTurnover
+		, ABS(ts.HouseTurnover) AS HouseTurnover
 		, ts.PercentageUsed
 		, s.SumHouseTurnover AS TotalHouseTurnover
 		, s.SumTotalTurnOver AS TotalMemberTurnover
+		, ISNULL(pf.IsEventLockTOLimit,0) AS IsEventLockTOLimit
+		, ISNULL(pf.IsGlobalLockTOLimit,0) AS IsGlobalLockTOLimit
 	FROM (
-			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName
+			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.IsEventLockTOLimit, ct.IsGlobalLockTOLimit
 			FROM (
-					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid 
+					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, t.IsEventLockTOLimit, t.IsGlobalLockTOLimit
 					FROM CTE_Filter t
 				)ct
 				CROSS APPLY (

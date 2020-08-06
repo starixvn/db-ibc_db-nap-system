@@ -13,6 +13,7 @@ AS
 		- 20191112@Helen: Ignore closed matches notification & SP Enhancement [Redmine: #122236]
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841] 
+		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		
 	Parameter's explaination: 
 	Hardcode:
@@ -36,8 +37,8 @@ BEGIN
 	SET @NotifiedLevel = (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1)
 	
 	;WITH cte_ AS (
-		SELECT t.custid, t.matchid, t.totalturnover, t.MaxTurnover, t.houseturnover, t.IsNotified
-				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE t.houseturnover*100/t.MaxTurnover END AS PercentageUsed
+		SELECT t.custid, t.matchid, t.totalturnover, t.MaxTurnover, ABS(t.houseturnover) AS houseturnover, t.IsNotified
+				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/ABS(t.MaxTurnover) END AS PercentageUsed
 				, t.IsGroupHeadline
 				, t.ProfileID
 				, st.siteid
@@ -50,7 +51,7 @@ BEGIN
 						) AS st
 		WHERE t.PercentLevel >= @NotifiedLevel AND t.ProfileID IS NOT NULL
 	), cte_sum AS (
-	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, SUM(t.TotalTurnOver) AS TotalMemberTurnover, SUM(t.HouseTurnover) AS TotalHouseTurnover
+	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, SUM(t.TotalTurnOver) AS TotalMemberTurnover, ABS(SUM(t.HouseTurnover)) AS TotalHouseTurnover
 		FROM TOControl_Setting t WITH(NOLOCK)
 		WHERE EXISTS (SELECT 1 FROM cte_ cte WITH(NOLOCK) WHERE cte.CustID = t.CustID AND cte.matchid = t.matchid AND cte.IsGroupHeadLine = t.IsGroupHeadLine) 
 			AND t.ProfileID IS NOT NULL
@@ -97,13 +98,13 @@ BEGIN
 		, pf.ProfileID
 		, pf.ProfileName
 		, ISNULL(rs.maxturnover, 0) AS maxturnover
-		, ISNULL(rs.houseturnover, 0) AS houseturnover
+		, ABS(ISNULL(rs.houseturnover, 0)) AS houseturnover
 		, t.nlevel AS nlevel 
 		, pf.TotalMemberTurnover
 		, pf.TotalHouseTurnover
 		, pf.IsGroupHeadline
 		, c.site AS SiteName 
-		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE rs.houseturnover/rs.MaxTurnover END AS PercentageUsed
+		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE ABS(rs.houseturnover/rs.MaxTurnover) END AS PercentageUsed
 		, pf.rn AS DisplayGroup
 	FROM (
 			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn

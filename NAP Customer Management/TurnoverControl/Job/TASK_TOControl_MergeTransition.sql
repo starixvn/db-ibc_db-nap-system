@@ -14,6 +14,7 @@ Revisions:
 	- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 	- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
 	- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
+	- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 
 Param explanation:
 */
@@ -26,7 +27,7 @@ BEGIN
 	
 	CREATE TABLE #TmpTableRaw(RowId BIGINT, CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY,IsGroupHeadline BIT,sporttype SMALLINT, liveindicator BIT, bettype SMALLINT)
 	
-	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT, ProfileID SMALLINT)
+	CREATE TABLE #TmpTable(CustID INT, matchid INT, adjusted_TurnOver MONEY, adjusted_HouseTurnOver MONEY, MaxTurnOver MONEY NULL, IsGroupHeadline BIT,sporttype SMALLINT, ProfileID SMALLINT, IsGlobalLockTOLimit BIT)
 	
 	CREATE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTableRaw (CustID, matchid, IsGroupHeadline, sporttype, bettype, liveindicator)
 	CREATE UNIQUE CLUSTERED INDEX CIX_CustID_MatchID ON #TmpTable (CustID, matchid, IsGroupHeadline, sporttype, ProfileID)
@@ -62,7 +63,7 @@ BEGIN
 
 
 	UPDATE t 
-		SET MaxTurnOver = gl.MaxTurnOver
+		SET MaxTurnOver = gl.MaxTurnOver, IsGlobalLockTOLimit = gl.IsGlobalLockTOLimit
 	FROM #TmpTable t
 		INNER JOIN dbo.TOControl_GlobalSetting gl WITH (NOLOCK) ON t.CustID = gl.CustID 
 							AND t.IsGroupHeadline = gl.IsGroupHeadLine 
@@ -72,8 +73,8 @@ BEGIN
 	DELETE #TmpTable WHERE MaxTurnOver IS NULL
 		
 	MERGE dbo.TOControl_Setting AS TARGET
-			USING (SELECT CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID FROM #TmpTable)
-			   AS SOURCE (CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID)
+			USING (SELECT CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit FROM #TmpTable)
+			   AS SOURCE (CustID, matchid, MaxTurnOver, adjusted_TurnOver, adjusted_HouseTurnOver,IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit)
 				ON (TARGET.CustID = SOURCE.CustID AND TARGET.matchid = SOURCE.matchid AND TARGET.IsGroupHeadLine = SOURCE.IsGroupHeadLine AND TARGET.ProfileID = SOURCE.ProfileID)
 			WHEN MATCHED THEN 
 				 UPDATE SET 
@@ -84,19 +85,20 @@ BEGIN
 							TARGET.PercentLevel = CASE WHEN TARGET.MaxTurnOver = 0 THEN	@MaxLevel 
 														ELSE ISNULL((SELECT MAX(PercentLevel) 
 																	FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
-																	WHERE (TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver) * 100 / TARGET.MaxTurnOver >= PercentValue
+																	WHERE ABS((TARGET.HouseTurnover + SOURCE.adjusted_HouseTurnOver)) * 100 / TARGET.MaxTurnOver >= PercentValue
 														  
 																	),0)
-													END				
+													END,
+							TARGET.IsGlobalLockTOLimit = SOURCE.IsGlobalLockTOLimit
 								
 			WHEN NOT MATCHED THEN	
-				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID)
+				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID, IsGlobalLockTOLimit)
 				VALUES (SOURCE.CustID, SOURCE.matchid,SOURCE.IsGroupHeadLine, SOURCE.MaxTurnOver, SOURCE.adjusted_TurnOver, SOURCE.adjusted_HouseTurnOver, 0, 
 						CASE WHEN SOURCE.MaxTurnOver = 0 THEN @MaxLevel 
 							ELSE ISNULL((SELECT MAX(PercentLevel) 
 										FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
-										WHERE (SOURCE.adjusted_HouseTurnOver) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)
-						END, SOURCE.ProfileID				
+										WHERE ABS((SOURCE.adjusted_HouseTurnOver)) * 100 / SOURCE.MaxTurnOver  >= PercentValue),0)
+						END, SOURCE.ProfileID, SOURCE.IsGlobalLockTOLimit				
 						);
 						
 	IF @@ERROR = 0
