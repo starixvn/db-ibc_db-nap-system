@@ -45,18 +45,18 @@ BEGIN
 		LEFT JOIN dbo.f_StringSplit(@SporttypeList,',') sp ON m.Sporttype = sp.val OR @SporttypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 	OPTION (MAXRECURSION 0)
-
+	
 	SELECT DISTINCT 
 		m.ProductID,
 		m.Sporttype,
 		CASE WHEN @BettypeList = '0' THEN m.bettype ELSE bt.val END AS Bettype
 	INTO #Bettype
 	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
-		INNER JOIN dbo.f_StringSplit(@SporttypeList,',') p1 ON m.Sporttype = p1.val OR @SporttypeList = '0'
+		INNER JOIN #Sport s ON m.Sporttype = s.Sporttype
 		LEFT JOIN dbo.f_StringSplit(@BettypeList,',') bt ON m.Bettype = bt.val OR @BettypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 	OPTION (MAXRECURSION 0)
-
+	
 	DECLARE @ErrorProducts VARCHAR(MAX) = '',
 			@ErrorSporttypes VARCHAR(MAX) = '',
 			@ErrorLeagueIDs VARCHAR(MAX) = '' 
@@ -171,7 +171,7 @@ BEGIN
 			AND Sporttype = 0 
 			AND Bettype = 0 
 			AND LeagueID = 0
-
+	
 	DROP TABLE #Bettype
 	DROP TABLE #Sport
 	DROP TABLE #League
