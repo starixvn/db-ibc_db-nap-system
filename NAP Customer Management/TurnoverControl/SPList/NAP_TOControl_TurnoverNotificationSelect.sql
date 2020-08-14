@@ -110,46 +110,50 @@ BEGIN
 		, m.awayid
 		, m.eventdate
 		, pf.custid
-		, t.username
+		, pf.username
 		, CASE WHEN pf.IsGroupHeadline = 1 THEN 'RM' ELSE e.currency END AS currency
 		, CASE WHEN pf.IsGroupHeadline = 1 THEN 'Headline' 
-				ELSE CASE WHEN t.roleid = 4 THEN 'Super'
-						WHEN t.roleid = 3 THEN 'Master'	
-						WHEN t.roleid = 2 THEN 'Agent'	
+				ELSE CASE WHEN pf.roleid = 4 THEN 'Super'
+						WHEN pf.roleid = 3 THEN 'Master'	
+						WHEN pf.roleid = 2 THEN 'Agent'	
 						ELSE ''
 					END	
 			END AS [Level]
-		, t.roleid
+		, pf.roleid
 		, ISNULL(t.totalturnover, 0) AS totalturnover
-		, t.ProfileID
+		, pf.ProfileID
 		, pf.ProfileName
 		, ISNULL(t.maxturnover, 0) AS maxturnover
 		, ABS(ISNULL(t.houseturnover, 0)) AS houseturnover
-		, t.nlevel AS nlevel 
-		, t.TotalMemberTurnover
-		, t.TotalHouseTurnover
-		, t.IsGroupHeadline
-		, t.site AS SiteName 
-		, t.PercentageUsed
+		, tmp.nlevel AS nlevel 
+		, pf.TotalMemberTurnover
+		, pf.TotalHouseTurnover
+		, pf.IsGroupHeadline
+		, pf.site AS SiteName 
+		, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover/t.MaxTurnover) END AS PercentageUsed
 		, pf.rn AS DisplayGroup
-	FROM (
-			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
+	FROM 
+		(
+			SELECT ct.CustID,ct.currency,ct.username,ct.roleid,ct.Site, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
 			FROM (
-					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, MAX(rn) AS rn
+					SELECT DISTINCT t.CustID,t.username,t.roleid, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, MAX(rn) AS rn
 						, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END AS sporttype
+						, currency
+						, t.site
 					FROM @temp_ t
-					GROUP BY t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END
+					GROUP BY t.CustID, t.currency,t.username,t.roleid, t.site, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END
 				)ct
 				CROSS APPLY (
 							SELECT ProfileID, GroupName, ProfileName
 							FROM TOControl_Profile WITH (NOLOCK)
 							WHERE Sporttype = ct.sporttype
 							)p
-		)pf
-		LEFT JOIN @temp_ t ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID
+		)pf	
+		LEFT JOIN @temp_ tmp ON tmp.custid = pf.custid AND tmp.matchid = pf.matchid AND tmp.ProfileID = pf.ProfileID AND tmp.IsGroupHeadLine = pf.IsGroupHeadline
+		LEFT JOIN dbo.TOControl_Setting t WITH (NOLOCK) ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID AND t.IsGroupHeadLine = pf.IsGroupHeadline
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
-		INNER JOIN dbo.exchange e WITH(NOLOCK) ON t.currency = e.exchangeid
-	
+		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
+		
 	DROP TABLE #Setting_tmp
 END
 GO
