@@ -32,6 +32,7 @@ BEGIN
 	DECLARE	@startRun DATETIME, @duration INT
 	DECLARE @CustId INT, 
 			@UserName NVARCHAR(50), 
+			@Old_ActionID INT,
 			@Old_ActionName VARCHAR(100), 
 			@Old_ReasonName VARCHAR(100),
 			@Old_Comment NVARCHAR(600),
@@ -43,7 +44,8 @@ BEGIN
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), 
 							CustId INT, 
 							Currency INT,
-							Comment NVARCHAR(600), 
+							Comment NVARCHAR(600),
+							ActionID INT,		
 							ActionName VARCHAR(100), 
 							ReasonName VARCHAR(100), 
 							VoidTime VARCHAR(50),
@@ -83,6 +85,7 @@ BEGIN
 	UPDATE t 
 	SET t.ReasonName = pr.ReasonName,
 		t.ActionName = pa.ActionName,
+		t.ActionID = pa.ActionID,
 		t.Comment = p.Comment,
 		t.VoidTime = p.VoidTime,
 		t.LimitAmount = p.LimitAmount
@@ -97,7 +100,9 @@ BEGIN
 		pa.ReasonID = @ReasonID,
 		pa.Comment = @Comment,
 		pa.SubIssueTypeId = CASE WHEN @ActionID= 2 THEN 38 ELSE NULL END,
-		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime ELSE pa.VoidTime END,
+		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime 
+							WHEN @UpdateTime = 0 AND @ActionId =2 AND pa.ActionId <> 2 THEN 'At Settlement'
+							ELSE pa.VoidTime END,
 		pa.LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE pa.LimitAmount END
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
@@ -117,6 +122,7 @@ BEGIN
 			@CustId = custid,
 			@UserName = Username,
 			@Old_ActionName = ActionName,
+			@Old_ActionID = ActionID,
 			@Old_ReasonName = ReasonName,
 			@Old_comment = Comment,
 			@Old_VoidTime = VoidTime,
@@ -147,7 +153,9 @@ BEGIN
 							+ ' Comment="' + COALESCE(@Comment, SPACE(1)) + '"'
 							+ ' UpdateTime="' + COALESCE(CAST(@UpdateTime as VARCHAR(10)), SPACE(1)) + '"'							
 							+ ' UpdateLimitAmount="' + COALESCE(CAST(@UpdateLimitAmount as VARCHAR(10)), SPACE(1)) + '"'							
-							+ ' VoidTime="' + COALESCE(@VoidTime, SPACE(1)) + '"'							
+							+ ' VoidTime="' + COALESCE(CASE WHEN @UpdateTime = 0 AND @ActionId =2 AND @Old_ActionId <> 2 
+														THEN 'At Settlement' 
+														ELSE @VoidTime END, SPACE(1)) + '"'	
 							+ ' LimitAmount="' + COALESCE(CASE WHEN @LimitAmount = 0 THEN 'Unlimited' ELSE dbo.f_FomatNumber (CAST(@LimitAmount AS VARCHAR(10))) END, SPACE(1)) + '"'						
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'	

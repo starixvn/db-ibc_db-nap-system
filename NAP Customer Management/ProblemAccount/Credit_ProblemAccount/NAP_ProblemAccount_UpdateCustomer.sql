@@ -95,7 +95,9 @@ BEGIN
 		pa.ActionId = @PreventActionId,
 		pa.Comment = @Comment,
 		pa.SubIssueTypeId = CASE WHEN @RoleId = 1 THEN @SubIssueTypeId ELSE NULL END,
-		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime ELSE pa.VoidTime END,
+		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime 
+							WHEN @UpdateTime = 0 AND @PreventActionId =2 AND t.PreventActionId <> 2 THEN 'At Settlement'
+							ELSE pa.VoidTime END,
 		pa.LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE pa.LimitAmount END
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
@@ -152,7 +154,9 @@ BEGIN
 							+ ' Comment="' + @Comment + '"'
 							+ ' UpdateTime="' + COALESCE(CAST(@UpdateTime as VARCHAR(10)), SPACE(1)) + '"'							
 							+ ' UpdateLimitAmount="' + COALESCE(CAST(@UpdateLimitAmount as VARCHAR(10)), SPACE(1)) + '"'							
-							+ ' VoidTime="' + COALESCE(@VoidTime, SPACE(1)) + '"'							
+							+ ' VoidTime="' + COALESCE(CASE WHEN @UpdateTime = 0 AND @PreventActionId =2 AND @Old_PreventActionId <> 2 
+														THEN 'At Settlement' 
+														ELSE @VoidTime END, SPACE(1)) + '"'							
 							+ ' LimitAmount="' + COALESCE(CASE WHEN @LimitAmount = 0 THEN 'Unlimited' ELSE dbo.f_FomatNumber (CAST(@LimitAmount AS VARCHAR(10))) END, SPACE(1)) + '"'
 							+ ' IP="' + COALESCE(@IP, SPACE(1)) + '"'
 							+ ' />'		
