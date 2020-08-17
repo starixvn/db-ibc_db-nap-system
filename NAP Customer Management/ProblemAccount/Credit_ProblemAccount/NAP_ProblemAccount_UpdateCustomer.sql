@@ -43,6 +43,7 @@ BEGIN
 			
 	DECLARE @tmpCust TABLE (Username NVARCHAR(50), 
 							CustId INT, 
+							Currency INT,
 							ReasonId TINYINT, 
 							PreventActionId TINYINT, 
 							Comment NVARCHAR(300), 
@@ -66,11 +67,19 @@ BEGIN
 	FROM dbo.ProblemAccountAction WITH (NOLOCK)
 	WHERE ActionId = @PreventActionId
 
-	INSERT INTO @tmpCust(Username, CustID)
-	SELECT ci.Username, ci.custid
+	INSERT INTO @tmpCust(Username, currency, CustID)
+	SELECT ci.Username, ci.currency, ci.custid
 	FROM dbo.f_StringSplit(@CustomerList, ',') f
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
-
+	
+	IF @PreventActionId = 2 --Void Winning Tickets
+		AND @UpdateLimitAmount = 1 AND @LimitAmount > 0
+		AND (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
+	BEGIN
+		SELECT @ErrCode = 101, @ErrMsg = 'Multiple currencies selected. To save Limit Amount, all selected accounts must belong to one currency.'
+		RETURN
+	END
+	
 	UPDATE t 
 	SET t.ReasonId = pa.ReasonId,
 		t.PreventActionId = pa.ActionId,

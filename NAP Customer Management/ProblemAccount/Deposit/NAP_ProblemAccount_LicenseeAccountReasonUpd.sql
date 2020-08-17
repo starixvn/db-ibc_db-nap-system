@@ -71,7 +71,9 @@ BEGIN
 	   RETURN
     END
 	
-	IF (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
+	IF @ActionID = 2 --Void Winning Tickets
+		AND @UpdateLimitAmount = 1 AND @LimitAmount > 0
+		AND (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
 	BEGIN
 		SELECT @ErrCode = 102, @ErrMsg = 'Multiple currencies selected. To save Limit Amount, all selected accounts must belong to one currency.'
 		RETURN
