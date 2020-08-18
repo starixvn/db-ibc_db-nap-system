@@ -98,7 +98,9 @@ BEGIN
 		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime 
 							WHEN @UpdateTime = 0 AND @PreventActionId =2 AND t.PreventActionId <> 2 THEN 'At Settlement'
 							ELSE pa.VoidTime END,
-		pa.LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE pa.LimitAmount END
+		pa.LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount 
+							WHEN @UpdateLimitAmount = 0 AND @PreventActionId =2 AND t.PreventActionId <> 2 THEN 0
+							ELSE pa.LimitAmount END			
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
@@ -130,7 +132,9 @@ BEGIN
 
 		SELECT @Old_ReasonName = ReasonName FROM dbo.ProblemAccountReason WITH (NOLOCK) WHERE ReasonID = @Old_ReasonId
 		SELECT @Old_ActionName = ActionName FROM dbo.ProblemAccountAction WITH (NOLOCK) WHERE ActionID = @Old_PreventActionId
-		SELECT @LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount ELSE @Old_LimitAmount END
+		SELECT @LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount 
+									WHEN @UpdateLimitAmount = 0 AND @PreventActionId =2 AND @Old_PreventActionId <> 2 THEN 0
+									ELSE @Old_LimitAmount END
 		SELECT @VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime ELSE @Old_VoidTime END
 		
 		-- Write log
