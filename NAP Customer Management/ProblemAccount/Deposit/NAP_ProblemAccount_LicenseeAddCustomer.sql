@@ -89,6 +89,7 @@ BEGIN
     END	
 	
 	IF (SELECT COUNT(DISTINCT currency) FROM @tmpCust) > 1
+		AND @LimitAmount > 0
 	BEGIN
 		SELECT @ErrCode = 103, @ErrMsg = 'Multiple currencies selected. To save Limit Amount, all selected accounts must belong to one currency.'
 		RETURN

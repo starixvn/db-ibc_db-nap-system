@@ -96,10 +96,16 @@ BEGIN
 		pa.Comment = @Comment,
 		pa.SubIssueTypeId = CASE WHEN @RoleId = 1 THEN @SubIssueTypeId ELSE NULL END,
 		pa.VoidTime = CASE WHEN @UpdateTime = 1 THEN @VoidTime 
-							WHEN @UpdateTime = 0 AND @PreventActionId =2 AND t.PreventActionId <> 2 THEN 'At Settlement'
+							WHEN @UpdateTime = 0 AND (@PreventActionId <> 2 
+													OR (@PreventActionId =2 AND t.PreventActionId <> 2) 
+													)
+							THEN 'At Settlement'
 							ELSE pa.VoidTime END,
 		pa.LimitAmount = CASE WHEN @UpdateLimitAmount = 1 THEN @LimitAmount 
-							WHEN @UpdateLimitAmount = 0 AND @PreventActionId =2 AND t.PreventActionId <> 2 THEN 0
+							WHEN @UpdateLimitAmount = 0 AND (@PreventActionId <> 2
+															OR (@PreventActionId =2 AND t.PreventActionId <> 2)
+															)
+							THEN 0
 							ELSE pa.LimitAmount END			
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
