@@ -25,7 +25,7 @@ AS
 	Revisions:
 		- 20200217@Johnson: Initial SP [Redmine:#128077]
 		- 20200414@Elodie: Problem account that was abnormal voided does not show in monitor list [Redmine:#132493]
-
+		- 20200721@Johnson: add void time & limit amount [redmine:#135253]
 	Parameter's explaination: 
 		- @Type: 0:All, 1:Acknowledgement, 2:Not Acknowledgement	
 		- @Vip: 0:All, 1:Yes, 2:No	
@@ -170,7 +170,7 @@ BEGIN
 	SELECT rs.custid, rs.site, l.isAcknowledgement, c.username, 
 		SUBSTRING(c.username2,  CHARINDEX('$',c.username2)+1, LEN(c.username2)-CHARINDEX('$',c.username2)) AS username2,
 		e.currency, rs.isVip, a.ActionName, p.MaxBet, p.MaxPerEvent as MaxPerMatch, p.CreatedDate as MarkDate, p.comment,
-		inform1.username as inform1, inform2.username as inform2, rs.AbnormalBetNumber
+		p.VoidTime, p.LimitAmount, inform1.username as inform1, inform2.username as inform2, rs.AbnormalBetNumber
 	FROM @Result rs
 		INNER JOIN customer c WITH(NOLOCK) ON rs.custid = c.custid
 		INNER JOIN Exchange e WITH(NOLOCK) ON c.currency = e.exchangeid 
