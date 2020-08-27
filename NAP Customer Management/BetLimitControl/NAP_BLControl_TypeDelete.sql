@@ -14,6 +14,7 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+	- 20200818@Eden: Auto Update Bet Limit Control [RedmineID: #139701]
 
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
@@ -124,22 +125,14 @@ BEGIN
 	FROM BetLimitControlType WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	SELECT CustID
-	INTO #TempCust
-	FROM BetLimitControlCustSetting WITH(NOLOCK)
+	DELETE 
+	FROM BetLimitControlDefaultSetting WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	WHILE 1 = 1
-	BEGIN
-		DELETE TOP (1000) bc
-		FROM BetLimitControlCustSetting bc WITH(ROWLOCK)
-			INNER JOIN #TempCust t ON t.CustID = bc.CustID 
-		WHERE bc.BetLimitTypeID = @BetLimitTypeID
-		
-		IF @@ROWCOUNT = 0
-		BREAK;
-		WAITFOR DELAY '00:00:00.010'
-	END
+	--Delete all setting on BetLimitControlCustSetting
+	EXEC [Acc_CustSetting_11]
+		@CustID = 0,
+		@BetLimitTypeID	= @BetLimitTypeID
 
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
