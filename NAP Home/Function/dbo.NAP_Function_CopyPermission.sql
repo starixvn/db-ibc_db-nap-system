@@ -22,7 +22,8 @@ AS
 	DB: DBPOL.NAP_UserControl
 
 	Revisions:
-		- 20181231@Kos : Create [Redmine: #104379]
+		- 20181231@Kos: Create [Redmine: #104379]
+		- 20200811@Kos: Hotfix - Wrong parent permission [Redmine: #130493]
 
 	Param's Explanation:
 */
@@ -122,6 +123,27 @@ BEGIN
 	WHERE uf.FunctionId = @ToFunctionId
 		AND uf.Policy <> 0
 		AND NOT EXISTS (SELECT 1 FROM dbo.NAP_UserFunction WITH (NOLOCK) WHERE UserId = uf.UserId AND FunctionId = @FromFunctionId)
+
+	-- Remove if child function have permission
+	DECLARE @ChildFunc TABLE (UserId INT, Policy TINYINT)
+
+	INSERT INTO @ChildFunc
+	SELECT
+		uf.UserId,
+		CASE
+			WHEN MAX(uf.Policy) = 2 AND @ToCRUD = 0 THEN 1
+			ELSE MAX(uf.Policy)
+		END
+	FROM dbo.NAP_UserFunction AS uf WITH (NOLOCK)
+		INNER JOIN @UserDiffFunction AS df ON uf.UserId = df.UserId
+	WHERE FunctionId IN (SELECT FunctionID FROM NAP_Functions WITH (NOLOCK) WHERE ParentId = @ToFunctionId)
+	GROUP BY uf.UserId
+
+	DELETE df
+	FROM @UserDiffFunction AS df
+		INNER JOIN @ChildFunc AS cf ON cf.UserId = df.UserId
+	WHERE df.ToPolicy IS NOT NULL
+		AND df.FromPolicy < cf.Policy
 
 	DECLARE @UserFunction TABLE (
 		FunctionId	SMALLINT,
