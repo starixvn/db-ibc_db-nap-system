@@ -14,7 +14,7 @@ AS
 		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
 		- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 		- 20200608@Elodie: Cannot insert Problem Account if customer got more than one reason [Redmine: #135444]
-
+		- 20200828@Johnson: add void time & limit amount for problem accounts [redmine:#140576]
 	Parameter's explaination: 
 	
 */
@@ -147,10 +147,10 @@ BEGIN
 			WHERE site <> 'CN88'
 				AND isDeposit <> 1
 				
-			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)			
+			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, VoidTime, LimitAmount)			
 			OUTPUT INSERTED.custid 
 			INTO @tmpCustInsert(custid)
-			SELECT CustId, 1, NULL, ActionID, NULL, NULL, NULL, GETDATE(), 0, 1			
+			SELECT CustId, 1, NULL, ActionID, NULL, NULL, NULL, GETDATE(), 0, 1, 'At Settlement', 0			
 			FROM #tmpCust t
 			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
 				AND site <> 'CN88'
@@ -243,11 +243,11 @@ BEGIN
 			--ORDER BY custid
 			
 			--insert new problem account
-			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember)
+			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, VoidTime, LimitAmount)
 			OUTPUT INSERTED.custid, INSERTED.MaxBet, INSERTED.MaxPerEvent 
 			INTO @tmpCustInsert(custid,MaxBet,MaxPerEvent)
 			SELECT t.CustId, 0, NULL, ActionID, NULL,CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxBet ELSE NULL END, 
-				CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxPerEvent ELSE NULL END, GETDATE(), 0, 1			
+				CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxPerEvent ELSE NULL END, GETDATE(), 0, 1, 	'At Settlement', 0			
 			FROM #tmpCust t
 			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
 				AND isDeposit = 1
