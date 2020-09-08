@@ -67,7 +67,7 @@ BEGIN
 			, c.site
 			, nlevel
 	FROM @MatchList m 
-		INNER JOIN dbo.TOControl_Setting t WITH(NOLOCK) ON m.matchid = t.matchid
+		INNER LOOP JOIN dbo.TOControl_Setting t WITH(NOLOCK, INDEX = ix_TOControl_Setting_matchid) ON m.matchid = t.matchid
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = t.CustID
 		CROSS APPLY (SELECT CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/ABS(t.MaxTurnover) END AS PercentageUsed
 					)  AS tmp
@@ -82,6 +82,7 @@ BEGIN
 				  ELSE 0
 			END	  
 		 AND nlevel > t.IsNotified
+	OPTION (MAXDOP 1)
 	
 	;WITH cte_sum AS (
 	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, Total.TotalMemberTurnover, Total.TotalHouseTurnover
