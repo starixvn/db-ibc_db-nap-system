@@ -14,6 +14,8 @@ AS
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841] 
 		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
+		- 20200812@Helen: SMA TO Control - Performance Tuning - [Redmine: #139387]
+		
 		
 	Parameter's explaination: 
 	Hardcode:
@@ -30,109 +32,130 @@ BEGIN
 
 	DECLARE @MatchList TABLE (matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
-	DECLARE @temp_ TABLE (rn INT, custid INT, matchid INT, totalturnover MONEY, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT)
+	DECLARE @temp_ TABLE (rn INT, custid INT, matchid INT, totalturnover MONEY
+				, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT
+				, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT
+				, PercentageUsed MONEY
+				, username VARCHAR(30)
+				, roleid TINYINT
+				, currency INT
+				, site VARCHAR(10))
 
-	DECLARE @NotifiedLevel INT
-	
-	SET @NotifiedLevel = (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1)
-	
-	;WITH cte_ AS (
-		SELECT t.custid, t.matchid, t.totalturnover, t.MaxTurnover, ABS(t.houseturnover) AS houseturnover, t.IsNotified
-				, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/ABS(t.MaxTurnover) END AS PercentageUsed
-				, t.IsGroupHeadline
-				, t.ProfileID
-				, st.siteid
-		FROM dbo.TOControl_Setting t WITH(NOLOCK, INDEX = IX_PercentLevel)
-			CROSS APPLY (SELECT TOP 1 ISNULL(ls.SiteID,0) AS SiteID
-						FROM dbo.Customer c WITH (NOLOCK) 
-							INNER JOIN dbo.Site s WITH (NOLOCK) ON c.site = s.site
-							LEFT JOIN dbo.TOControl_LevelSetting ls WITH (NOLOCK) ON ls.SiteID =  s.siteid
-						WHERE custid = t.CustID 
-						) AS st
-		WHERE t.PercentLevel >= @NotifiedLevel AND t.ProfileID IS NOT NULL
-	), cte_sum AS (
-	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, SUM(t.TotalTurnOver) AS TotalMemberTurnover, ABS(SUM(t.HouseTurnover)) AS TotalHouseTurnover
-		FROM TOControl_Setting t WITH(NOLOCK)
-		WHERE EXISTS (SELECT 1 FROM cte_ cte WITH(NOLOCK) WHERE cte.CustID = t.CustID AND cte.matchid = t.matchid AND cte.IsGroupHeadLine = t.IsGroupHeadLine) 
-			AND t.ProfileID IS NOT NULL
-		GROUP BY t.CustID, t.matchid, t.IsGroupHeadLine
-	)
-	
-	INSERT INTO @temp_(rn, custid, matchid, totalturnover,ProfileID, MaxTurnover, houseturnover, nlevel,IsGroupHeadline, TotalMemberTurnover, TotalHouseTurnover)
-	SELECT ROW_NUMBER() OVER(ORDER BY t.CustId, t.MatchId) AS rn 
-		, t.custid, t.matchid, t.totalturnover,t.ProfileID, t.MaxTurnover, t.houseturnover, nlevel,t.IsGroupHeadline, cs.TotalMemberTurnover, cs.TotalHouseTurnover
-	FROM cte_ t WITH(NOLOCK)
-	    INNER JOIN cte_sum cs WITH(NOLOCK) ON t.CustID = cs.CustID AND t.matchid = cs.matchid AND t.IsGroupHeadLine = cs.IsGroupHeadLine
-		CROSS APPLY (SELECT MAX(PercentValue) 
-					FROM dbo.TOControl_LevelSetting lst WITH (NOLOCK) 
-					WHERE t.PercentageUsed >= lst.PercentValue AND lst.IsNotified = 1
-							AND lst.SiteID = t.SiteID) _(nlevel)
+	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
 		
-	WHERE nlevel > t.IsNotified
-
-	-- get match info
+	SET @NotifiedLevel_mbc =  (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 0)
+	SET @NotifiedLevel_cn88 = (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 329)
+	
 	INSERT INTO @MatchList(matchid, homeid, awayid, eventdate, sporttype, leagueid)
 	SELECT m.matchid, m.homeid, m.awayid, m.eventdate, m.sporttype, m.leagueid
 	FROM DBAGE.bodb02.dbo.match m WITH(NOLOCK)
-	WHERE m.eventstatus = 'running' AND EXISTS(SELECT tmp.matchid FROM @temp_ tmp WHERE m.matchid = tmp.matchid)
-
+	WHERE m.eventstatus = 'running' AND m.sporttype < 99
+	
+	CREATE TABLE #Setting_tmp(custid INT
+							, username VARCHAR(30)
+							, roleid TINYINT
+							, currency INT
+							, matchid INT, TotalTurnOver MONEY, MaxTurnover MONEY
+							,houseturnover MONEY, IsNotified BIT, PercentageUsed	MONEY, IsGroupHeadline BIT
+							,ProfileID SMALLINT, site VARCHAR(10), nlevel TINYINT)
+	
+	INSERT INTO #Setting_tmp (custid,username, roleid,currency, matchid, TotalTurnOver, MaxTurnover,houseturnover, IsNotified, PercentageUsed	, IsGroupHeadline,ProfileID, site, nlevel)						
+	SELECT t.custid, c.username, c.roleid, c.currency, t.matchid, t.totalturnover, t.MaxTurnover, ABS(t.houseturnover) AS houseturnover, t.IsNotified
+			, tmp.PercentageUsed
+			, t.IsGroupHeadline
+			, t.ProfileID
+			, c.site
+			, nlevel
+	FROM @MatchList m 
+		INNER LOOP JOIN dbo.TOControl_Setting t WITH(NOLOCK, INDEX = ix_TOControl_Setting_matchid) ON m.matchid = t.matchid
+		INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = t.CustID
+		CROSS APPLY (SELECT CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/ABS(t.MaxTurnover) END AS PercentageUsed
+					)  AS tmp
+		CROSS APPLY (SELECT MAX(PercentValue) 
+					FROM dbo.TOControl_LevelSetting lst WITH (NOLOCK) 
+					WHERE tmp.PercentageUsed >= lst.PercentValue AND lst.IsNotified = 1
+							AND lst.SiteID = (CASE WHEN c.Site = 'CN88' THEN 329 ELSE 0 END)
+						) _(nlevel)
+	
+	WHERE 1 = CASE WHEN t.PercentLevel >= @NotifiedLevel_cn88 AND c.Site = 'CN88' THEN 1
+				  WHEN t.PercentLevel >= @NotifiedLevel_mbc AND ISNULL(c.Site,'') <> 'CN88' THEN 1
+				  ELSE 0
+			END	  
+		 AND nlevel > t.IsNotified
+	OPTION (MAXDOP 1)
+	
+	;WITH cte_sum AS (
+	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, Total.TotalMemberTurnover, Total.TotalHouseTurnover
+		FROM  (SELECT DISTINCT CustID, matchid, IsGroupHeadLine FROM #Setting_tmp) AS t
+			CROSS APPLY (SELECT SUM(t1.TotalTurnOver) AS TotalMemberTurnover, ABS(SUM(t1.HouseTurnover)) AS TotalHouseTurnover
+						 FROM dbo.TOControl_Setting t1 WITH(NOLOCK)
+						 WHERE t.CustID = t1.custid AND t.matchid = t1.matchid AND t.IsGroupHeadLine = t1.IsGroupHeadLine
+						 ) AS Total
+	)
+	
+	
+	INSERT INTO @temp_(rn, custid, username, roleid, currency ,site, matchid, totalturnover,ProfileID, MaxTurnover, houseturnover, nlevel,IsGroupHeadline, TotalMemberTurnover, TotalHouseTurnover, PercentageUsed)
+	SELECT ROW_NUMBER() OVER(ORDER BY t.CustId, t.MatchId) AS rn 
+		, t.custid, t.username, t.roleid, t.currency, t.site
+		, t.matchid, t.totalturnover,t.ProfileID, t.MaxTurnover, t.houseturnover, nlevel,t.IsGroupHeadline, cs.TotalMemberTurnover, cs.TotalHouseTurnover
+		, PercentageUsed
+	FROM #Setting_tmp t WITH(NOLOCK)
+	    INNER JOIN cte_sum cs WITH(NOLOCK) ON t.CustID = cs.CustID AND t.matchid = cs.matchid AND t.IsGroupHeadLine = cs.IsGroupHeadLine
+	
 	-- return result
-	SELECT pf.sporttype
+	SELECT 
+		pf.sporttype 
 		, m.leagueid
 		, pf.matchid
 		, m.homeid
 		, m.awayid
 		, m.eventdate
 		, pf.custid
-		, c.username
+		, pf.username
 		, CASE WHEN pf.IsGroupHeadline = 1 THEN 'RM' ELSE e.currency END AS currency
 		, CASE WHEN pf.IsGroupHeadline = 1 THEN 'Headline' 
-				ELSE CASE WHEN c.roleid = 4 THEN 'Super'
-						WHEN c.roleid = 3 THEN 'Master'	
-						WHEN c.roleid = 2 THEN 'Agent'	
+				ELSE CASE WHEN pf.roleid = 4 THEN 'Super'
+						WHEN pf.roleid = 3 THEN 'Master'	
+						WHEN pf.roleid = 2 THEN 'Agent'	
 						ELSE ''
 					END	
 			END AS [Level]
-		, c.roleid
-		, ISNULL(rs.totalturnover, 0) AS totalturnover
+		, pf.roleid
+		, ISNULL(t.totalturnover, 0) AS totalturnover
 		, pf.ProfileID
 		, pf.ProfileName
-		, ISNULL(rs.maxturnover, 0) AS maxturnover
-		, ABS(ISNULL(rs.houseturnover, 0)) AS houseturnover
-		, t.nlevel AS nlevel 
+		, ISNULL(t.maxturnover, 0) AS maxturnover
+		, ABS(ISNULL(t.houseturnover, 0)) AS houseturnover
+		, tmp.nlevel AS nlevel 
 		, pf.TotalMemberTurnover
 		, pf.TotalHouseTurnover
 		, pf.IsGroupHeadline
-		, c.site AS SiteName 
-		, CASE WHEN rs.MaxTurnover = 0 THEN 100 ELSE ABS(rs.houseturnover/rs.MaxTurnover) END AS PercentageUsed
+		, pf.site AS SiteName 
+		, CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover/t.MaxTurnover) END AS PercentageUsed
 		, pf.rn AS DisplayGroup
-	FROM (
-			SELECT ct.CustID, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
+	FROM 
+		(
+			SELECT ct.CustID,ct.currency,ct.username,ct.roleid,ct.Site, ct.matchid, ct.IsGroupHeadLine, p.ProfileID, p.GroupName, ct.sporttype, p.ProfileName, TotalHouseTurnover, TotalMemberTurnover, rn
 			FROM (
-					SELECT DISTINCT t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, MAX(rn) AS rn
+					SELECT DISTINCT t.CustID,t.username,t.roleid, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, MAX(rn) AS rn
 						, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END AS sporttype
+						, currency
+						, t.site
 					FROM @temp_ t
-					GROUP BY t.CustID, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END
+					GROUP BY t.CustID, t.currency,t.username,t.roleid, t.site, t.IsGroupHeadLine, t.matchid, TotalHouseTurnover, TotalMemberTurnover, CASE WHEN t.ProfileID <= 10 THEN 1 ELSE 99 END
 				)ct
 				CROSS APPLY (
 							SELECT ProfileID, GroupName, ProfileName
 							FROM TOControl_Profile WITH (NOLOCK)
 							WHERE Sporttype = ct.sporttype
 							)p
-		)pf
-		LEFT JOIN @temp_ t ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID
-		OUTER APPLY (
-			SELECT t.CustID, t.matchid, t.ProfileID, t.IsGroupHeadLine, t.MaxTurnOver, t.HouseTurnover, t.TotalTurnOver
-			FROM TOControl_Setting t WITH (NOLOCK)
-			WHERE pf.custid = t.CustID
-				AND pf.matchid = t.matchid
-				AND pf.IsGroupHeadline = t.IsGroupHeadLine
-				AND pf.ProfileID = t.ProfileID
-		)rs
+		)pf	
+		LEFT JOIN @temp_ tmp ON tmp.custid = pf.custid AND tmp.matchid = pf.matchid AND tmp.ProfileID = pf.ProfileID AND tmp.IsGroupHeadLine = pf.IsGroupHeadline
+		LEFT JOIN dbo.TOControl_Setting t WITH (NOLOCK) ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID AND t.IsGroupHeadLine = pf.IsGroupHeadline
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
-		INNER JOIN dbo.Customer c WITH(NOLOCK) ON pf.custID = c.custid
-		INNER JOIN dbo.exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
-
+		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
+		
+	DROP TABLE #Setting_tmp
 END
 GO
 
