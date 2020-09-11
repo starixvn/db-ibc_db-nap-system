@@ -1,4 +1,4 @@
-/*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet,bodbSPUNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[CTS_Customer_RobotListSel]
 	@FromDate DATETIME,
 	@creditSite VARCHAR(MAX) = ''
@@ -26,7 +26,7 @@ BEGIN
 		LEFT JOIN bodb02.dbo.customer ag WITH(NOLOCK) ON c.recommend = ag.custid					
 	WHERE RobotDate > @FromDate
 		AND r.counter >=10
-		AND (ISNULL(c.site,ag.site) IN (SELECT site FROM @tmpSite)
+		AND (ISNULL(NULLIF(c.site,''),ag.site) IN (SELECT site FROM @tmpSite)
 			OR c.srecommend IN (SELECT custid FROM bodb02.dbo.Dep_CustSuper (nolock))
 			)	
 END			
