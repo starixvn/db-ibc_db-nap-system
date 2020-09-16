@@ -26,6 +26,7 @@ AS
 		- 20200217@Johnson: Initial SP [Redmine:#128077]
 		- 20200414@Elodie: Problem account that was abnormal voided does not show in monitor list [Redmine:#132493]
 		- 20200721@Johnson: add void time & limit amount [redmine:#135253]
+		- 20200916@Johnson: get archive data for TicketVoiding_VoidedTransaction [redmine:#137217]
 	Parameter's explaination: 
 		- @Type: 0:All, 1:Acknowledgement, 2:Not Acknowledgement	
 		- @Vip: 0:All, 1:Yes, 2:No	
@@ -119,14 +120,24 @@ BEGIN
 						WHEN @isReduced = 2 AND MaxBet IS NOT NULL THEN 1
 						WHEN @isReduced = 0 THEN 1 ELSE 0 END
 	END
-				
+	
+	;WITH T AS (
+		SELECT c.custid, CreatedDate, SubIssueTypeId
+		FROM #tblCust c
+			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
+		WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate
+			 AND IssueTypeId = 11
+		UNION 
+		SELECT c.custid, CreatedDate, SubIssueTypeId
+		FROM #tblCust c
+			INNER JOIN DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
+		WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate
+			 AND IssueTypeId = 11	
+	)
 	INSERT INTO #tblCustReason (CustId, CreatedDate, ReasonId, AbnormalBetNumber)
-	SELECT c.CustId, MIN(tv.CreatedDate), tv.SubIssueTypeId, COUNT(1)
-	FROM #tblCust c
-		INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
-	WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate
-		 AND IssueTypeId = 11
-	GROUP BY c.CustId, tv.SubIssueTypeId
+	SELECT t.CustId, MIN(t.CreatedDate), t.SubIssueTypeId, COUNT(1)
+	FROM T
+	GROUP BY CustId,SubIssueTypeId
 	UNION ALL
 	SELECT c.custid, p.CreatedDate, p.ReasonId,0
 	FROM #tblCust c
@@ -136,6 +147,7 @@ BEGIN
 	SELECT c.CustId, NULL, 0, 0
 	FROM #tblCust c
 	WHERE NOT EXISTS (SELECT 1 FROM dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
+		AND NOT EXISTS (SELECT 1 FROM DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
 		AND c.IsAbnormalMember = 1
 
 	UPDATE c 
@@ -186,6 +198,9 @@ BEGIN
 		INNER JOIN #tblCustReason c ON rs.custid = c.custid
 		INNER JOIN dbo.ProblemAccountReason pr WITH (NOLOCK) ON pr.ReasonID = c.ReasonId
 	ORDER BY rn ASC, custid, CreatedDate DESC 	
+	
+	DROP TABLE #tblCust 
+	DROP TABLE #tblCustReason
 END
 
 GO

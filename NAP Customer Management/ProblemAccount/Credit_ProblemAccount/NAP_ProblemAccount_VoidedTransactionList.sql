@@ -15,6 +15,7 @@ AS
 
 	Revisions:
 		- 20200205@Percy: Initialize SP [RedmineID: #127446]
+		- 20200916@Johnson: get archive data for TicketVoiding_VoidedTransaction [redmine:#137217]
 */
 
 BEGIN
@@ -24,24 +25,39 @@ BEGIN
 
 	SELECT  @RowStart	= @PageSize * (@PageIndex - 1) + 1
 			,@RowEnd	= @RowStart + @PageSize - 1
-
-	SELECT @TotalRows = COUNT(1)
-	FROM dbo.TicketVoiding_VoidedTransaction t WITH (NOLOCK)
-		INNER JOIN dbo.TicketVoiding_SubIssueType s WITH (NOLOCK) ON t.SubIssueTypeID = s.SubIssueTypeID
-	WHERE t.CreatedDate BETWEEN @FromDate AND @ToDate
-		AND t.CustID = @CustId
-		AND t.IssueTypeId = 11 -- Abnormal Bets
-
-	SELECT CreatedDate, TransId, AbnormalReason
-	FROM (
-		SELECT t.CreatedDate, t.TransId, s.SubIssueTypeName AS AbnormalReason, ROW_NUMBER() OVER(ORDER BY t.CreatedDate DESC) AS RowNum
+	
+	CREATE TABLE #tmpTicketVoiding (TransID BIGINT, CreatedDate DATETIME, SubIssueTypeName VARCHAR(100))
+	
+	;WITH T AS (
+		SELECT TransID,CreatedDate,SubIssueTypeName
 		FROM dbo.TicketVoiding_VoidedTransaction t WITH (NOLOCK)
 			INNER JOIN dbo.TicketVoiding_SubIssueType s WITH (NOLOCK) ON t.SubIssueTypeID = s.SubIssueTypeID
 		WHERE t.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND t.CustID = @CustId
 			AND t.IssueTypeId = 11 -- Abnormal Bets
+		UNION 	
+		SELECT TransID,CreatedDate,SubIssueTypeName
+		FROM DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk t WITH (NOLOCK)
+			INNER JOIN dbo.TicketVoiding_SubIssueType s WITH (NOLOCK) ON t.SubIssueTypeID = s.SubIssueTypeID
+		WHERE t.CreatedDate BETWEEN @FromDate AND @ToDate
+			AND t.CustID = @CustId
+			AND t.IssueTypeId = 11 -- Abnormal Bets
+	)
+	INSERT INTO #tmpTicketVoiding (TransID,CreatedDate,SubIssueTypeName)
+	SELECT DISTINCT TransID,CreatedDate,SubIssueTypeName
+	FROM T
+	
+	SELECT @TotalRows = COUNT(1)
+	FROM #tmpTicketVoiding
+
+	SELECT CreatedDate, TransId, AbnormalReason
+	FROM (
+		SELECT t.CreatedDate, t.TransId, t.SubIssueTypeName AS AbnormalReason, ROW_NUMBER() OVER(ORDER BY t.CreatedDate DESC) AS RowNum
+		FROM #tmpTicketVoiding t
 	) AS A
 	WHERE A.RowNum BETWEEN @RowStart AND @RowEnd
 	ORDER BY A.RowNum
+	
+	DROP TABLE #tmpTicketVoiding
 END
 GO
