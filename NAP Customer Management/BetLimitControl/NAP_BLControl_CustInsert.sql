@@ -1,11 +1,11 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert] 
-	@Username VARCHAR(30) = NULL,
+	@Usernames VARCHAR(MAX) = NULL,
 	@BetLimitTypeID INT = NULL,
 	@MaxBet MONEY = NULL,
 	@MaxPerMatch MONEY = NULL,
-	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(200) = '' OUTPUT,
+	--@ErrorCode INT = 0 OUTPUT,
+	--@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = ''
 AS
@@ -17,30 +17,28 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
 
 	Parameter explanation:
 	- @ErrorCode: 
 		1: The bet limit type exist already.
 
 	Example: 
-	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(200) = '' 
 	EXEC NAP_BLControl_CustInsert 
-		@Username = 'member01',
+		@Usernames = 'member01,agent01,member0x',
 		@BetLimitTypeID  = 1,
 		@MaxBet  = 100,
 		@MaxPerMatch  = 1000,
-		@ErrorCode = @ErrorCode OUTPUT,
-		@ErrorMsg = @ErrorMsg OUTPUT,
 		@UserId = 8
-
-	SELECT @ErrorCode,@ErrorMsg
 
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31753
 	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50)
+	DECLARE @Username VARCHAR(30)
+	DECLARE @ErrorCode INT = 0 , @ErrorMsg VARCHAR(200) = ''
 
-	SET @StartRun = GETDATE()
+	DECLARE @ErrorTbl TABLE (Username VARCHAR(30),ErrorCode INT , ErrorMsg VARCHAR(200))
 
 	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
 		@UserId=@userid,
@@ -50,56 +48,108 @@ BEGIN
 		@ErrMsg=@ErrorMsg OUTPUT
 
 	IF @ErrorCode <> 0
-		RETURN
+	BEGIN
+		INSERT INTO @ErrorTbl(Username, ErrorCode, ErrorMsg)
+		SELECT '', @ErrorCode, @ErrorMsg
 
-	DECLARE @CustID INT
+		GOTO EndStep;
+	END
 
-	EXEC NAP_BLControl_CustCheck 
-		@Username = @Username,
-		@userid = @userid,
-		@BetLimitTypeID = @BetLimitTypeID,
-		@ErrorCode = @ErrorCode OUTPUT,
-		@ErrorMsg = @ErrorMsg OUTPUT,
-		@CustID = @CustID OUTPUT,
-		@Site = @site OUTPUT
+	DECLARE @CustTbl TABLE ( UserName VARCHAR(30), Currency INT, IsFinished BIT DEFAULT 0)
 
-	IF @ErrorCode <> 0
-		RETURN
+	INSERT INTO @CustTBL(UserName)
+	SELECT DISTINCT p.val
+	FROM dbo.f_StringSplit(@Usernames,',') p
+	OPTION (MAXRECURSION 0)
+
+	UPDATE t
+	SET t.Currency = c.currency
+	FROM @CustTbl t
+		INNER JOIN custInfo c WITH(NOLOCK)
+			ON t.UserName = c.username
 	
-	INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch)
-	SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch
+	IF (SELECT COUNT(DISTINCT currency) FROM @CustTbl ) > 1
+	BEGIN
+		INSERT INTO @ErrorTbl(Username, ErrorCode, ErrorMsg)
+		SELECT '', 4, 'All input accounts must belong to one currency only.'
+
+		GOTO EndStep;
+	END
 
 	SELECT @BetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @BetLimitTypeID
 
-	SET @EndRun = GETDATE()
-	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+	DECLARE @CustID INT
 
-	DECLARE @LogData VARCHAR(500)
-	SELECT  @LogData = '<R '
-						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
-						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" '
-						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
-						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
-						+ ' />'
+	WHILE 1 = 1
+	BEGIN
+		SELECT @ErrorCode = 0, 
+			@ErrorMsg = '', 
+			@CustID = NULL, 
+			@Username = NULL , 
+			@Site =  NULL
 
-	IF @site = 'CN88'
-	BEGIN
-		EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
-			@UserId				= @UserId,
-			@CustId				= @CustId,
-			@ActionId			= @ActionID,
-			@TrackingValue		= @LogData,
-			@Duration			= @Duration
+		UPDATE TOP(1) t
+		SET t.IsFinished = 1,
+			@Username = t.UserName
+		FROM @CustTbl t
+		WHERE IsFinished = 0
+
+		IF @@ROWCOUNT = 0
+			BREAK;
+
+		EXEC NAP_BLControl_CustCheck 
+			@Username = @Username,
+			@userid = @userid,
+			@BetLimitTypeID = @BetLimitTypeID,
+			@ErrorCode = @ErrorCode OUTPUT,
+			@ErrorMsg = @ErrorMsg OUTPUT,
+			@CustID = @CustID OUTPUT,
+			@Site = @site OUTPUT
+
+		INSERT INTO @ErrorTbl(Username, ErrorCode, ErrorMsg)
+		SELECT @Username, @ErrorCode, @ErrorMsg
+
+		IF @ErrorCode =  0
+		BEGIN
+			SET @StartRun = GETDATE()
+
+			INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch)
+			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch
+
+			SET @EndRun = GETDATE()
+			SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
+
+			DECLARE @LogData VARCHAR(500)
+			SELECT  @LogData = '<R '
+								+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
+								+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" '
+								+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
+								+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
+								+ ' />'
+
+			IF @site = 'CN88'
+			BEGIN
+				EXEC dbo.CS_WriteLog_UserLog_RunSP_Wrapper
+					@UserId				= @UserId,
+					@CustId				= @CustId,
+					@ActionId			= @ActionID,
+					@TrackingValue		= @LogData,
+					@Duration			= @Duration
+			END
+			ELSE -- MBC
+			BEGIN
+				EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+					@UserId				= @UserId,
+					@CustId				= @CustId,
+					@ActionId			= @ActionID,
+					@TrackingValue		= @LogData,
+					@Duration			= @Duration
+			END
+		END
 	END
-	ELSE -- MBC
-	BEGIN
-		EXEC dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
-			@UserId				= @UserId,
-			@CustId				= @CustId,
-			@ActionId			= @ActionID,
-			@TrackingValue		= @LogData,
-			@Duration			= @Duration
-	END
+
+	EndStep:
+	SELECT * FROM @ErrorTbl
 END
 GO
 

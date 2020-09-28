@@ -16,6 +16,7 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -87,7 +88,7 @@ BEGIN
 				WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID )
 	BEGIN
 		SELECT @ErrorCode = 2
-			  ,@ErrorMsg = 'The selected user has this Bet Limit Type already.'
+			  ,@ErrorMsg = 'The selected user(s) has this Bet Limit Type already.'
 		RETURN
 	END
 
