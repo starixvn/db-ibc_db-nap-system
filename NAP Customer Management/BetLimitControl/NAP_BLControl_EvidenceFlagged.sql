@@ -10,6 +10,7 @@ AS
 
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
+	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
 
 	Parameter explanation:
 
@@ -96,7 +97,7 @@ BEGIN
 		ELSE
 		BEGIN
 			EXEC NAP_BLControl_CustInsert 
-				@Username = @Username,
+				@Usernames = @Username,
 				@BetLimitTypeID  = @BetLimitTypeID_Check,
 				@MaxBet  = @MaxBet,
 				@MaxPerMatch  = @MaxPerMatch,
