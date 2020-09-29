@@ -37,7 +37,7 @@ BEGIN
 			AND t.IssueTypeId = 11 -- Abnormal Bets
 		UNION 	
 		SELECT TransID,CreatedDate,SubIssueTypeName
-		FROM DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk t WITH (NOLOCK)
+		FROM bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk t WITH (NOLOCK)
 			INNER JOIN dbo.TicketVoiding_SubIssueType s WITH (NOLOCK) ON t.SubIssueTypeID = s.SubIssueTypeID
 		WHERE t.CreatedDate BETWEEN @FromDate AND @ToDate
 			AND t.CustID = @CustId

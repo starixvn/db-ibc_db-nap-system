@@ -122,15 +122,15 @@ BEGIN
 	END
 	
 	;WITH T AS (
-		SELECT c.custid, CreatedDate, SubIssueTypeId
+		SELECT c.custid, transid, CreatedDate, SubIssueTypeId
 		FROM #tblCust c
 			INNER JOIN dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) ON c.CustId = tv.custid			
 		WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate
 			 AND IssueTypeId = 11
 		UNION 
-		SELECT c.custid, CreatedDate, SubIssueTypeId
+		SELECT c.custid, transid, CreatedDate, SubIssueTypeId
 		FROM #tblCust c
-			INNER JOIN DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
+			INNER JOIN bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) ON c.CustId = tv.custid			
 		WHERE tv.CreatedDate BETWEEN @FromDate AND @ToDate
 			 AND IssueTypeId = 11	
 	)
@@ -147,7 +147,7 @@ BEGIN
 	SELECT c.CustId, NULL, 0, 0
 	FROM #tblCust c
 	WHERE NOT EXISTS (SELECT 1 FROM dbo.TicketVoiding_VoidedTransaction tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
-		AND NOT EXISTS (SELECT 1 FROM DBARC.bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
+		AND NOT EXISTS (SELECT 1 FROM bodb_Archive.dbo.TicketVoiding_VoidedTransaction_bk tv WITH (NOLOCK) WHERE c.CustId = tv.custid AND tv.IssueTypeID = 11)
 		AND c.IsAbnormalMember = 1
 
 	UPDATE c 
