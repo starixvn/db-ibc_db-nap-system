@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet, Dot_Member" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Nap_ProblemAccount_AddCustomer]
 	@CustomerList		VARCHAR(MAX),
 	@RoleId				TINYINT,
