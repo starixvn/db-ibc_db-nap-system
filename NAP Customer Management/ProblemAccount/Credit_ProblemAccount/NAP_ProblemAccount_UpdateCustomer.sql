@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet, Dot_Member" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE NAP_ProblemAccount_UpdateCustomer
 	@CustomerList		VARCHAR(MAX),
