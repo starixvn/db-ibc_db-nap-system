@@ -100,8 +100,6 @@ BEGIN
 			@TrackingValue		= @LogDataNew,
 			@Duration			= @Duration,
 			@AffectedDownlines	= @SuccessDownlineList
-
-		SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + ',' + @SuccessDownlineList 
 	END	
 	
 	SELECT @SuccessAllDownlineList = STUFF(@SuccessAllDownlineList,1,1,'')
