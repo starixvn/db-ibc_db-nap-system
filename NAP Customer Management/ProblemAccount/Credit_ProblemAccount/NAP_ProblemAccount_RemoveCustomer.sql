@@ -62,10 +62,8 @@ BEGIN
 				@Action = 'UnmarkProblem',
 				@ExcludeAbnormalMember = @ExcludeAbnormalMember,
 				@ExcludeDirectMark = @ExcludeDirectMark, 
-				@SuccessDownlineList = @SuccessDownlineList OUTPUT
-
-			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + @SuccessDownlineList
-		END
+				@SuccessDownlineList = @SuccessDownlineList OUTPUT			
+		END		
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
@@ -96,6 +94,10 @@ BEGIN
 			@TrackingValue		= @LogDataNew,
 			@Duration			= @Duration,
 			@AffectedDownlines	= @SuccessDownlineList
+
+		SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + ',' + @SuccessDownlineList 
 	END	
+	
+	SELECT @SuccessAllDownlineList = STUFF(@SuccessAllDownlineList,1,1,'')
 END
 GO
