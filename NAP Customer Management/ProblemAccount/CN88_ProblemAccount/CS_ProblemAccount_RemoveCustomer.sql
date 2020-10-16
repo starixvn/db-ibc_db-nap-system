@@ -63,9 +63,14 @@ BEGIN
 				@Action = 'UnmarkProblem',
 				@ExcludeAbnormalMember = @ExcludeAbnormalMember,
 				@ExcludeDirectMark = @ExcludeDirectMark, 
-				@SuccessDownlineList = @SuccessDownlineList OUTPUT			
-		END		
-
+				@SuccessDownlineList = @SuccessDownlineList OUTPUT		
+				
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + CASE WHEN @SuccessDownlineList <> '' THEN ',' ELSE '' END + @SuccessDownlineList 	
+		END	
+		ELSE 	
+		BEGIN
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10))
+		END
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
 		-- Write log
@@ -94,9 +99,7 @@ BEGIN
 			@ActionId			= @ActionId,
 			@TrackingValue		= @LogDataNew,
 			@Duration			= @Duration,
-			@AffectedDownlines	= @SuccessDownlineList
-
-		SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + ',' + @SuccessDownlineList 
+			@AffectedDownlines	= @SuccessDownlineList		
 	END	
 
 	SELECT @SuccessAllDownlineList = STUFF(@SuccessAllDownlineList,1,1,'')

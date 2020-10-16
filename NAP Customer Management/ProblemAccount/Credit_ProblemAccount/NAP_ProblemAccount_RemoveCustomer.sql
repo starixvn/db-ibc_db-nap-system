@@ -63,7 +63,13 @@ BEGIN
 				@ExcludeAbnormalMember = @ExcludeAbnormalMember,
 				@ExcludeDirectMark = @ExcludeDirectMark, 
 				@SuccessDownlineList = @SuccessDownlineList OUTPUT			
-		END		
+			
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + CASE WHEN @SuccessDownlineList <> '' THEN ',' ELSE '' END + @SuccessDownlineList 	
+		END	
+		ELSE 	
+		BEGIN
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10))
+		END	
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
