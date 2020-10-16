@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[CS_ProblemAccount_RemoveCustomer]
 
 	@UserID						INT,
 	@IP							VARCHAR(15),
+	@SuccessAllDownlineList		VARCHAR(MAX) = '' OUTPUT,
 	@ErrCode					INT = 0 OUTPUT,
 	@ErrMsg						NVARCHAR(MAX) = '' OUTPUT
 AS
@@ -19,6 +20,7 @@ AS
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
 		- 20191218@Percy: Change using SP CS_DynamicCustSetting_01 to CS_DynamicCustomerInfo_02 [RedmineID: #125186]
+		- 20201016@Elodie: Output all downline list is removed PA [Redmine:#141756]
 
 	Parameter's explaination: 
 	
@@ -41,6 +43,8 @@ BEGIN
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
+	SELECT @SuccessAllDownlineList = ''
+
 	WHILE (1=1)
 	BEGIN		
 		UPDATE TOP (1) @tmpCust
@@ -60,6 +64,8 @@ BEGIN
 				@ExcludeAbnormalMember = @ExcludeAbnormalMember,
 				@ExcludeDirectMark = @ExcludeDirectMark, 
 				@SuccessDownlineList = @SuccessDownlineList OUTPUT
+
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + @SuccessDownlineList
 		END
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
