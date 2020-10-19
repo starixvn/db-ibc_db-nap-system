@@ -15,7 +15,8 @@ AS
 
 	Revisions:
 		- 20200219@Johnson: Initial SP [Redmine:#128077]
-		
+		- 20201016@Elodie: Output all cust list is removed PA [Redmine:#141756]
+
 	Parameter's explaination: 
 	
 */
