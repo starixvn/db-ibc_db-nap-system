@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[CS_ProblemAccount_RemoveCustomer]
 
 	@UserID						INT,
 	@IP							VARCHAR(15),
+	@SuccessAllDownlineList		VARCHAR(MAX) = '' OUTPUT,
 	@ErrCode					INT = 0 OUTPUT,
 	@ErrMsg						NVARCHAR(MAX) = '' OUTPUT
 AS
@@ -19,6 +20,7 @@ AS
 	Revisions:
 		- 20190808@Elodie: Initial SP [Redmine:#116814]
 		- 20191218@Percy: Change using SP CS_DynamicCustSetting_01 to CS_DynamicCustomerInfo_02 [RedmineID: #125186]
+		- 20201016@Elodie: Output all downline list is removed PA [Redmine:#141756]
 
 	Parameter's explaination: 
 	
@@ -41,6 +43,8 @@ BEGIN
 	FROM dbo.CS_ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
+	SELECT @SuccessAllDownlineList = ''
+
 	WHILE (1=1)
 	BEGIN		
 		UPDATE TOP (1) @tmpCust
@@ -59,9 +63,14 @@ BEGIN
 				@Action = 'UnmarkProblem',
 				@ExcludeAbnormalMember = @ExcludeAbnormalMember,
 				@ExcludeDirectMark = @ExcludeDirectMark, 
-				@SuccessDownlineList = @SuccessDownlineList OUTPUT
+				@SuccessDownlineList = @SuccessDownlineList OUTPUT		
+				
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + CASE WHEN @SuccessDownlineList <> '' THEN ',' ELSE '' END + @SuccessDownlineList 	
+		END	
+		ELSE 	
+		BEGIN
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10))
 		END
-
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
 		-- Write log
@@ -90,7 +99,9 @@ BEGIN
 			@ActionId			= @ActionId,
 			@TrackingValue		= @LogDataNew,
 			@Duration			= @Duration,
-			@AffectedDownlines	= @SuccessDownlineList
+			@AffectedDownlines	= @SuccessDownlineList		
 	END	
+
+	SELECT @SuccessAllDownlineList = STUFF(@SuccessAllDownlineList,1,1,'')
 END
 GO

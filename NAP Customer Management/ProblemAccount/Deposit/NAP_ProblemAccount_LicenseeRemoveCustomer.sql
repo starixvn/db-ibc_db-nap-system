@@ -1,11 +1,12 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_ProblemAccount_LicenseeRemoveCustomer]
-	@CustomerList VARCHAR(MAX),
+	@CustomerList				VARCHAR(MAX),
 
-	@UserID		INT,
-	@IP			VARCHAR(15),
-	@ErrCode 	INT = 0 OUTPUT,
-	@ErrMsg		NVARCHAR(MAX) = '' OUTPUT
+	@UserID						INT,
+	@IP							VARCHAR(15),
+	@SuccessAllDownlineList		VARCHAR(MAX) = '' OUTPUT,
+	@ErrCode 					INT = 0 OUTPUT,
+	@ErrMsg						NVARCHAR(MAX) = '' OUTPUT
 AS
 /*
 	Created: 20200219@Johnson	
@@ -14,7 +15,8 @@ AS
 
 	Revisions:
 		- 20200219@Johnson: Initial SP [Redmine:#128077]
-		
+		- 20201016@Elodie: Output all cust list is removed PA [Redmine:#141756]
+
 	Parameter's explaination: 
 	
 */
@@ -61,7 +63,11 @@ BEGIN
 			@CustId				= @CustId,
 			@ActionId			= 31627,
 			@TrackingValue		= @LogData,
-			@Duration			= @Duration			
+			@Duration			= @Duration		
+			
+		SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10))	
 	END	
+
+	SELECT @SuccessAllDownlineList = STUFF(@SuccessAllDownlineList,1,1,'')
 END
 GO

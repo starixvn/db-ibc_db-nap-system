@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[NAP_ProblemAccount_RemoveCustomer]
 
 	@UserID						INT,
 	@IP							VARCHAR(15),
+	@SuccessAllDownlineList		VARCHAR(MAX) = '' OUTPUT,
 	@ErrCode					INT = 0 OUTPUT,
 	@ErrMsg						NVARCHAR(MAX) = '' OUTPUT
 AS
@@ -18,6 +19,7 @@ AS
 
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
+		- 20201016@Elodie: Output all downline list is removed PA [Redmine:#141756]
 
 	Parameter's explaination: 
 	
@@ -40,6 +42,8 @@ BEGIN
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 
+	SELECT @SuccessAllDownlineList = ''
+
 	WHILE (1=1)
 	BEGIN		
 		UPDATE TOP (1) @tmpCust
@@ -58,8 +62,14 @@ BEGIN
 				@Action = 'UnmarkProblem',
 				@ExcludeAbnormalMember = @ExcludeAbnormalMember,
 				@ExcludeDirectMark = @ExcludeDirectMark, 
-				@SuccessDownlineList = @SuccessDownlineList OUTPUT
-		END
+				@SuccessDownlineList = @SuccessDownlineList OUTPUT			
+			
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10)) + CASE WHEN @SuccessDownlineList <> '' THEN ',' ELSE '' END + @SuccessDownlineList 	
+		END	
+		ELSE 	
+		BEGIN
+			SELECT @SuccessAllDownlineList = @SuccessAllDownlineList + ',' + CAST(@CustId AS VARCHAR(10))
+		END	
 
 		SELECT @Duration = DATEDIFF (MILLISECOND, @startRun, GETDATE())
 
@@ -91,5 +101,7 @@ BEGIN
 			@Duration			= @Duration,
 			@AffectedDownlines	= @SuccessDownlineList
 	END	
+	
+	SELECT @SuccessAllDownlineList = STUFF(@SuccessAllDownlineList,1,1,'')
 END
 GO
