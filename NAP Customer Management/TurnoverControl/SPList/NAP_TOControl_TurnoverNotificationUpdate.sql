@@ -18,6 +18,7 @@ AS
 
 	Revisions:
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
+		- 20201127@Max: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
 	Parameter's explaination:
 */
 BEGIN
@@ -36,7 +37,7 @@ BEGIN
 				)p
 	)
 	UPDATE t WITH(ROWLOCK,UPDLOCK)
-	SET t.IsNotified = tmp.nlevel
+	SET t.IsNotified = tmp.nlevel, ModifiedDate = GETDATE()
 	FROM dbo.TOControl_Setting t
 		INNER JOIN tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
 	
