@@ -8,4 +8,6 @@
 USE CustDB
 GO
 
-ALTER TABLE [dbo].[TOControl_Setting] ADD ModifiedDate DATETIME NULL
+ALTER TABLE [dbo].[TOControl_Setting] ADD
+	IsNotified2	 TINYINT  NULL,
+	ModifiedDate DATETIME NULL				  

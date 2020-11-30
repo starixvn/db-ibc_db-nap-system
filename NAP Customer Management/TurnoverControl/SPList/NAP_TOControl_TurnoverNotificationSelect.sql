@@ -15,6 +15,7 @@ AS
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841] 
 		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		- 20200812@Helen: SMA TO Control - Performance Tuning - [Redmine: #139387]
+		- 20201130@July: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
 		
 		
 	Parameter's explaination: 
@@ -154,7 +155,12 @@ BEGIN
 		LEFT JOIN dbo.TOControl_Setting t WITH (NOLOCK) ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID AND t.IsGroupHeadLine = pf.IsGroupHeadline
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
-		
+	
+	UPDATE t WITH(ROWLOCK,UPDLOCK)
+	SET t.IsNotified2 = tmp.nlevel, t.ModifiedDate = GETDATE()
+	FROM dbo.TOControl_Setting t
+		INNER JOIN tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
+
 	DROP TABLE #Setting_tmp
 END
 GO
