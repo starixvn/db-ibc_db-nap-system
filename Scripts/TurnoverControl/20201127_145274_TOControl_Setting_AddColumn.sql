@@ -9,5 +9,5 @@ USE CustDB
 GO
 
 ALTER TABLE [dbo].[TOControl_Setting] ADD
-	IsNotified2	 TINYINT  NULL,
-	ModifiedDate DATETIME NULL				  
+	NotifiedPercentValue	 TINYINT  NULL,
+	ModifiedDatePercentValue DATETIME NULL				  

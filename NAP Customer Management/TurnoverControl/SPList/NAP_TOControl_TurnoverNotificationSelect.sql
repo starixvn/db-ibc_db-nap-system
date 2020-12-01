@@ -157,7 +157,7 @@ BEGIN
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
 	
 	UPDATE t WITH(ROWLOCK,UPDLOCK)
-	SET t.IsNotified2 = tmp.nlevel, t.ModifiedDate = GETDATE()
+	SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
 	FROM dbo.TOControl_Setting t
 		INNER JOIN @temp_ tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
 
