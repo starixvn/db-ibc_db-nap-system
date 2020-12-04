@@ -160,6 +160,9 @@ BEGIN
 	SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
 	FROM dbo.TOControl_Setting t
 		INNER JOIN @temp_ tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
+		INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
+		INNER JOIN @MatchList m ON t.matchid = m.matchid
+		INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
 
 	DROP TABLE #Setting_tmp
 END
