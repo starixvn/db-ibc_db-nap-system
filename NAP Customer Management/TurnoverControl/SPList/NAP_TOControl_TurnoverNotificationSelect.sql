@@ -40,8 +40,11 @@ BEGIN
 				, username VARCHAR(30)
 				, roleid TINYINT
 				, currency INT
-				, site VARCHAR(10))
+				, site VARCHAR(10)
+				, IsFinish BIT
+		)
 
+	DECLARE @matchid INT, @custid INT, @IsGroupHeadline BIT, @ProfileID SMALLINT, @nlevel TINYINT
 	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
 		
 	SET @NotifiedLevel_mbc =  (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 0)
@@ -156,19 +159,26 @@ BEGIN
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
 	
+	
 	WHILE (1=1)
 	BEGIN
-		UPDATE TOP (1) t WITH(ROWLOCK,UPDLOCK)
-		SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
-		FROM dbo.TOControl_Setting t
-			INNER JOIN @temp_ tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
-			INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
-			INNER JOIN @MatchList m ON t.matchid = m.matchid
-			INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
-		WHERE t.NotifiedPercentValue IS NOT NULL AND t.ModifiedDatePercentValue IS NOT NULL  
-		
-		IF @@ROWCOUNT = 0 BREAK;
+		UPDATE TOP (1) t
+		SET  IsFinish = 1
+			, @matchid = t.matchid
+			, @custid = custid 
+			, @IsGroupHeadline = t.IsGroupHeadline
+			, @ProfileID = t.ProfileID
+			, @nlevel = t.nlevel
+		FROM @temp_ t
+		WHERE IsFinish IS NULL
 
+		IF @@ROWCOUNT = 0 BREAK
+
+		UPDATE t WITH(ROWLOCK,UPDLOCK)
+		SET t.NotifiedPercentValue = @nlevel, t.ModifiedDatePercentValue = GETDATE()
+		FROM dbo.TOControl_Setting t
+		WHERE t.matchid = @matchid AND t.custid = @custid AND t.IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID = @ProfileID
+		
 	END
 
 	DROP TABLE #Setting_tmp
