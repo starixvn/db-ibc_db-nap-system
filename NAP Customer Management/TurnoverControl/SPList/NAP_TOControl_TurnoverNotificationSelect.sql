@@ -156,13 +156,20 @@ BEGIN
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
 	
-	UPDATE t WITH(ROWLOCK,UPDLOCK)
-	SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
-	FROM dbo.TOControl_Setting t
-		INNER JOIN @temp_ tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
-		INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
-		INNER JOIN @MatchList m ON t.matchid = m.matchid
-		INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
+	WHILE (1=1)
+	BEGIN
+		UPDATE TOP (1) t WITH(ROWLOCK,UPDLOCK)
+		SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
+		FROM dbo.TOControl_Setting t
+			INNER JOIN @temp_ tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
+			INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
+			INNER JOIN @MatchList m ON t.matchid = m.matchid
+			INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
+		WHERE t.NotifiedPercentValue IS NOT NULL AND t.ModifiedDatePercentValue IS NOT NULL  
+		
+		IF @@ROWCOUNT = 0 BREAK;
+
+	END
 
 	DROP TABLE #Setting_tmp
 END
