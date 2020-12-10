@@ -44,7 +44,7 @@ BEGIN
 				, IsFinish BIT
 		)
 
-	DECLARE @tmpBatchTOSetting TABLE (matchid INT, custid INT, IsGroupHeadLine BIT, ProfileID SMALLINT, nlevel TINYINT)
+	DECLARE @tmpBatchTOSetting TABLE (matchid INT, custid INT, IsGroupHeadLine BIT, ProfileID SMALLINT, nlevel TINYINT, currency INT)
 	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
 		
 	SET @NotifiedLevel_mbc =  (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 0)
@@ -170,8 +170,9 @@ BEGIN
 				deleted.custid,
 				deleted.IsGroupHeadline,
 				deleted.ProfileID,
-				deleted.nlevel
-		INTO @tmpBatchTOSetting (matchid, custid, IsGroupHeadLine, ProfileID, nlevel)
+				deleted.nlevel,
+				deleted.currency
+		INTO @tmpBatchTOSetting (matchid, custid, IsGroupHeadLine, ProfileID, nlevel, currency)
 		FROM @temp_ t
 		WHERE t.IsFinish IS NULL
 
@@ -183,6 +184,9 @@ BEGIN
 		FROM dbo.TOControl_Setting t
 		INNER JOIN @tmpBatchTOSetting tmp
 			ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
+		INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
+		INNER JOIN @MatchList m ON t.matchid = m.matchid
+		INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
 		
 		WAITFOR DELAY '00:00:0.001';
 
