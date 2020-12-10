@@ -44,7 +44,7 @@ BEGIN
 				, IsFinish BIT
 		)
 
-	DECLARE @matchid INT, @custid INT, @IsGroupHeadline BIT, @ProfileID SMALLINT, @nlevel TINYINT
+	DECLARE @tmpBatchTOSetting TABLE (matchid INT, custid INT, IsGroupHeadLine BIT, ProfileID SMALLINT, nlevel TINYINT)
 	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
 		
 	SET @NotifiedLevel_mbc =  (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 0)
@@ -162,23 +162,31 @@ BEGIN
 	
 	WHILE (1=1)
 	BEGIN
-		UPDATE TOP (1) t
-		SET  IsFinish = 1
-			, @matchid = t.matchid
-			, @custid = custid 
-			, @IsGroupHeadline = t.IsGroupHeadline
-			, @ProfileID = t.ProfileID
-			, @nlevel = t.nlevel
+		DELETE FROM @tmpBatchTOSetting
+
+		UPDATE TOP (10) t
+		SET t.IsFinish = 1
+		OUTPUT deleted.matchid,
+				deleted.custid,
+				deleted.IsGroupHeadline,
+				deleted.ProfileID,
+				deleted.nlevel
+		INTO @tmpBatchTOSetting (matchid, custid, IsGroupHeadLine, ProfileID, nlevel)
 		FROM @temp_ t
-		WHERE IsFinish IS NULL
+		WHERE t.IsFinish IS NULL
 
 		IF @@ROWCOUNT = 0 BREAK
 
+
 		UPDATE t WITH(ROWLOCK,UPDLOCK)
-		SET t.NotifiedPercentValue = @nlevel, t.ModifiedDatePercentValue = GETDATE()
+		SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
 		FROM dbo.TOControl_Setting t
-		WHERE t.matchid = @matchid AND t.custid = @custid AND t.IsGroupHeadLine = @IsGroupHeadline AND t.ProfileID = @ProfileID
+		INNER JOIN @tmpBatchTOSetting tmp
+			ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
 		
+		WAITFOR DELAY '00:00:0.001';
+
+
 	END
 
 	DROP TABLE #Setting_tmp
