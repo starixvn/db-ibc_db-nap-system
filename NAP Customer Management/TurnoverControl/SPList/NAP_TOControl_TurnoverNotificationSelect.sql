@@ -33,7 +33,9 @@ BEGIN
 
 	DECLARE @MatchList TABLE (matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
-	DECLARE @temp_ TABLE (rn INT, custid INT, matchid INT, totalturnover MONEY
+	DECLARE @temp_ TABLE (
+				RowID INT IDENTITY(1,1)
+				, rn INT, custid INT, matchid INT, totalturnover MONEY
 				, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT
 				, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT
 				, PercentageUsed MONEY
@@ -41,10 +43,8 @@ BEGIN
 				, roleid TINYINT
 				, currency INT
 				, site VARCHAR(10)
-				, IsFinish BIT
 		)
 
-	DECLARE @tmpBatchTOSetting TABLE (matchid INT, custid INT, IsGroupHeadLine BIT, ProfileID SMALLINT, nlevel TINYINT, currency INT)
 	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
 		
 	SET @NotifiedLevel_mbc =  (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 0)
@@ -160,39 +160,17 @@ BEGIN
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
 	
 	
-	WHILE (1=1)
-	BEGIN
-		DELETE FROM @tmpBatchTOSetting
-
-		UPDATE TOP (10) t
-		SET t.IsFinish = 1
-		OUTPUT deleted.matchid,
-				deleted.custid,
-				deleted.IsGroupHeadline,
-				deleted.ProfileID,
-				deleted.nlevel,
-				deleted.currency
-		INTO @tmpBatchTOSetting (matchid, custid, IsGroupHeadLine, ProfileID, nlevel, currency)
-		FROM @temp_ t
-		WHERE t.IsFinish IS NULL
-
-		IF @@ROWCOUNT = 0 BREAK
-
-
-		UPDATE t WITH(ROWLOCK,UPDLOCK)
-		SET t.NotifiedPercentValue = tmp.nlevel, t.ModifiedDatePercentValue = GETDATE()
-		FROM dbo.TOControl_Setting t
-		INNER JOIN @tmpBatchTOSetting tmp
-			ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
-		INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
-		INNER JOIN @MatchList m ON t.matchid = m.matchid
-		INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
+	UPDATE t WITH(ROWLOCK,UPDLOCK)
+	SET t.NotifiedPercentValue = tmp.nlevel
+		, t.ModifiedDatePercentValue = DATEADD(ms,tmp.RowID*10,GETDATE())
+	FROM dbo.TOControl_Setting t
+	INNER JOIN @temp_ tmp
+		ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
+	INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
+	INNER JOIN @MatchList m ON t.matchid = m.matchid
+	INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
+	WHERE tmp.nlevel > ISNULL(t.NotifiedPercentValue,0)
 		
-		WAITFOR DELAY '00:00:0.001';
-
-
-	END
-
 	DROP TABLE #Setting_tmp
 END
 GO
