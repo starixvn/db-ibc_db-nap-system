@@ -169,7 +169,7 @@ BEGIN
 	INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
 	INNER JOIN @MatchList m ON t.matchid = m.matchid
 	INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
-	WHERE tmp.nlevel > ISNULL(t.NotifiedPercentValue,0)
+	WHERE tmp.nlevel <> ISNULL(t.NotifiedPercentValue,0)
 		
 	DROP TABLE #Setting_tmp
 END
