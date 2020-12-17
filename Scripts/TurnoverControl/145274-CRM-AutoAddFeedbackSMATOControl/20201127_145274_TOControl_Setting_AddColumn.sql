@@ -8,6 +8,27 @@
 USE CustDB
 GO
 
-ALTER TABLE [dbo].[TOControl_Setting] ADD
-	NotifiedPercentValue	 TINYINT  NULL,
-	ModifiedDatePercentValue DATETIME NULL				  
+CREATE TABLE TOControl_Setting_History
+(
+	LogID INT IDENTITY(1,1), 
+	CustID INT, 
+	Matchid INT, 
+	MaxTurnover MONEY, 
+	HouseTurnover MONEY,
+	TotalTurnover MONEY	,
+	PercentLevel TINYINT, 
+	IsGroupHeadLine	BIT, 
+	ProfileID SMALLINT, 
+	NotifiedPercentValue INT, 
+	ModifiedDate DATETIME
+)
+GO
+CREATE CLUSTERED INDEX [ix_CustID_MatchID_IsGroupHeadLine_ProfileID] ON [dbo].[TOControl_Setting_History]
+(
+	[CustID] ASC,
+	[Matchid] ASC,
+	[IsGroupHeadLine] ASC,
+	[ProfileID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [DATA]
+GO
+				  

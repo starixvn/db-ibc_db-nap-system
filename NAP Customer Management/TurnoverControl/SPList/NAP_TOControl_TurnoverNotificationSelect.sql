@@ -159,17 +159,33 @@ BEGIN
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
 	
-	
-	UPDATE t WITH(ROWLOCK,UPDLOCK)
-	SET t.NotifiedPercentValue = tmp.nlevel
-		, t.ModifiedDatePercentValue = DATEADD(ms,tmp.RowID*10,GETDATE())
-	FROM dbo.TOControl_Setting t
+	INSERT INTO TOControl_Setting_History( CustID, Matchid, MaxTurnover, HouseTurnover,TotalTurnOver, PercentLevel, IsGroupHeadLine, ProfileID, NotifiedPercentValue, ModifiedDate)
+	SELECT t.CustID
+		   ,t.matchid
+		   ,t.MaxTurnOver
+		   ,t.HouseTurnover
+		   ,t.TotalTurnOver
+		   ,t.PercentLevel
+		   ,t.IsGroupHeadLine
+		   ,t.ProfileID
+		   ,tmp.nlevel
+		   ,ModifiedDate = GETDATE()
+	FROM dbo.TOControl_Setting t WITH(NOLOCK)
 	INNER JOIN @temp_ tmp
 		ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
 	INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
 	INNER JOIN @MatchList m ON t.matchid = m.matchid
 	INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
-	WHERE tmp.nlevel <> ISNULL(t.NotifiedPercentValue,0)
+	OUTER APPLY (
+		SELECT TOP 1 h.custid
+		FROM dbo.TOControl_Setting_History h WITH(NOLOCK)
+		WHERE t.CustID = h.custid AND t.matchid = h.matchid AND  t.IsGroupHeadLine = h.IsGroupHeadline AND t.ProfileID = h.ProfileID 
+			AND 1 = CASE WHEN h.MaxTurnOver <> t.MaxTurnOver THEN 1
+						 WHEN h.MaxTurnOver = t.MaxTurnOver AND  tmp.nlevel > h.NotifiedPercentValue THEN 1
+						 ELSE 0 END
+		ORDER BY h.LogID DESC
+	)tab
+	WHERE tab.CustID IS NULL
 		
 	DROP TABLE #Setting_tmp
 END
