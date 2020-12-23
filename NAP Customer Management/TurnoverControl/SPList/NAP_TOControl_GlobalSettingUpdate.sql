@@ -121,7 +121,7 @@ BEGIN
 			t.IsNotified = 	CASE WHEN @MaxTurnover = 0 THEN @MaxLevel 
 								  ELSE ISNULL((SELECT MAX(PercentValue) 
 												FROM dbo.TOControl_LevelSetting WITH (NOLOCK) 
-												WHERE t.HouseTurnOver*100/@MaxTurnover >= PercentValue AND IsNotified = 1
+												WHERE ABS(t.HouseTurnOver*100/@MaxTurnover) >= PercentValue AND IsNotified = 1
 													AND SiteID = @SiteID
 												),0)
 								END				
