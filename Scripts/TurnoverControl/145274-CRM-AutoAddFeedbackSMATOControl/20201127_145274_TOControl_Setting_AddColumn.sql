@@ -20,7 +20,8 @@ CREATE TABLE TOControl_Setting_History
 	IsGroupHeadLine	BIT, 
 	ProfileID SMALLINT, 
 	NotifiedPercentValue INT, 
-	ModifiedDate DATETIME
+	ModifiedDate DATETIME,
+	PRIMARY KEY (LogID)
 )
 GO
 CREATE CLUSTERED INDEX [ix_CustID_MatchID_IsGroupHeadLine_ProfileID] ON [dbo].[TOControl_Setting_History]

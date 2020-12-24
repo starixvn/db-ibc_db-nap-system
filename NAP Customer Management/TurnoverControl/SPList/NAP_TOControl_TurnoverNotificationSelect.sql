@@ -34,8 +34,7 @@ BEGIN
 	DECLARE @MatchList TABLE (matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
 	DECLARE @temp_ TABLE (
-				RowID INT IDENTITY(1,1)
-				, rn INT, custid INT, matchid INT, totalturnover MONEY
+				rn INT, custid INT, matchid INT, totalturnover MONEY
 				, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT
 				, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT
 				, PercentageUsed MONEY
@@ -177,15 +176,15 @@ BEGIN
 	INNER JOIN @MatchList m ON t.matchid = m.matchid
 	INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
 	OUTER APPLY (
-		SELECT TOP 1 h.custid
+		SELECT TOP 1 h.CustID, h.MaxTurnover, h.IsGroupHeadLine, h.ProfileID, h.Matchid, h.NotifiedPercentValue
 		FROM dbo.TOControl_Setting_History h WITH(NOLOCK)
 		WHERE t.CustID = h.custid AND t.matchid = h.matchid AND  t.IsGroupHeadLine = h.IsGroupHeadline AND t.ProfileID = h.ProfileID 
-			AND 1 = CASE WHEN h.MaxTurnOver <> t.MaxTurnOver THEN 1
-						 WHEN h.MaxTurnOver = t.MaxTurnOver AND  tmp.nlevel > h.NotifiedPercentValue THEN 1
-						 ELSE 0 END
 		ORDER BY h.LogID DESC
 	)tab
-	WHERE tab.CustID IS NULL
+	WHERE  1 =  CASE WHEN tab.CustId  IS NULL THEN 1
+					 WHEN tab.CustID IS NOT NULL AND t.MaxTurnOver <> tab.MaxTurnover THEN 1
+					 WHEN tab.CustID IS NOT NULL AND t.MaxTurnOver = tab.MaxTurnover and tmp.nlevel <> tab.NotifiedPercentValue THEN 1
+					ELSE 0 END
 		
 	DROP TABLE #Setting_tmp
 END
