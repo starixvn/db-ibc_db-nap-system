@@ -27,6 +27,7 @@ AS
 		- 20190927@Helen: Differentiate alert thresholds between MBC and CN88 [Redmine: #119561]
 		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
+		- 20201223@Max: Hotfix - ToControl_Percentlevel is not updated if user place bet made house TO negative then add SMA to ToControl [Redmine: #147580]
 		
 	Parameter's explaination:
 	 
