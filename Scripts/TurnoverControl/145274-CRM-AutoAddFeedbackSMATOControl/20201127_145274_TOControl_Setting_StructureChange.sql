@@ -1,4 +1,4 @@
-
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
 /*
     Created: 20201127@Max
 	Task: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
