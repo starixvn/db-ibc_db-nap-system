@@ -15,6 +15,7 @@ AS
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841] 
 		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		- 20200812@Helen: SMA TO Control - Performance Tuning - [Redmine: #139387]
+		- 20201130@July: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
 		
 		
 	Parameter's explaination: 
@@ -32,14 +33,16 @@ BEGIN
 
 	DECLARE @MatchList TABLE (matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
-	DECLARE @temp_ TABLE (rn INT, custid INT, matchid INT, totalturnover MONEY
+	DECLARE @temp_ TABLE (
+				rn INT, custid INT, matchid INT, totalturnover MONEY
 				, MaxTurnover MONEY, houseturnover MONEY, nlevel TINYINT, IsGroupHeadline BIT
 				, TotalMemberTurnover  MONEY, TotalHouseTurnover MONEY, ProfileID SMALLINT
 				, PercentageUsed MONEY
 				, username VARCHAR(30)
 				, roleid TINYINT
 				, currency INT
-				, site VARCHAR(10))
+				, site VARCHAR(10)
+		)
 
 	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
 		
@@ -154,6 +157,34 @@ BEGIN
 		LEFT JOIN dbo.TOControl_Setting t WITH (NOLOCK) ON t.custid = pf.custid AND t.matchid = pf.matchid AND t.ProfileID = pf.ProfileID AND t.IsGroupHeadLine = pf.IsGroupHeadline
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
+	
+	INSERT INTO TOControl_Setting_History( CustID, Matchid, MaxTurnover, HouseTurnover,TotalTurnOver, PercentLevel, IsGroupHeadLine, ProfileID, NotifiedPercentValue, ModifiedDate)
+	SELECT t.CustID
+		   ,t.matchid
+		   ,t.MaxTurnOver
+		   ,t.HouseTurnover
+		   ,t.TotalTurnOver
+		   ,t.PercentLevel
+		   ,t.IsGroupHeadLine
+		   ,t.ProfileID
+		   ,tmp.nlevel
+		   ,ModifiedDate = GETDATE()
+	FROM dbo.TOControl_Setting t WITH(NOLOCK)
+	INNER JOIN @temp_ tmp
+		ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
+	INNER JOIN TOControl_Profile p WITH (NOLOCK) ON t.ProfileID = p.ProfileID
+	INNER JOIN @MatchList m ON t.matchid = m.matchid
+	INNER JOIN dbo.exchange e WITH(NOLOCK) ON tmp.currency = e.exchangeid
+	OUTER APPLY (
+		SELECT TOP 1 h.CustID, h.MaxTurnover, h.IsGroupHeadLine, h.ProfileID, h.Matchid, h.NotifiedPercentValue
+		FROM dbo.TOControl_Setting_History h WITH(NOLOCK)
+		WHERE t.CustID = h.custid AND t.matchid = h.matchid AND  t.IsGroupHeadLine = h.IsGroupHeadline AND t.ProfileID = h.ProfileID 
+		ORDER BY h.LogID DESC
+	)tab
+	WHERE  1 =  CASE WHEN tab.CustId  IS NULL THEN 1
+					 WHEN tab.CustID IS NOT NULL AND t.MaxTurnOver <> tab.MaxTurnover THEN 1
+					 WHEN tab.CustID IS NOT NULL AND t.MaxTurnOver = tab.MaxTurnover and tmp.nlevel <> tab.NotifiedPercentValue THEN 1
+					ELSE 0 END
 		
 	DROP TABLE #Setting_tmp
 END
