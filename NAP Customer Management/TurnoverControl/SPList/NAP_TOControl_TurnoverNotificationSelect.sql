@@ -16,6 +16,7 @@ AS
 		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 		- 20200812@Helen: SMA TO Control - Performance Tuning - [Redmine: #139387]
 		- 20201130@July: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
+		- 20210318@Helen: SMA TO Control - Config to capture UUS Currency only on UAT to avoid SMA TO email duplication - [Redmine: #151926]
 		
 		
 	Parameter's explaination: 
@@ -30,7 +31,15 @@ AS
 */
 BEGIN
 	SET NOCOUNT ON
-
+	
+	DECLARE @procName NVARCHAR(50), @IsTest BIT =  0, @currentDate DATETIME
+	SET @procName = OBJECT_NAME(@@procid)
+	
+	IF @procName LIKE '%_xtest' OR @procName LIKE '%_xpre' OR @procName LIKE '%_UAT_'
+	BEGIN
+		SET @IsTest = 1
+	END
+		
 	DECLARE @MatchList TABLE (matchid INT, homeid INT, awayid INT, eventdate DATETIME, sporttype INT, leagueid INT)
 
 	DECLARE @temp_ TABLE (
@@ -85,6 +94,8 @@ BEGIN
 				  ELSE 0
 			END	  
 		 AND nlevel > t.IsNotified
+		 AND c.currency = CASE WHEN @IsTest = 1 THEN 20 ELSE c.currency END
+		 
 	OPTION (MAXDOP 1)
 	
 	;WITH cte_sum AS (
@@ -95,8 +106,6 @@ BEGIN
 						 WHERE t.CustID = t1.custid AND t.matchid = t1.matchid AND t.IsGroupHeadLine = t1.IsGroupHeadLine
 						 ) AS Total
 	)
-	
-	
 	INSERT INTO @temp_(rn, custid, username, roleid, currency ,site, matchid, totalturnover,ProfileID, MaxTurnover, houseturnover, nlevel,IsGroupHeadline, TotalMemberTurnover, TotalHouseTurnover, PercentageUsed)
 	SELECT ROW_NUMBER() OVER(ORDER BY t.CustId, t.MatchId) AS rn 
 		, t.custid, t.username, t.roleid, t.currency, t.site
@@ -158,8 +167,10 @@ BEGIN
 		INNER JOIN @MatchList m ON pf.matchid = m.matchid
 		INNER JOIN dbo.exchange e WITH(NOLOCK) ON pf.currency = e.exchangeid
 	
+	SET @currentDate = GETDATE()
+	
 	INSERT INTO TOControl_Setting_History( CustID, Matchid, MaxTurnover, HouseTurnover,TotalTurnOver, PercentLevel, IsGroupHeadLine, ProfileID, NotifiedPercentValue, ModifiedDate)
-	SELECT t.CustID
+	SELECT DISTINCT t.CustID
 		   ,t.matchid
 		   ,t.MaxTurnOver
 		   ,t.HouseTurnover
@@ -168,7 +179,7 @@ BEGIN
 		   ,t.IsGroupHeadLine
 		   ,t.ProfileID
 		   ,tmp.nlevel
-		   ,ModifiedDate = GETDATE()
+		   ,@currentDate ModifiedDate
 	FROM dbo.TOControl_Setting t WITH(NOLOCK)
 	INNER JOIN @temp_ tmp
 		ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND t.ProfileID = tmp.ProfileID
