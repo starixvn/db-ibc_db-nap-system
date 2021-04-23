@@ -17,6 +17,7 @@ AS
 		- 20200812@Helen: SMA TO Control - Performance Tuning - [Redmine: #139387]
 		- 20201130@July: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
 		- 20210318@Helen: SMA TO Control - Config to capture UUS Currency only on UAT to avoid SMA TO email duplication - [Redmine: #151926]
+		- 20210414@Max: SMA TO Control - Performance Tuning - [Redmine: #153447]
 		
 		
 	Parameter's explaination: 
@@ -32,7 +33,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	DECLARE @procName NVARCHAR(50), @IsTest BIT =  0, @currentDate DATETIME
+	DECLARE @procName NVARCHAR(50), @IsTest BIT =  0, @currentDate DATETIME, @n INT= 2147483647
 	SET @procName = OBJECT_NAME(@@procid)
 	
 	IF @procName LIKE '%_xtest' OR @procName LIKE '%_xpre' OR @procName LIKE '%_UAT_'
@@ -78,7 +79,7 @@ BEGIN
 			, t.ProfileID
 			, c.site
 			, nlevel
-	FROM @MatchList m 
+	FROM (SELECT TOP (@n) matchid, homeid, awayid, eventdate, sporttype, leagueid FROM @MatchList) m  
 		INNER LOOP JOIN dbo.TOControl_Setting t WITH(NOLOCK, INDEX = ix_TOControl_Setting_matchid) ON m.matchid = t.matchid
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = t.CustID
 		CROSS APPLY (SELECT CASE WHEN t.MaxTurnover = 0 THEN 100 ELSE ABS(t.houseturnover)*100/ABS(t.MaxTurnover) END AS PercentageUsed
@@ -96,7 +97,7 @@ BEGIN
 		 AND nlevel > t.IsNotified
 		 AND c.currency = CASE WHEN @IsTest = 1 THEN 20 ELSE c.currency END
 		 
-	OPTION (MAXDOP 1)
+	OPTION (MAXDOP 1, OPTIMIZE FOR (@n = 1))
 	
 	;WITH cte_sum AS (
 	    SELECT t.CustID, t.matchid, t.IsGroupHeadLine, Total.TotalMemberTurnover, Total.TotalHouseTurnover
