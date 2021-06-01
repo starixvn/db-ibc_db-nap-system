@@ -7,6 +7,7 @@ ALTER PROCEDURE [dbo].[Dot_Member_BetLimitControl_CustSettingSelect]
 	 ,@LeagueGroupID INT = 0
 	 ,@LiveIndicator BIT = NULL
 	 ,@ProductID TINYINT = NULL
+	 ,@OddsMaxBet MONEY = NULL
 AS
 /*
 
@@ -17,6 +18,7 @@ AS
 
 	Revisions:  
 	- 20200602@Eden: Create New SP  [RedmineID: #132736]
+	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 
 	Parameter explanation:
 
@@ -41,8 +43,8 @@ BEGIN
 	FROM Dep_CustVIP vip WITH(NOLOCK) 
 	WHERE vip.CustID = @CustID
 
-	--> option 2
-	SELECT MIN(c.MaxBet) AS MaxBet,MIN(c.MaxPerMatch) AS MaxPerMatch
+	SELECT MIN(CASE WHEN c.mode = 1 THEN c.MaxBet WHEN c.mode = 2 THEN @OddsMaxBet * c.MaxBet END ) AS MaxBet
+		  ,MIN(CASE WHEN c.mode = 1 THEN c.MaxPerMatch WHEN c.mode = 2 THEN @OddsMaxBet * c.MaxPerMatch END ) AS MaxPerMatch
 	FROM custinfo ci WITH(NOLOCK) 
 		INNER JOIN BetLimitControlCustSetting c WITH(NOLOCK,FORCESEEK) ON c.CustID IN (ci.custid,ci.recommend,ci.mrecommend,ci.srecommend)
 		INNER JOIN BetLimitControlType bt WITH(NOLOCK) ON c.BetLimitTypeID = bt.BetLimitTypeID

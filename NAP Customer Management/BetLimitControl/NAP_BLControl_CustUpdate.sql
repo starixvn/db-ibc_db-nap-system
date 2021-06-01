@@ -8,7 +8,8 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustUpdate]
 	@ErrorCode INT = 0 OUTPUT,
 	@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
-	@IP	VARCHAR(15) = ''
+	@IP	VARCHAR(15) = '',
+	@Mode TINYINT = 1  
 AS
 /*
 	Created: 20200525@Eden
@@ -18,11 +19,17 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 
 	Parameter explanation:
 	- @ErrorCode: 
 		3: Invalid Bet Limit Type. Please try again.
 		4: This record no longer exists in the Bet Limit Control List.
+
+	-@Mode:
+		 1: Fixed Value
+		 2: X times of Odds' Max Bet
+
 	Example: 
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(200) = '' 
 	EXEC NAP_BLControl_CustUpdate 
@@ -79,10 +86,12 @@ BEGIN
 		RETURN
 	
 	DECLARE @OldMaxBet MONEY ,
-			@OldMaxPerMatch MONEY
+			@OldMaxPerMatch MONEY,
+			@OldMode TINYINT
 
 	SELECT @OldMaxBet = t.MaxBet
 		,@OldMaxPerMatch = t.MaxPerMatch
+		,@OldMode = t.Mode
 	FROM BetLimitControlCustSetting t WITH(NOLOCK)
 	WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID 
 
@@ -115,7 +124,8 @@ BEGIN
 	UPDATE t
 	SET t.BetLimitTypeID = @NewBetLimitTypeID,
 		t.MaxBet = @MaxBet,
-		t.MaxPerMatch = @MaxPerMatch
+		t.MaxPerMatch = @MaxPerMatch,
+		t.Mode = @Mode
 	FROM BetLimitControlCustSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE t.CustID = @CustID AND t.BetLimitTypeID = @BetLimitTypeID
 
@@ -128,12 +138,14 @@ BEGIN
 	DECLARE @OldLogData VARCHAR(500),@NewLogData VARCHAR(500)
 	SELECT  @OldLogData = '<R '
 						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" '
+						+ 'Mode="'+ coalesce(CASE WHEN @OldMode = 1 THEN 'Fixed Value' ELSE 'X times of Odds'' Max Bet' END ,space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@OldMaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'maxb="'+ coalesce(cast(@OldMaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@NewLogData = '<R '
 						+ 'Type="'+ coalesce(cast(@NewBetLimitType as varchar(50)),space(1)) + '" ' 
+						+ 'Mode="'+ coalesce(CASE WHEN @mode = 1 THEN 'Fixed Value' ELSE 'X times of Odds'' Max Bet' END ,space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '

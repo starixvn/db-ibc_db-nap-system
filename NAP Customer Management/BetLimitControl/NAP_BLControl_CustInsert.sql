@@ -7,7 +7,8 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert]
 	--@ErrorCode INT = 0 OUTPUT,
 	--@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
-	@IP	VARCHAR(15) = ''
+	@IP	VARCHAR(15) = '',
+	@Mode TINYINT = 1  
 AS
 /*
 	Created: 20200525@Eden
@@ -18,10 +19,15 @@ AS
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
+	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 
 	Parameter explanation:
 	- @ErrorCode: 
 		1: The bet limit type exist already.
+
+	-@Mode:
+		 1: Fixed Value
+		 2: X times of Odds' Max Bet
 
 	Example: 
 	EXEC NAP_BLControl_CustInsert 
@@ -113,8 +119,8 @@ BEGIN
 		BEGIN
 			SET @StartRun = GETDATE()
 
-			INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch)
-			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch
+			INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch,Mode)
+			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch,@Mode
 
 			SET @EndRun = GETDATE()
 			SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
@@ -122,6 +128,7 @@ BEGIN
 			DECLARE @LogData VARCHAR(500)
 			SELECT  @LogData = '<R '
 								+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
+								+ 'Mode="'+ coalesce(CASE WHEN @mode = 1 THEN 'Fixed Value' ELSE 'X times of Odds'' Max Bet' END ,space(1)) + '" ' 
 								+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" '
 								+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 								+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '

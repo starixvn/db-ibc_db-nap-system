@@ -20,6 +20,7 @@ AS
 
 	Revisions:  
 	- 20200528@Eden: Create New SP  [RedmineID: #132736]
+	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 
 	Parameter explanation:
 		- @LevelID : 1- Member, 2 - Agent, 3-Masrer, 4 - Super, 0 - all
@@ -102,12 +103,16 @@ BEGIN
 		COALESCE(s.Site,ag.site,'') AS Site,
 		b.BetLimitType,
 		b.BetLimitTypeID,
+		bc.Mode,
 		bc.MaxBet,
 		bc.MaxPerMatch,
+		agbc.Mode AS AgentMode,
 		agbc.MaxBet AS Agent_MaxBet,
 		agbc.MaxPerMatch AS Agent_MaxPerMatch,
+		mtbc.Mode AS MasterMode,
 		mtbc.MaxBet AS Master_MaxBet,
 		mtbc.MaxPerMatch AS Master_MaxPerMatch,
+		spbc.Mode AS SuperMode,
 		spbc.MaxBet AS Super_MaxBet,
 		spbc.MaxPerMatch AS Super_MaxPerMatch,
 		ROW_NUMBER() OVER (ORDER BY c.Username,b.BetLimitType) AS RowNumber
