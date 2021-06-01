@@ -6,9 +6,15 @@
 */
 
 USE CustDB 
+GO
 
+--STEP 1: Get maxcustid from dbo.TOControl_GlobalSetting 
+DECLARE @maxcustid INT
+SET @maxcustid = (SELECT MAX(custid) FROM dbo.TOControl_GlobalSetting WITH (NOLOCK))
+SELECT @maxcustid
 
---STEP 1: script to save all current data into new physical TOControl_GlobalSetting-> TOControl_GlobalSetting_History
+GO
+--STEP 2: Script to save all current data into new physical TOControl_GlobalSetting-> TOControl_GlobalSetting_History
 CREATE TABLE [dbo].[TOControl_GlobalSetting_History_tmp](
 	[CustID] [int] NOT NULL,
 	[MaxTurnOver] [money] NOT NULL,
