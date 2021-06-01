@@ -6,8 +6,9 @@
 */
 
 USE CustDB 
+GO
 
---STEP 1: update all data exists TOControl_GlobalSetting <-> TOControl_GlobalSetting_History
+--STEP 1: update all data exists TOControl_GlobalSetting <-> TOControl_GlobalSetting_History_tmp
 CREATE TABLE #tblTOControl_GlobalSetting_History_tmp
 (
 	CustID INT,
