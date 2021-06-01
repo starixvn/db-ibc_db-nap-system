@@ -15,6 +15,7 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -72,10 +73,12 @@ BEGIN
 		RETURN
 
 	DECLARE @OldMaxBet MONEY ,
-		@OldMaxPerMatch MONEY
+		@OldMaxPerMatch MONEY,
+		@OldMode TINYINT
 
 	SELECT @OldMaxBet = t.MaxBet
 		,@OldMaxPerMatch = t.MaxPerMatch
+		,@OldMode = Mode
 	FROM BetLimitControlCustSetting t WITH(NOLOCK)
 	WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID 
 	
@@ -98,6 +101,7 @@ BEGIN
 	DECLARE @LogData VARCHAR(500)
 	SELECT  @LogData = '<R '
 						+ 'Type="'+ coalesce(cast(@BetLimitType as varchar(50)),space(1)) + '" ' 
+						+ 'Mode="'+ coalesce(CASE WHEN @OldMode = 1 THEN 'Fixed Value' ELSE 'X times of Odds'' Max Bet' END ,space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@OldMaxPerMatch as varchar(50)),space(1)) + '" '
 						+ 'maxb="'+ coalesce(cast(@OldMaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '

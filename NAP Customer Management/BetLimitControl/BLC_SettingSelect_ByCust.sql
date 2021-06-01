@@ -11,12 +11,13 @@ AS
 
 	Revisions:  
 	- 20201005@Eden: Create New SP  [RedmineID: #141754]
+	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 
 	Parameter explanation:
 
 	Example: 
 	EXEC BLC_SettingSelect_ByCust 
-		@CustID = 1176092
+		@CustID = 1309
 	*/
 BEGIN 
 	DECLARE @IsVIP BIT = 0
@@ -30,6 +31,7 @@ BEGIN
 		INNER JOIN BetLimitControlType bt WITH(NOLOCK) ON c.BetLimitTypeID = bt.BetLimitTypeID
 	WHERE ci.CustID = @CustID
 			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
+			AND c.Mode = 1 --Fixed Value , skip OddsMB Info
 	OPTION (FORCE ORDER)
 END
 GO
