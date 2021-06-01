@@ -15,6 +15,7 @@ Revisions:
 	- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
 	- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 	- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
+	- 20200601@Helen: Rehearsal switch DB servers (DB05x) - [Redmine: #155769]
 
 Param explanation:
 */
@@ -40,7 +41,7 @@ BEGIN
 
 	INSERT INTO #TmpTableRaw(RowId, CustID, matchid, adjusted_TurnOver
 		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype, liveindicator, bettype)
-	EXEC DBEXT.bodb02.dbo.TASK_TOControl_GetTransition @RowId = @__lastRowId
+	EXEC DBTOC.bodb02.dbo.TASK_TOControl_GetTransition @RowId = @__lastRowId
 
 	IF @@ROWCOUNT = 0
 		RETURN
