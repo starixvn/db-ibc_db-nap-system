@@ -18,6 +18,7 @@ AS
 		- 20201130@July: Support CRM - Automate adding feedback If SMA reach Company Turnover Control - [Redmine: #145274]
 		- 20210318@Helen: SMA TO Control - Config to capture UUS Currency only on UAT to avoid SMA TO email duplication - [Redmine: #151926]
 		- 20210414@Max: SMA TO Control - Performance Tuning - [Redmine: #153447]
+		- 20210504@July: SMA TO Control - Change Global Setting for EC2021 - [Redmine: #130912]
 		
 		
 	Parameter's explaination: 
@@ -54,10 +55,10 @@ BEGIN
 				, site VARCHAR(10)
 		)
 
-	DECLARE @NotifiedLevel_mbc INT, @NotifiedLevel_cn88 INT
+	DECLARE @NotifiedLevel_mbc INT --, @NotifiedLevel_cn88 INT
 		
 	SET @NotifiedLevel_mbc =  (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 0)
-	SET @NotifiedLevel_cn88 = (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 329)
+	--SET @NotifiedLevel_cn88 = (SELECT MIN(PercentLevel) FROM dbo.TOControl_LevelSetting WITH (NOLOCK) WHERE IsNotified = 1 AND siteid = 329)
 	
 	INSERT INTO @MatchList(matchid, homeid, awayid, eventdate, sporttype, leagueid)
 	SELECT m.matchid, m.homeid, m.awayid, m.eventdate, m.sporttype, m.leagueid
@@ -87,13 +88,14 @@ BEGIN
 		CROSS APPLY (SELECT MAX(PercentValue) 
 					FROM dbo.TOControl_LevelSetting lst WITH (NOLOCK) 
 					WHERE tmp.PercentageUsed >= lst.PercentValue AND lst.IsNotified = 1
-							AND lst.SiteID = (CASE WHEN c.Site = 'CN88' THEN 329 ELSE 0 END)
+							AND lst.SiteID = 0 --(CASE WHEN c.Site = 'CN88' THEN 329 ELSE 0 END)
 						) _(nlevel)
 	
-	WHERE 1 = CASE WHEN t.PercentLevel >= @NotifiedLevel_cn88 AND c.Site = 'CN88' THEN 1
+	WHERE /*1 = CASE WHEN t.PercentLevel >= @NotifiedLevel_cn88 AND c.Site = 'CN88' THEN 1
 				  WHEN t.PercentLevel >= @NotifiedLevel_mbc AND ISNULL(c.Site,'') <> 'CN88' THEN 1
 				  ELSE 0
-			END	  
+			END	 */
+			t.PercentLevel >= @NotifiedLevel_mbc AND ISNULL(c.Site,'') <> 'CN88'
 		 AND nlevel > t.IsNotified
 		 AND c.currency = CASE WHEN @IsTest = 1 THEN 20 ELSE c.currency END
 		 
