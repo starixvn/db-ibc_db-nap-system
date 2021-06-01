@@ -6,7 +6,5 @@
 */
 USE CustDB 
 GO
---
-DROP FUNCTION f_TOControl_GlobalSettingSel_PreEC
---
+
 DROP TABLE [dbo].[TOControl_GlobalSetting_History_tmp]
