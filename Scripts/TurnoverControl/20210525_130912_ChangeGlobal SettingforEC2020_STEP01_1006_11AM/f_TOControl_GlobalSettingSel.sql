@@ -20,7 +20,7 @@ AS
 		- 20190913@Helen: Change Global setting [Redmine: 113472]
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
 		- 20200120@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
-		- 20200524@July: Remove code 4H,4C,CN88 [Redmine: #130912] 
+		- 20200524@July: Remove code H,C,CN88 [Redmine: #130912] 
 
     Parameters Explanation:  
     

@@ -14,7 +14,7 @@ SET @maxcustid = (SELECT MAX(custid) FROM dbo.TOControl_GlobalSetting WITH (NOLO
 SELECT @maxcustid
 
 GO
---STEP 2: Script to save all current data into new physical TOControl_GlobalSetting-> TOControl_GlobalSetting_History
+--STEP 2: Script to save all current data into new physical TOControl_GlobalSetting-> TOControl_GlobalSetting_History_tmp
 CREATE TABLE [dbo].[TOControl_GlobalSetting_History_tmp](
 	[CustID] [int] NOT NULL,
 	[MaxTurnOver] [money] NOT NULL,
