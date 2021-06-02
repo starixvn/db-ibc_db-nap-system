@@ -48,7 +48,7 @@ BEGIN
 	
 	UPDATE s
 	SET s.MaxTurnOver = CASE WHEN c.site IN ('789y', '755555', 'Indo', 'IBCIndo', '611111') THEN s.MaxTurnOver * 3
-							 WHEN c.site IN ('733333', '72222', '222223') THEN s.MaxTurnOver * 2.5
+							 WHEN c.site IN ('733333', '722222', '222223') THEN s.MaxTurnOver * 2.5
 							 WHEN c.site IN ('76666B', '7aa666') THEN s.MaxTurnOver * 2
 							 ELSE s.MaxTurnOver
 						END
