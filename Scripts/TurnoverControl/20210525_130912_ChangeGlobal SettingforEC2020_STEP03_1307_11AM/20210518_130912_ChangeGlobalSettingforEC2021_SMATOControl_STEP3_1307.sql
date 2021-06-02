@@ -54,7 +54,7 @@ BEGIN
 	INNER JOIN dbo.Customer sp WITH (NOLOCK) ON sp.CustID = c.srecommend
 	WHERE 
 		1 = CASE 
-				WHEN c.site = 611111 AND sp.username IN ('2CU','A312D','A312E','A312RMB','BAK','D312RMB','DC1','DC2','FBH','FNH'
+				WHEN c.site = '611111' AND sp.username IN ('2CU','A312D','A312E','A312RMB','BAK','D312RMB','DC1','DC2','FBH','FNH'
 							,'FNN','HK09','HK8A','JK1','LHK','LHR','MC','MC5','MG1','MKE'
 							,'MOX','MVP','POR','POW','POY','PPB','PPR','PYA','PYB','PYH'
 							,'Pyy','RGRMB','RGRMB2','RW01','RW02','RW03','RW05','RW06','RW07','RW08'
