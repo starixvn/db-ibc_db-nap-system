@@ -50,12 +50,16 @@ BEGIN
 	SET s.MaxTurnOver = CASE WHEN c.site IN ('789y', '755555', 'Indo', 'IBCIndo', '611111') THEN s.MaxTurnOver * 3
 							 WHEN c.site IN ('733333', '72222', '222223') THEN s.MaxTurnOver * 2.5
 							 WHEN c.site IN ('76666B', '7aa666') THEN s.MaxTurnOver * 2
-							 END
+							 ELSE s.MaxTurnOver
+						END
 	FROM dbo.TOControl_GlobalSetting s WITH( ROWLOCK, UPDLOCK)
 	INNER JOIN @ClearTOControl_GlobalSetting cto ON cto.CustID = s.CustID AND cto.Sporttype = s.Sporttype 
 		AND cto.IsGroupHeadLine = s.IsGroupHeadLine AND cto.ProfileID = s.ProfileID
 	INNER JOIN dbo.Customer c WITH (NOLOCK) ON s.CustID = c.custid
-	WHERE c.username NOT IN ('2CU','A312D','A312E','A312RMB','BAK','D312RMB','DC1','DC2','FBH','FNH'
+	INNER JOIN dbo.Customer sp WITH (NOLOCK) ON sp.CustID = c.srecommend
+	WHERE 
+		1 = CASE 
+				WHEN c.site = 611111 AND sp.username IN ('2CU','A312D','A312E','A312RMB','BAK','D312RMB','DC1','DC2','FBH','FNH'
 							,'FNN','HK09','HK8A','JK1','LHK','LHR','MC','MC5','MG1','MKE'
 							,'MOX','MVP','POR','POW','POY','PPB','PPR','PYA','PYB','PYH'
 							,'Pyy','RGRMB','RGRMB2','RW01','RW02','RW03','RW05','RW06','RW07','RW08'
@@ -63,7 +67,10 @@ BEGIN
 							,'S69H','s6cn','S80R','S81R','S863R','S90R','S99RB','SBRR','SBV','SBZB'
 							,'SBZC','SBZR','SF8','SFB','SME','SMQ','SMW','SSFK','SWK','SWKH'
 							,'TEH','TEK','TEP','THG','THR','THS','WKR','WPR','XCN'
-					      ) /*site 611111 except the 79 supers*/
+					      ) /*site 611111 except the 79 supers*/ 
+					THEN 0
+				ELSE 1
+			END	
 END
 
 DROP TABLE #tblTOControl_GlobalSetting
