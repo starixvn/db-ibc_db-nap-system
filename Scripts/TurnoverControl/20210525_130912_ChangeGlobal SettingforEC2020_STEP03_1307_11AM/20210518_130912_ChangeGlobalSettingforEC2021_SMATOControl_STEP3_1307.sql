@@ -46,7 +46,6 @@ BEGIN
 	
 	UPDATE s
 	SET  s.MaxTurnOver = sh.MaxTurnOver
-		,s.IsGlobalLockTOLimit = sh.IsGlobalLockTOLimit
 	FROM dbo.TOControl_GlobalSetting s WITH(ROWLOCK, UPDLOCK)
 		 INNER JOIN @ClearTOControl_GlobalSettingHistory_tmp sh
 		 ON s.CustID = sh.CustID AND s.Sporttype = sh.Sporttype 
