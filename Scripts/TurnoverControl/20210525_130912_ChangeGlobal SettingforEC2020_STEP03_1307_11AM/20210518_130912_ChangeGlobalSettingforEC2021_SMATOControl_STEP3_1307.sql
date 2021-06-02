@@ -50,6 +50,22 @@ BEGIN
 		 INNER JOIN @ClearTOControl_GlobalSettingHistory_tmp sh
 		 ON s.CustID = sh.CustID AND s.Sporttype = sh.Sporttype 
 			AND s.IsGroupHeadLine = sh.IsGroupHeadLine AND s.ProfileID = sh.ProfileID
+	INNER JOIN dbo.Customer c WITH (NOLOCK) ON s.CustID = c.custid
+	INNER JOIN dbo.Customer sp WITH (NOLOCK) ON sp.CustID = c.srecommend
+	WHERE 
+		1 = CASE 
+				WHEN c.site = 611111 AND sp.username IN ('2CU','A312D','A312E','A312RMB','BAK','D312RMB','DC1','DC2','FBH','FNH'
+							,'FNN','HK09','HK8A','JK1','LHK','LHR','MC','MC5','MG1','MKE'
+							,'MOX','MVP','POR','POW','POY','PPB','PPR','PYA','PYB','PYH'
+							,'Pyy','RGRMB','RGRMB2','RW01','RW02','RW03','RW05','RW06','RW07','RW08'
+							,'RW09','RW10','RW11','S123R','S312A','S312K','S31BRMB','S56A','S56AE','S56AF'
+							,'S69H','s6cn','S80R','S81R','S863R','S90R','S99RB','SBRR','SBV','SBZB'
+							,'SBZC','SBZR','SF8','SFB','SME','SMQ','SMW','SSFK','SWK','SWKH'
+							,'TEH','TEK','TEP','THG','THR','THS','WKR','WPR','XCN'
+					      ) /*site 611111 except the 79 supers*/ 
+					THEN 0
+				ELSE 1
+			END	
 END
 
 DROP TABLE #tblTOControl_GlobalSetting_History_tmp
