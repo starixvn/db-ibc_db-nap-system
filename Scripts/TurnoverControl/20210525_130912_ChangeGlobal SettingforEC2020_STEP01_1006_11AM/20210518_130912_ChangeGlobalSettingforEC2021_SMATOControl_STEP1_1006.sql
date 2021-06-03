@@ -9,7 +9,7 @@ USE CustDB
 GO
 
 --STEP 1: Get maxcustid from dbo.TOControl_GlobalSetting 
-DECLARE @maxcustid INT
+DECLARE @maxcustid INT = xxx
 SET @maxcustid = (SELECT MAX(custid) FROM dbo.TOControl_GlobalSetting WITH (NOLOCK))
 SELECT @maxcustid
 
