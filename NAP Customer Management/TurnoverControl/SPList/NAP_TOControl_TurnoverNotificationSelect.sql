@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_TOControl_TurnoverNotificationSelect_UAT2]
+ALTER PROCEDURE [dbo].[NAP_TOControl_TurnoverNotificationSelect]
 AS
 /*
 	Created: Don
