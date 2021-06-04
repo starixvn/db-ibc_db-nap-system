@@ -10,6 +10,7 @@ USE CustDB
 GO
 --STEP 2: UPDATE TOControl_GlobalSetting
 DECLARE @maxcustid INT = xxx
+
 DECLARE @ClearTOControl_GlobalSetting AS TABLE (CustID INT, MaxTurnOver MONEY, Sporttype SMALLINT, IsGroupHeadLine BIT, ProfileID SMALLINT, IsGlobalLockTOLimit BIT)
 CREATE TABLE #tblTOControl_GlobalSetting
 (
@@ -25,7 +26,7 @@ CREATE TABLE #tblTOControl_GlobalSetting
 
 INSERT INTO #tblTOControl_GlobalSetting (CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit)
 SELECT CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit
-FROM dbo.TOControl_GlobalSetting s WITH(NOLOCK)
+FROM dbo.TOControl_GlobalSetting_History_tmp s WITH(NOLOCK)
 WHERE s.CustID <= @maxcustid
 
 WHILE (1 = 1)
