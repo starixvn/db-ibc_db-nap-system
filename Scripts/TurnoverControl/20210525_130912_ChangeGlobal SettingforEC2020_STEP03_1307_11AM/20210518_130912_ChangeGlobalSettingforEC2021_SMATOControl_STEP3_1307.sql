@@ -20,6 +20,8 @@ CREATE TABLE #tblTOControl_GlobalSetting_History_tmp
 	IsFinishHistory BIT
 
 )
+CREATE CLUSTERED INDEX CIX_tblTOControl_GlobalSetting_History_tmp ON #tblTOControl_GlobalSetting_History_tmp (CustID, Sporttype, IsGroupHeadLine, ProfileID)
+
 DECLARE @ClearTOControl_GlobalSettingHistory_tmp AS TABLE (CustID INT, MaxTurnOver MONEY, Sporttype SMALLINT, IsGroupHeadLine BIT, ProfileID SMALLINT, IsGlobalLockTOLimit BIT)
 
 INSERT INTO #tblTOControl_GlobalSetting_History_tmp (CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit)
