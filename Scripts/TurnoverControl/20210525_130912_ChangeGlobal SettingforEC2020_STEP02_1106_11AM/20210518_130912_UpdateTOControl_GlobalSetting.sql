@@ -23,6 +23,7 @@ CREATE TABLE #tblTOControl_GlobalSetting
 	IsFinishUpdateGlobalSetting BIT
 
 )
+CREATE CLUSTERED INDEX CIX_tblTOControl_GlobalSetting ON #tblTOControl_GlobalSetting (CustID, Sporttype, IsGroupHeadLine, ProfileID)
 
 INSERT INTO #tblTOControl_GlobalSetting (CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit)
 SELECT CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit
