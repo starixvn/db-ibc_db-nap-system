@@ -28,7 +28,7 @@ CREATE TABLE [dbo].[TOControl_GlobalSetting_History_tmp](
 	[Sporttype] ASC,
 	[IsGroupHeadLine] ASC,
 	[ProfileID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [DATA]
+)
 ) ON [DATA]
 GO
 ALTER TABLE [dbo].[TOControl_GlobalSetting_History_tmp] ADD  DEFAULT ((0)) FOR [IsGlobalLockTOLimit]
@@ -48,6 +48,7 @@ CREATE TABLE #tblTOControl_GlobalSetting
 	IsFinishHistory BIT,
 
 )
+CREATE CLUSTERED INDEX CIX_tblTOControl_GlobalSetting ON #tblTOControl_GlobalSetting (CustID, Sporttype, IsGroupHeadLine, ProfileID)
 
 INSERT INTO #tblTOControl_GlobalSetting (CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit)
 SELECT CustID, MaxTurnOver, Sporttype, IsGroupHeadLine, ProfileID, IsGlobalLockTOLimit
