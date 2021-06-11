@@ -9,7 +9,7 @@ USE CustDB
 
 GO
 --STEP 2: UPDATE TOControl_GlobalSetting
-DECLARE @maxcustid INT = xxx
+DECLARE @maxcustid INT = 51459909
 
 DECLARE @ClearTOControl_GlobalSetting AS TABLE (CustID INT, MaxTurnOver MONEY, Sporttype SMALLINT, IsGroupHeadLine BIT, ProfileID SMALLINT, IsGlobalLockTOLimit BIT)
 CREATE TABLE #tblTOControl_GlobalSetting
