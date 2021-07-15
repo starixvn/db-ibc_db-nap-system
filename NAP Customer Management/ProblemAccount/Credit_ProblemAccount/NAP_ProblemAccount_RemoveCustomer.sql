@@ -21,6 +21,7 @@ AS
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20201016@Elodie: Output all downline list is removed PA [Redmine:#141756]
 		- 20201214@Johnson: check & output result status when unmark PA for member level [redmine:#146400]
+		- 20210625@Johnson: Unmark multiple SMA PA accounts [redmine:#155453]
 	Parameter's explaination: 
 		-tblError result:
 			* 100: invalid accounts
@@ -44,52 +45,50 @@ BEGIN
 		LEFT JOIN dbo.Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
 	OPTION (MAXRECURSION 0)
 	
-	IF @RoleID = 1
+	
+	SELECT @strUsername = ''
+	
+	--check invalid accounts	
+	SELECT @strUsername = @strUsername + ',' +username 
+	FROM @tmpCust
+	WHERE custid IS NULL
+		OR isDeposit = 1
+		
+	IF @strUsername <> ''
+	BEGIN			
+		SELECT 100 ErrCode,STUFF(@strUsername,1,1,'') Username
+		RETURN
+	END
+	
+	--check unmarked problem accounts
+	UPDATE t 
+	SET isPA = 1
+	FROM @tmpCust t
+		INNER JOIN dbo.ProblemAccount pa WITH(NOLOCK) ON t.custid = pa.custid
+	
+	SELECT @strUsername = @strUsername + ',' +username 
+	FROM @tmpCust
+	WHERE custid IS NOT NULL
+		AND isPA = 0
+		AND isDeposit = 0
+		
+	IF @strUsername <> ''
 	BEGIN
-		SELECT @strUsername = ''
-		
-		--check invalid accounts	
-		SELECT @strUsername = @strUsername + ',' +username 
-		FROM @tmpCust
-		WHERE custid IS NULL
-			OR isDeposit = 1
-			
-		IF @strUsername <> ''
-		BEGIN			
-			SELECT 100 ErrCode,STUFF(@strUsername,1,1,'') Username
-			RETURN
-		END
-		
-		--check unmarked problem accounts
-		UPDATE t 
-		SET isPA = 1
-		FROM @tmpCust t
-			INNER JOIN dbo.ProblemAccount pa WITH(NOLOCK) ON t.custid = pa.custid
-		
-		SELECT @strUsername = @strUsername + ',' +username 
-		FROM @tmpCust
-		WHERE custid IS NOT NULL
-			AND isPA = 0
-			AND isDeposit = 0
-			
-		IF @strUsername <> ''
-		BEGIN
-			SELECT 101 ErrCode,STUFF(@strUsername,1,1,'') Username
-			RETURN
-		END	
+		SELECT 101 ErrCode,STUFF(@strUsername,1,1,'') Username
+		RETURN
+	END	
 
-		--Non-Member Accounts
-		SELECT @strUsername = @strUsername + ',' +username 
-		FROM @tmpCust
-		WHERE custid IS NOT NULL
-			AND roleid <> 1
-			
-		IF @strUsername <> ''
-		BEGIN
-			SELECT 102 ErrCode,STUFF(@strUsername,1,1,'') Username
-			RETURN
-		END		
-	END 
+	--Not in the selected level
+	SELECT @strUsername = @strUsername + ',' +username 
+	FROM @tmpCust
+	WHERE custid IS NOT NULL
+		AND roleid <> @roleid
+		
+	IF @strUsername <> ''
+	BEGIN
+		SELECT 102 ErrCode,STUFF(@strUsername,1,1,'') Username
+		RETURN
+	END	
 	
 	DELETE pa 
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
