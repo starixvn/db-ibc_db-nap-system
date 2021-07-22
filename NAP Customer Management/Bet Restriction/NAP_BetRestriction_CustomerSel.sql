@@ -19,6 +19,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
+	- 20210617@Tina: Lock account & indirect close account [redmine: #148600]
 
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
@@ -59,17 +60,13 @@ BEGIN
 						  WHEN ci.roleid = 4 THEN 'Super'
 						  ELSE 'N/A'
 					END,
-		   CASE WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 0 AND ISNULL(ci.reject, 0) = 0 THEN 'Open'
-				WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 0 AND ISNULL(ci.reject, 0) = 1 THEN 'Suspended'
-				WHEN  ISNULL(c.site,'') <> 'CN88' AND ISNULL(s.isLicensee,AgentSite.isLicensee) = 0 AND ci.Closed = 1 THEN 'Closed'
-				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 1 THEN 'Inactive'
-				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 2 THEN 'Suspended'
-				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 3 THEN 'View Only'
-				WHEN  c.site = 'CN88' AND s.isLicensee = 0 AND cn88Stat.CustStatus = 4 THEN 'Active'
+		   CASE WHEN  cps.Closed = 0 AND ISNULL(cps.reject, 0) = 0 THEN 'Open'
+				WHEN  cps.Closed = 0 AND ISNULL(cps.reject, 0) = 1 THEN 'Suspended'
+				WHEN  cps.Closed = 1 THEN 'Closed'
 				ELSE 'N/A'
 		   END AS [Status],
-		   COALESCE(NULLIF(c.[site],''),agent.site,'') AS Site,
-		   ISNULL(s.siteid,AgentSite.siteid) as SiteID,
+		   ISNULL(c.[site],'') AS Site,
+		   s.siteid as SiteID,
 		   bc.LiveBetAccept, 
 		   bc.SeizeBetTicket, 
 		   e.Currency,
@@ -94,12 +91,15 @@ BEGIN
 		 LEFT JOIN custAccount head WITH(NOLOCK) ON ca.groupID = head.groupID AND head.IsGroupHeadLine = 1
 		 LEFT JOIN custInfo headname WITH(NOLOCK) ON headname.custid = head.custid
 		 LEFT JOIN CS_ProblemAccount cp  WITH(NOLOCK) ON cp.CustId = bc.CustID  
-		 LEFT JOIN Site s WITH(NOLOCK) ON s.site = c.site
 		 LEFT JOIN Customer Agent WITH(NOLOCK) ON agent.custid = ci.recommend
-		 LEFT JOIN Site AgentSite WITH(NOLOCK) ON AgentSite.site = agent.site
-		 OUTER APPLY dbo.f_CS_GetCustomerStatus (bc.custid) cn88Stat
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.FollowAccount
+		 LEFT JOIN Site s WITH(NOLOCK) ON s.site = c.site
 		 INNER JOIN #Setting st WITH(NOLOCK) ON bc.SportType = st.SportType AND st.IsShowData = 1
+		 OUTER APPLY  (SELECT CASE WHEN CloseInfo > 0 THEN 1 ELSE 0 END AS closed
+										, CASE WHEN SuspendInfo > 0 THEN 1 ELSE 0 END AS reject
+									FROM dbo.CustProductStatus  WITH(NOLOCK)
+									WHERE CustID = ci.custid
+					  ) AS cps
 	WHERE ci.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE ci.username END
 		  AND ci.roleid = CASE WHEN @RoleID IS NOT NULL THEN @RoleID ELSE ci.roleid END
 		  AND ci.currency IN (SELECT val FROM dbo.f_SplitString(@CurrencyIDs,','))
