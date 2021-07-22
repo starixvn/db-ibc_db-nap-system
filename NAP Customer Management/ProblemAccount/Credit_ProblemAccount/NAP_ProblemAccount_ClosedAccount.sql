@@ -95,6 +95,7 @@ BEGIN
 				,@RoleID		= @RoleID
 				,@Action		= 'CloseInfo'
 				,@Closed		= 1
+				,@ClosedReason  = 1
 		END	
 		ELSE
 		BEGIN
