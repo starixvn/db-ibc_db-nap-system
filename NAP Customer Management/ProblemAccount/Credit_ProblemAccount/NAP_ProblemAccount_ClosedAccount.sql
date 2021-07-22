@@ -18,6 +18,7 @@ AS
 
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
+		- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
 
 	Parameter's explaination:
 */
@@ -32,9 +33,14 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, CustID, StatusID)
 	SELECT ci.Username, ci.custid,
-		CASE WHEN ci.Enabled = 1 THEN CASE WHEN ci.closed = 1 THEN 3 WHEN ci.reject = 1 THEN 2 ELSE 1 END ELSE 4 END AS CustStatus
+		CASE WHEN ci.Enabled = 1 THEN CASE WHEN cps.closed = 1 THEN 3 WHEN cps.reject = 1 THEN 2 ELSE 1 END ELSE 4 END AS CustStatus
 	FROM dbo.f_StringSplit(@CustomerList, ',') f
 		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+		CROSS APPLY  (SELECT CASE WHEN CloseInfo > 0 THEN 1 ELSE 0 END AS closed
+										, CASE WHEN SuspendInfo > 0 THEN 1 ELSE 0 END AS reject
+									FROM dbo.CustProductStatus  WITH(NOLOCK)
+									WHERE CustID = ci.custid
+								) AS cps
 	
 	IF @IsConfirmed = 0
 	BEGIN
@@ -77,17 +83,23 @@ BEGIN
 
 		IF @RoleID BETWEEN 2 AND 4
 		BEGIN
-			EXEC Acc_CustomerInfo_Execrep_04
+			UPDATE CustProductStatus WITH(ROWLOCK, UPDLOCK) 
+			SET CloseInfo = (SELECT suspendinfo FROM dbo.f_GenerateSuspendInfo(@RoleID,1,ISNULL(CloseInfo,0)))
+			WHERE custid = @custid
+
+			UPDATE [dbo].CustLoginInfo WITH (ROWLOCK, UPDLOCK) set ClosedReason = 1
+			WHERE custid = @custid
+
+			EXEC Acc_DynamicCustomerInfo_04
 				 @CustID		= @CustID
 				,@RoleID		= @RoleID
-				,@Action		= 'Closed'
+				,@Action		= 'CloseInfo'
 				,@Closed		= 1
-				,@SystemID		= 1
 		END	
 		ELSE
 		BEGIN
-			UPDATE custinfo WITH(ROWLOCK, UPDLOCK) 
-			SET Closed = 1
+			UPDATE CustProductStatus WITH(ROWLOCK, UPDLOCK) 
+			SET CloseInfo = (SELECT suspendinfo FROM dbo.f_GenerateSuspendInfo(@RoleID,1,ISNULL(CloseInfo,0)))
 			WHERE custid = @custid
 
 			IF NOT EXISTS (SELECT 1 FROM dbo.CustLoginInfo_Member WITH(NOLOCK) WHERE custid = @custid)
