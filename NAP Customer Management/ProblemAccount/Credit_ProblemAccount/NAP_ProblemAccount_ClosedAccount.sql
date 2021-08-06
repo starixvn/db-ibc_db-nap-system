@@ -19,6 +19,7 @@ AS
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
+		- 20210722@Tina: fix the issue that closeinfo cannot replicate on time [redmine: #158917]
 
 	Parameter's explaination:
 */
@@ -95,6 +96,7 @@ BEGIN
 				,@RoleID		= @RoleID
 				,@Action		= 'CloseInfo'
 				,@Closed		= 1
+				,@ClosedReason  = 1
 		END	
 		ELSE
 		BEGIN
