@@ -72,7 +72,7 @@ BEGIN
 							  WHEN upCust.roleid = 4 THEN 'Super'
 						END,
 			   upCust.username AS ExistingUplineUserName,
-			   Upline_SeizeBetTicket = COALESCE(Aup.SeizeBetTicket,MUp.SeizeBetTicket,SUp.SeizeBetTicket,bcu.SeizeBetTicket,bs.SeizeBetTicket),
+			   Upline_SeizeBetTicket = COALESCE(Aup.SeizeBetTicket,MUp.SeizeBetTicket,SUp.SeizeBetTicket),
 			   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists,
 			   down.Min_Downline_SeizeBetTicket
 		FROM customer ci WITH(NOLOCK) 
