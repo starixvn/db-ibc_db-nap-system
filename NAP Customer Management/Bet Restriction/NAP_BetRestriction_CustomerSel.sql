@@ -1,6 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSel] (
 	 @Username		NVARCHAR(50) = NULL
+	,@SportType 	INT = 1
 	,@RoleID		TINYINT = NULL
 	,@Status		VARCHAR(10) = NULL
 	,@SiteID		INT = NULL
@@ -20,7 +21,7 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20210617@Tina: Lock account & indirect close account [redmine: #148600]
-
+	- 20210802@Johnson: add @sporttype to support bet restriction for basketball [redmine:#158229]
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
 		@Status = : All, Active, View Only, Suspended, Inactive
@@ -48,7 +49,8 @@ BEGIN
 	SELECT SportType,IsShowData 
 	INTO  #Setting
 	FROM  dbo.f_BetRestrictionSettingSel('BetRestriction_Customer',@IsTest)
-
+	WHERE sporttype= @sporttype
+	
 	SELECT bc.CustID,
 		   bc.SportType,
 		   headname.username AS Headline,

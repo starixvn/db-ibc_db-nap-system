@@ -1,6 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SettingSel] (
-	@SportType	SMALLINT = 1,
 	@IsTest		BIT = 0
 )
 AS
@@ -11,8 +10,8 @@ AS
 	Original:
 
 	Revisions:  
-	- 20190829@Eden: Create New SP  [RedmineID: #117727]
-
+		- 20190829@Eden: Create New SP  [RedmineID: #117727]
+		- 20210809@Elodie: Support Basketball on Bet Restriction [RedmineID: #158229]
 	Example: 
 	EXEC NAP_BetRestriction_SettingSel 
 		@SportType = 1,
@@ -29,7 +28,6 @@ BEGIN
 			BetLimitStatus
 	FROM	BetRestriction_Setting bs WITH(NOLOCK) 
 	WHERE  	1 = CASE WHEN BackEndStatus <=  @IsTest THEN 1 ELSE 0 END
-		    AND SportType = @SportType 
 END
 GO
 
