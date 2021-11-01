@@ -12,6 +12,7 @@ AS
 			- 20200911@Johnson: Initial sp [redmine:#141416]
 			- 20210517@Johnson: convert @FromDate to smalldatetime to fix issue datatype RobotUsers [redmine:#153617]
 			- 20210907@Johnson: get robot list by last tstamp [redmine:#161232]
+			- 20211101@Johnson: Check robot with counter >10 [redmine:#163803]
 */
 BEGIN
 	SET NOCOUNT ON
@@ -30,7 +31,7 @@ BEGIN
 					WHEN c.srecommend IN (SELECT custid FROM bodb02.dbo.Dep_CustSuper (nolock))
 						AND c.currency IN (6,13) 
 						AND r.counter >= 3 THEN 1
-					WHEN r.counter >= 10 THEN 1
+					WHEN r.counter > 10 THEN 1
 					ELSE 0 END
 		
 	SELECT @MaxTstamp = ISNULL((SELECT MAX(tstamp)

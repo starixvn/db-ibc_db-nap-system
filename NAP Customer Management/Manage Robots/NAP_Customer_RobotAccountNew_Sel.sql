@@ -25,10 +25,11 @@ AS
 			- 20200318@Egan: and date filter [redmine:129835]
 			- 20200313@Johnson: get site from upline instead of RobotUsers [redmine:#129509]
 			- 20200730@Johnson: fix site for robot [redmine:#138471]
+			- 20211101@Johnson: Check robot with counter >10 [redmine:#163803]
 		Parameter's Explanation:	
 			-@currency = NULL : all currency
 			-@counter = 0: all values
-					 1: >=10, 2: <10
+					 1: >10, 2: <=10
 			-@orderOption: 0 : default 
 						1: Currency, 2: Site, 3:Country
 						4:Region,5:Last Change Time, 6: Counter	
@@ -60,8 +61,8 @@ BEGIN
 			WHERE c.roleid = ISNULL(@level,c.roleid)			
 				AND c.currency = ISNULL(@currency, c.currency)				
 				AND 1 = CASE WHEN @counter = 0 THEN 1
-							WHEN @counter = 1 AND counter >= 10 THEN 1
-							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+							WHEN @counter = 1 AND counter > 10 THEN 1
+							WHEN @counter = 2 AND ISNULL(counter,0) <= 10 THEN 1
 						ELSE 0 END
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 
@@ -82,8 +83,8 @@ BEGIN
 				AND c.username = @username
 				AND c.currency = ISNULL(@currency, c.currency)				
 				AND 1 = CASE WHEN @counter = 0 THEN 1
-							WHEN @counter = 1 AND counter >= 10 THEN 1
-							WHEN @counter = 2 AND ISNULL(counter,0) < 10 THEN 1
+							WHEN @counter = 1 AND counter > 10 THEN 1
+							WHEN @counter = 2 AND ISNULL(counter,0) <= 10 THEN 1
 						ELSE 0 END
 			AND (ISNULL(@fromDate,'') = '' 
 				OR ISNULL(@toDate,'') = '' 

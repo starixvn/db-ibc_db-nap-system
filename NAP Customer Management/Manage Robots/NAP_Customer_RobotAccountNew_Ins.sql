@@ -22,6 +22,7 @@ AS
 			- 20191125@Johnson: set counter = 10 when update robot [redmine:#122642]
 			- 20200113@Johnson: add default for robotdate [redmine:#126998]
 			- 20200205@Johnson: call sp wrapper from DBCUST to write log [redmine:#127911]
+			- 20211101@Johnson: Set default counter = 11 [redmine:#163803]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -113,8 +114,8 @@ BEGIN
 	BEGIN
 		UPDATE RobotUsers WITH(UPDLOCK,ROWLOCK)
 		SET remark = @remark,
-			counter = CASE WHEN ISNULL(counter,0) < 10 THEN 10 ELSE counter END,
-			RobotDate = CASE WHEN ISNULL(counter,0) <= 10 THEN GETDATE() ELSE RobotDate END
+			counter = CASE WHEN ISNULL(counter,0) < 11 THEN 11 ELSE counter END,
+			RobotDate = CASE WHEN ISNULL(counter,0) <= 11 THEN GETDATE() ELSE RobotDate END
 		OUTPUT DELETED.custid, DELETED.remark INTO @tmpCust(custid,remark)		
 		WHERE custid IN (SELECT custid FROM @tmpUser)
 		
@@ -136,7 +137,7 @@ BEGIN
            ,[RobotDate]
            ,[remark]
 		   ,[Creator])
-	SELECT t.custid, 'N/A', GETDATE(), t.site, 10, NULL, GETDATE(), @remark, @userid
+	SELECT t.custid, 'N/A', GETDATE(), t.site, 11, NULL, GETDATE(), @remark, @userid
 	FROM @tmpUser t
 		LEFT JOIN RobotUsers r WITH(NOLOCK) ON t.custid = r.custid
 	WHERE r.custid IS NULL
