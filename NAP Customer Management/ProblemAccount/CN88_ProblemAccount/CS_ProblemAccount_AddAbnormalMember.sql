@@ -15,6 +15,7 @@ AS
 		- 20200417@Elodie: Unremove VIP if void abnormal [Redmine: #132736]
 		- 20200608@Elodie: Cannot insert Problem Account if customer got more than one reason [Redmine: #135444]
 		- 20200828@Johnson: add void time & limit amount for problem accounts [redmine:#140576]
+		- 20211105@Johnson: Add Void User when mark PA [redmine:#164166]
 	Parameter's explaination: 
 	
 */
@@ -30,7 +31,7 @@ BEGIN
 			@custid INT,
 			@username VARCHAR(30)			
 		
-	CREATE TABLE #tmpCustVoidTicket(custid INT,transid BIGINT, matchid INT, reasonid TINYINT, ReasonName VARCHAR(100))
+	CREATE TABLE #tmpCustVoidTicket(custid INT,transid BIGINT, matchid INT, reasonid TINYINT, ReasonName VARCHAR(100), MessageID INT, VoidedBy INT)
 	CREATE TABLE #tmpCust (CustId INT, 
 							username VARCHAR(30), 
 							currency INT, 
@@ -43,7 +44,8 @@ BEGIN
 							MaxBet MONEY, 
 							MaxPerEvent MONEY, 
 							isLogNew BIT DEFAULT 0, 
-							isLogVip BIT DEFAULT 0)
+							isLogVip BIT DEFAULT 0,
+							VoidedBy INT)
 							
 	DECLARE @tmpCustInsert TABLE (custid INT, MaxBet MONEY, MaxPerEvent MONEY)
 	
@@ -56,13 +58,27 @@ BEGIN
 	BEGIN
 		SELECT @MaxId = CASE WHEN @MaxId - @MinId > 5000 THEN @MinId + 5000 ELSE @MaxId END
 		
-		INSERT INTO #tmpCustVoidTicket(custid,transid,matchid,reasonID)
-		SELECT custid, transid,matchid,SubIssueTypeID
+		INSERT INTO #tmpCustVoidTicket(custid,transid,matchid,reasonID, MessageID)
+		SELECT custid, transid,matchid,SubIssueTypeID, MessageID
 		FROM DBACC.bodb02.dbo.TicketVoiding_VoidedTransaction v WITH (NOLOCK)
 		WHERE v.Id > @MinId AND v.Id <= @MaxId AND v.IssueTypeID = 11
 		
-		INSERT INTO #tmpCust (CustId,username,currency,site,srecommend,ActionID)
+		;WITH vh AS(
+			SELECT MessageId,RequestID
+			FROM OPENQUERY(DBACC,
+				'SELECT MessageId,RequestID
+				FROM bodb02.dbo.TicketVoiding_VoidingHistory WITH(NOLOCK)
+				') AS RemoteQuery
+		)
+		UPDATE t
+		SET t.VoidedBy = r.UserID
+		FROM #tmpCustVoidTicket t
+			INNER JOIN  vh ON t.MessageID = vh.MessageID
+			INNER JOIN DBACC.bodb02.dbo.TicketVoiding_Request r WITH(NOLOCK) ON vh.RequestID = r.RequestID
+		
+		INSERT INTO #tmpCust (CustId,username,currency,site,srecommend,ActionID,VoidedBy)
 		SELECT DISTINCT c.CustId,c.username,c.currency,ISNULL(c.site,''),c.srecommend,1--Default None
+			,VoidedBy
 		FROM #tmpCustVoidTicket v
 			INNER JOIN Customer c WITH (NOLOCK) ON c.custid = v.CustID
 			
@@ -150,8 +166,9 @@ BEGIN
 			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, VoidTime, LimitAmount)			
 			OUTPUT INSERTED.custid 
 			INTO @tmpCustInsert(custid)
-			SELECT CustId, 1, NULL, ActionID, NULL, NULL, NULL, GETDATE(), 0, 1, 'At Settlement', 0			
+			SELECT t.CustId, 1, NULL, ActionID, 'Voided by ' + c.username as comment, NULL, NULL, GETDATE(), 0, 1, 'At Settlement', 0			
 			FROM #tmpCust t
+				LEFT JOIN custinfo c WITH(NOLOCK) ON t.VoidedBy = c.custid
 			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
 				AND site <> 'CN88'
 				AND isDeposit <> 1
@@ -246,9 +263,11 @@ BEGIN
 			INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, VoidTime, LimitAmount)
 			OUTPUT INSERTED.custid, INSERTED.MaxBet, INSERTED.MaxPerEvent 
 			INTO @tmpCustInsert(custid,MaxBet,MaxPerEvent)
-			SELECT t.CustId, 0, NULL, ActionID, NULL,CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxBet ELSE NULL END, 
+			SELECT t.CustId, 0, NULL, ActionID, 'Voided by '+ c.username as comment,
+				CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxBet ELSE NULL END, 
 				CASE WHEN isVip = 0 AND IsAcknowledgement = 1 THEN MaxPerEvent ELSE NULL END, GETDATE(), 0, 1, 	'At Settlement', 0			
 			FROM #tmpCust t
+				LEFT JOIN custinfo c WITH(NOLOCK) ON t.VoidedBy = c.custid
 			WHERE NOT EXISTS (SELECT 1 FROM ProblemAccount WHERE CustId = t.CustId)
 				AND isDeposit = 1
 				
