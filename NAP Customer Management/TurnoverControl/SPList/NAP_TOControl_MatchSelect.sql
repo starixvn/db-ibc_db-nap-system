@@ -13,6 +13,8 @@ AS
 
 	Revisions:
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
+		- 20211117@July: In-house Replication - [Redmine: 164660]
+
 	Parameter's explaination:
 */
 BEGIN
@@ -23,6 +25,7 @@ BEGIN
 	WHERE (@LeagueID = 0 OR m.leagueid = @LeagueID )
 		AND m.eventdate BETWEEN @FromDate AND @ToDate 
 		AND m.matchcode NOT LIKE '%hedge%'
+		AND ISNULL(m.IsDeleted,0) = 0
 	ORDER BY m.eventdate
 
 END
