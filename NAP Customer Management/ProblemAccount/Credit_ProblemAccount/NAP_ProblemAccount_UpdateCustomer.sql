@@ -25,6 +25,7 @@ AS
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20200720@Johnson: add void time & limit amount [redmine:#135253]	
+		- 20200210@Elodie: Return OldReasonId value [Redmine:#156935]
 	Parameter's explaination: 
 	
 */
@@ -109,6 +110,8 @@ BEGIN
 							ELSE pa.LimitAmount END			
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
+	
+	SELECT custid, ReasonId AS OldReasonId FROM @tmpCust 
 
 	WHILE (1=1)
 	BEGIN		

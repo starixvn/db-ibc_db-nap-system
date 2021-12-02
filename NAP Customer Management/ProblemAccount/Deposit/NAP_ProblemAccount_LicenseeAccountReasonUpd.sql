@@ -24,6 +24,8 @@ AS
 	Revisions:
 		- 20200221@Johnson: Initial SP [Redmine:#128077]
 		- 20200721@Johnson: add void time & limit amount [redmine: #135253]
+		- 20200210@Elodie: Return OldReasonId value [Redmine:#156935]
+
 	Parameter's explaination: 
 	
 */
@@ -48,6 +50,7 @@ BEGIN
 							ActionID INT,		
 							ActionName VARCHAR(100), 
 							ReasonName VARCHAR(100), 
+							ReasonId TINYINT, 
 							VoidTime VARCHAR(50),
 							LimitAmount MONEY,
 							IsFinished BIT DEFAULT(0))
@@ -84,6 +87,7 @@ BEGIN
 	--get old ActionID & ReasonID
 	UPDATE t 
 	SET t.ReasonName = pr.ReasonName,
+		t.ReasonId = p.ReasonID,
 		t.ActionName = pa.ActionName,
 		t.ActionID = pa.ActionID,
 		t.Comment = p.Comment,
@@ -93,7 +97,9 @@ BEGIN
 		INNER JOIN @tmpCust t ON t.CustId = p.CustId
 		INNER JOIN ProblemAccountReason pr WITH(NOLOCK) ON p.ReasonID = pr.ReasonID
 		INNER JOIN ProblemAccountAction pa WITH(NOLOCK) ON p.ActionID = pa.ActionID
-		
+	
+	SELECT custid, ReasonId AS OldReasonId FROM @tmpCust 
+
 	--update new Action & Reason
 	UPDATE pa 
 	SET pa.ActionID = @ActionID,
