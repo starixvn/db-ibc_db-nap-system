@@ -15,6 +15,8 @@ AS
 
 	Revisions:
 		- 20170920@Helen: TO Control Phase 3 - [Redmine: 75557]
+		- 20211117@July: In-house Replication - [Redmine: 164660]
+
 	Parameter's explaination:
 		@MoveBetDate	= NULL		: used for Add SMA Turnover
 						<> NULL		: Used for list SMA Turnover
@@ -31,6 +33,7 @@ BEGIN
 			FROM dbo.League l WITH(NOLOCK)   
 				INNER JOIN dbo.match m WITH (NOLOCK) ON l.leagueid = m.leagueid 
 			WHERE l.sporttype = @SportType AND m.eventdate BETWEEN @FromDate AND @ToDate and matchcode NOT LIKE '%hedge%'
+				AND ISNULL(l.IsDeleted,0) = 0 AND ISNULL(m.IsDeleted,0) = 0
 	END
 	ELSE
 	BEGIN
@@ -41,6 +44,7 @@ BEGIN
 				FROM dbo.League l WITH(NOLOCK)   
 					INNER JOIN dbo.match14 m WITH (NOLOCK) ON l.leagueid = m.leagueid  
 				WHERE l.sporttype = @SportType AND m.eventdate BETWEEN @FromDate AND @ToDate  
+					AND ISNULL(l.IsDeleted,0) = 0
 		END  
 		ELSE IF @FromDate > @MoveBetsDay  
 		BEGIN  
@@ -49,6 +53,7 @@ BEGIN
 				FROM dbo.League l WITH(NOLOCK)   
 					INNER JOIN dbo.match m WITH (NOLOCK) ON l.leagueid = m.leagueid  
 				WHERE l.sporttype = @SportType AND m.eventdate BETWEEN @FromDate AND @ToDate  
+					AND ISNULL(l.IsDeleted,0) = 0 AND ISNULL(m.IsDeleted,0) = 0
 		END  
 		ELSE  
 		BEGIN  
@@ -57,12 +62,14 @@ BEGIN
 				FROM dbo.League l WITH(NOLOCK)   
 					INNER JOIN dbo.match14 m WITH (NOLOCK) ON l.leagueid = m.leagueid  
 				WHERE l.sporttype = @SportType AND m.eventdate BETWEEN @FromDate AND @MoveBetsDay  
+					AND ISNULL(l.IsDeleted,0) = 0
 	   
 			INSERT INTO @League (LeagueID, LeagueName)  
 				SELECT DISTINCT l.leagueid, l.leaguename  
 				FROM dbo.League l WITH(NOLOCK)   
 					INNER JOIN dbo.match m WITH (NOLOCK) ON l.leagueid = m.leagueid  
 				WHERE l.sporttype = @SportType AND m.eventdate BETWEEN @MoveBetsDay AND @ToDate  
+					AND ISNULL(l.IsDeleted,0) = 0 AND ISNULL(m.IsDeleted,0) = 0
 		END  
 	END
   
