@@ -16,6 +16,7 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
+	- 20211112@Eden: Alpha/NAP - In-house Replication (isDeleted & RepUpdateTime) [RedmineID: #164321]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -104,6 +105,7 @@ BEGIN
 		INNER JOIN #League le ON l.LeagueID = le.LeagueID
 		INNER JOIN #Sport s ON l.Sporttype = s.Sporttype
 	WHERE s.ProductID = 1
+		AND ISNULL(l.IsDeleted,0) = 0
 
 	IF ISNULL(@LeagueList,'') <> ''
 	BEGIN
