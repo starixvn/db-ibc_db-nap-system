@@ -8,7 +8,7 @@ RETURNS VARCHAR(100)
     
 	Revisions:
 		- 20210601@July: support deploy without UM - [Redmine:130912]
-   
+		- 20211221@July: Turn on - [Redmine: #166411]
 	Notes:
 		DECLARE @Delay VARCHAR(100) = ''
 		SET @Delay = dbo.f_Job_SetWaitforDelay () 
@@ -17,6 +17,6 @@ RETURNS VARCHAR(100)
 */
 AS
 BEGIN
-    RETURN '00:00:10:000'
+    RETURN '00:05:00:000'
 END
 GO
