@@ -92,16 +92,13 @@ BEGIN
 										 GROUP BY c.BetType
 										 ORDER BY c.Bettype
 										 FOR XML PATH ('')),2,10000),
-			--LeagueGroupList = SUBSTRING((SELECT ',' + CONVERT(VARCHAR,lg.GroupID)
-			--							 FROM #BTC_SportBettypeReference c
-			--								INNER JOIN DBPRO.bodb02.dbo.leagueGroup lg WITH(NOLOCK) ON lg.sporttype = c.Sporttype OR lg.sporttype = 0
-			--								CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
-			--												FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
-			--												WHERE (b.LeagueGroupID = lg.GroupID OR b.LeagueGroupID = 0)
-			--													AND BetLimitTypeID = t.BetLimitTypeID) gr
-			--							 GROUP BY lg.GroupID
-			--							 ORDER BY lg.GroupID
-			--							 FOR XML PATH ('')),2,10000),
+			LeagueGroupList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR(10),b.leagueGroupID)
+										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueGroupID <> 0
+										 GROUP BY b.leagueGroupID
+										 ORDER BY b.leagueGroupID
+										 FOR XML PATH ('')),2,10000),''),
+			ISNULL(ExcludedLeagueGroupList,'') ExcludedLeagueGroupList,								
 			LeagueList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
 										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
 										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueID <> 0
