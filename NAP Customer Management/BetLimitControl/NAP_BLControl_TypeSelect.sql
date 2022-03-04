@@ -94,7 +94,7 @@ BEGIN
 										 FOR XML PATH ('')),2,10000),
 			LeagueGroupList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR(10),b.leagueGroupID)
 										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
-										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueGroupID <> 0
+										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueGroupID <> -1
 										 GROUP BY b.leagueGroupID
 										 ORDER BY b.leagueGroupID
 										 FOR XML PATH ('')),2,10000),''),
