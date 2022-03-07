@@ -100,15 +100,12 @@ BEGIN
 	INTO #League
 	FROM dbo.f_StringSplit(@LeagueList,',') le
 	OPTION (MAXRECURSION 0)
-	
-	--IF @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> ''
-	--BEGIN
-		SELECT val AS LeagueGroupID 
-		INTO #LeagueGroup
-		FROM dbo.f_StringSplit(@LeagueGroupList,',') lg
-		OPTION (MAXRECURSION 0)
-	--END
-	
+		
+	SELECT val AS LeagueGroupID 
+	INTO #LeagueGroup
+	FROM dbo.f_StringSplit(@LeagueGroupList,',') lg
+	OPTION (MAXRECURSION 0)
+		
 	SELECT l.Sporttype,l.LeagueID, l.LeagueGroupID
 	INTO #SportLeague
 	FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
@@ -117,16 +114,38 @@ BEGIN
 	WHERE s.ProductID = 1
 		AND ISNULL(l.IsDeleted,0) = 0
 	
+	
+	SELECT @ErrorLeagueGroupIDs = ''
+		
+	--> Invalid League Group ID: <ID1, ID2...>
+	SELECT @ErrorLeagueGroupIDs = @ErrorLeagueGroupIDs + ', ' + CAST(lg.LeagueGroupID as VARCHAR(10))
+	FROM #LeagueGroup lg		
+	WHERE NOT EXISTS (SELECT 1 
+						FROM DBPRO.bodb02.dbo.LeagueGroup lg2 WITH(NOLOCK)
+						WHERE lg.LeagueGroupID = lg2.GroupID)		
+
+	IF @ErrorLeagueGroupIDs <> ''
+	BEGIN
+		SELECT @ErrorLeagueGroupIDs = STUFF(@ErrorLeagueGroupIDs,1,2,'')
+		SELECT @ErrorCode = 7,
+			@ErrorMsg = 'Invalid League Group ID: ' + @ErrorLeagueGroupIDs + '.'
+
+		RETURN
+	END
+	
 	IF @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> ''
 	BEGIN
-		SELECT @ErrorLeagueGroupIDs = ''
+		SELECT @ErrorSporttypes = ''
 		
 		--> None of the input league group belong to <Sport>.
-		SELECT @ErrorSporttypes = @ErrorSporttypes + ', ' + MAX(s.SportName)
+		SELECT @ErrorSporttypes = @ErrorSporttypes + ', ' + s.SportName
 		FROM #Sport sp
 			INNER JOIN DBPRO.bodb02.dbo.sports s WITH(NOLOCK) ON sp.Sporttype = s.Sporttype			
 		WHERE  sp.ProductID = 1 
 			AND sp.Sporttype IS NOT NULL
+			AND EXISTS (SELECT 1 
+						FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
+						WHERE l.Sporttype=sp.Sporttype)
 			AND NOT EXISTS (SELECT 1 
 							FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
 							WHERE l.Sporttype=sp.Sporttype
@@ -135,27 +154,13 @@ BEGIN
 		IF @ErrorSporttypes <> ''
 		BEGIN
 			SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,2,'')
-			SELECT @ErrorCode = 7,
+			SELECT @ErrorCode = 8,
 				@ErrorMsg = 'None of the input league group belong to ' + @ErrorSporttypes + '.'
 
 			RETURN
 		END
 		
-		--> League <league ID> belong to none of the selected sport.
-		SELECT @ErrorLeagueIDs = @ErrorLeagueIDs + ', ' + le.LeagueID
-		FROM #League le
-			LEFT JOIN #SportLeague l ON le.LeagueID = l.LeagueID
-		WHERE l.LeagueID IS NULL
-
-		IF @ErrorLeagueIDs <> ''
-		BEGIN
-			SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,2,'')
-			SELECT @ErrorCode = 8,
-				@ErrorMsg = 'League '+ @ErrorLeagueIDs + ' belong to none of the selected sport.' 
-
-			RETURN
-		END
-		
+		--> League group <league group ID> belong to none of the selected sport.
 		SELECT @ErrorLeagueGroupIDs = @ErrorLeagueGroupIDs + ', ' + lg.LeagueGroupID
 		FROM #LeagueGroup lg			
 		WHERE NOT EXISTS (SELECT 1
@@ -167,11 +172,12 @@ BEGIN
 		IF @ErrorLeagueGroupIDs <> ''
 			BEGIN
 				SELECT @ErrorLeagueGroupIDs = STUFF(@ErrorLeagueGroupIDs,1,2,'')
-				SELECT @ErrorCode = 7,
-					@ErrorMsg = 'Invalid League Group ID: '+ @ErrorLeagueGroupIDs
+				SELECT @ErrorCode = 9,
+					@ErrorMsg = 'League Group '+ @ErrorLeagueGroupIDs + ' belong to none of the selected sport.' 
 
 				RETURN
 			END
+			
 	END
 		
 	IF ISNULL(@LeagueList,'') <> ''
@@ -194,23 +200,20 @@ BEGIN
 
 			RETURN
 		END
-
-		--> League group <league group ID> belong to none of the selected sport.
-		SELECT @ErrorLeagueGroupIDs = @ErrorLeagueGroupIDs + ', ' + lg.LeagueGroupID
-		FROM #LeagueGroup lg			
-		WHERE NOT EXISTS (SELECT 1
-						FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
-							INNER JOIN #sport s ON l.sporttype = s.sporttype
-						WHERE l.LeagueGroupID = lg.LeagueGroupID
-							AND s.ProductID = 1
-							AND s.Sporttype IS NOT NULL
-						)
 		
-		IF @ErrorLeagueGroupIDs <> ''
+		--> League <league ID> belong to none of the selected sport.
+		SELECT @ErrorLeagueIDs = ''
+		
+		SELECT @ErrorLeagueIDs = @ErrorLeagueIDs + ', ' + le.LeagueID
+		FROM #League le
+			LEFT JOIN #SportLeague l ON le.LeagueID = l.LeagueID
+		WHERE l.LeagueID IS NULL
+
+		IF @ErrorLeagueIDs <> ''
 		BEGIN
-			SELECT @ErrorLeagueGroupIDs = STUFF(@ErrorLeagueGroupIDs,1,2,'')
-			SELECT @ErrorCode = 7,
-				@ErrorMsg = 'League '+ @ErrorLeagueGroupIDs + ' belong to none of the selected sport.'
+			SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,2,'')
+			SELECT @ErrorCode = 5,
+				@ErrorMsg = 'League '+ @ErrorLeagueIDs + ' belong to none of the selected sport.' 
 
 			RETURN
 		END
@@ -229,36 +232,14 @@ BEGIN
 			IF @ErrorLeagueIDs <> ''
 			BEGIN
 				SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,2,'')
-				SELECT @ErrorCode = 6,
+				SELECT @ErrorCode = 11,
 					@ErrorMsg = 'League '+ @ErrorLeagueIDs + ' belong to none of the selected league group.' 
 
 				RETURN
 			END
 		END
 	END
-	
-	IF @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> ''
-	BEGIN
-		SELECT @ErrorLeagueGroupIDs = ''
 		
-		SELECT @ErrorLeagueGroupIDs = @ErrorLeagueGroupIDs + ', ' + lg.LeagueGroupID
-		FROM #LeagueGroup lg			
-		WHERE NOT EXISTS (SELECT 1
-						FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
-							INNER JOIN #sport s ON l.sporttype = s.sporttype
-						WHERE l.LeagueGroupID = lg.LeagueGroupID
-						)
-		
-		IF @ErrorLeagueGroupIDs <> ''
-			BEGIN
-				SELECT @ErrorLeagueGroupIDs = STUFF(@ErrorLeagueGroupIDs,1,2,'')
-				SELECT @ErrorCode = 7,
-					@ErrorMsg = 'Invalid League Group ID: '+ @ErrorLeagueGroupIDs
-
-				RETURN
-			END
-	END
-	
 	INSERT INTO #ValidData(ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
 	SELECT DISTINCT 
 		CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
@@ -281,7 +262,23 @@ BEGIN
 		LEFT JOIN #SportLeague sl ON s.Sporttype = sl.Sporttype
 		LEFT JOIN #LeagueGroup lg ON ISNULL(sl.LeagueGroupID,lg.LeagueGroupID) = lg.LeagueGroupID
 	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1
-
+	UNION
+	select DISTINCT
+	 CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
+		CASE WHEN @SporttypeList = '0' THEN 0 ELSE s.sporttype END AS sporttype,
+		CASE WHEN @BettypeList = '0' THEN 0 ELSE bt.bettype END AS bettype,
+		CASE WHEN @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> '' THEN ISNULL(t.LeagueGroupID,-1) ELSE -1 END AS LeagueGroupID,
+		0  AS LeagueID
+	FROM #Sport s 
+		INNER JOIN #Bettype bt ON s.Sporttype = bt.Sporttype
+		INNER JOIN (SELECT DISTINCT lg.LeagueGroupID, l.sporttype
+					FROM #LeagueGroup lg 
+						INNER JOIN DBPRO.bodb02.dbo.League l WITH(NOLOCK) ON l.LeagueGroupID = lg.LeagueGroupID
+					WHERE NOT EXISTS (SELECT 1 FROM #SportLeague l WHERE l.LeagueGroupID = lg.LeagueGroupID)) t	ON s.sporttype = t.sporttype
+	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1
+		AND @IsExcludedLeagueGroup = 0 
+		AND @LeagueGroupList <> ''
+	
 	IF @ProductList = '0' AND @SporttypeList = '0' AND @BettypeList = '0' AND ISNULL(@LeagueList,'') <> ''
 		DELETE 
 		FROM #ValidData 
@@ -293,7 +290,8 @@ BEGIN
 	DROP TABLE #Bettype
 	DROP TABLE #Sport
 	DROP TABLE #League
-	DROP TABLE #SportLeague
+	DROP TABLE #SportLeague	
+	DROP TABLE #LeagueGroup
 END
 GO
 
