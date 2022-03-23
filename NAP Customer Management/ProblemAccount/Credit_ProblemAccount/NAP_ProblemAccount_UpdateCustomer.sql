@@ -32,6 +32,7 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT, @SubIssueTypeId TINYINT
+	CREATE TABLE #DownlineCust (CustID INT PRIMARY KEY)
 	DECLARE @SetBit1 INT, @Pos TINYINT, @SuccessDownlineList VARCHAR(MAX) = '', @ReasonName VARCHAR(100), @ActionName VARCHAR(100), @Old_ReasonName VARCHAR(100), @Old_ActionName VARCHAR(100)
 	DECLARE @CustId INT, 
 			@UserName NVARCHAR(50), 
@@ -111,7 +112,33 @@ BEGIN
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
+	IF @RoleID = 4 --Super			
+	BEGIN
+		INSERT INTO #DownlineCust (CustID)
+		SELECT custid
+		FROM custInfo c WITH(NOLOCK)
+		WHERE srecommend = @CustID AND c.custid <> @CustId
+	END
+	ELSE IF @RoleID = 3 --Master
+	BEGIN
+		INSERT INTO #DownlineCust (CustID)
+		SELECT custid
+		FROM custInfo c WITH(NOLOCK)
+		WHERE mrecommend = @CustID AND c.custid <> @CustId
+	END
+	ELSE IF @RoleID = 2 --Agent
+	BEGIN
+		INSERT INTO #DownlineCust (CustID)
+		SELECT custid
+		FROM custInfo c WITH(NOLOCK)
+		WHERE recommend = @CustID AND c.custid <> @CustId
+	END	
+
 	SELECT custid, ReasonId AS OldReasonId FROM @tmpCust 
+	UNION ALL
+	SELECT custid, pa.ReasonId AS OldReasonId
+	FROM #DownlineCust dl
+		INNER JOIN ProblemAccount pa WITH(NOLOCK) ON dl.custid = pa.custid
 
 	WHILE (1=1)
 	BEGIN		
