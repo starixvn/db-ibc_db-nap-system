@@ -14,6 +14,8 @@ AS
 
 	Revisions:
 			- 20171212@Helen: Implement some change request from OPS Team - [Redmine: 85638]
+			- 20220325@July: Remove unused sport type Cricket 27 from Dropdownlist - [Redmine: 170244]
+	
 	Parameter's explaination: 
 		@Mode	= 0: Sport of sportbook
 				= 1: All sports
@@ -25,9 +27,9 @@ BEGIN
 	FROM dbo.sports s WITH(NOLOCK) 
 	WHERE	1 = CASE  
 					WHEN @Mode = 0 AND @SportType = 1  AND s.SportType = 1 THEN 1
-					WHEN @Mode = 0 AND @SportType = 99 AND s.sporttype > 1 AND s.sporttype <= 99 THEN 1
-					WHEN @Mode = 0 AND @SportType = 0  AND s.sporttype <= 99 THEN 1
-					WHEN @Mode = 1 THEN 1
+					WHEN @Mode = 0 AND @SportType = 99 AND s.sporttype > 1 AND s.sporttype <= 99 AND s.SportType <> 27 THEN 1
+					WHEN @Mode = 0 AND @SportType = 0  AND s.sporttype <= 99 AND s.SportType <> 27 THEN 1
+					WHEN @Mode = 1 AND s.SportType <> 27 THEN 1
 					ELSE 0 END			
 					
 	ORDER BY s.sporttype
