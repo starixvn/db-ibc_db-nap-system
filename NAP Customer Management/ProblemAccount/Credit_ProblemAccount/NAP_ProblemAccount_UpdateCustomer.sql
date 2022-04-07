@@ -115,28 +115,31 @@ BEGIN
 	IF @RoleID = 4 --Super			
 	BEGIN
 		INSERT INTO #DownlineCust (CustID)
-		SELECT custid
+		SELECT c.custid
 		FROM custInfo c WITH(NOLOCK)
-		WHERE srecommend = @CustID AND c.custid <> @CustId
+			INNER JOIN @tmpCust t ON c.srecommend = t.custid
+		WHERE c.roleid IN (3,2,1)
 	END
 	ELSE IF @RoleID = 3 --Master
 	BEGIN
 		INSERT INTO #DownlineCust (CustID)
-		SELECT custid
+		SELECT c.custid
 		FROM custInfo c WITH(NOLOCK)
-		WHERE mrecommend = @CustID AND c.custid <> @CustId
+			INNER JOIN @tmpCust t ON c.mrecommend = t.custid
+		WHERE c.roleid IN (2,1)
 	END
 	ELSE IF @RoleID = 2 --Agent
 	BEGIN
 		INSERT INTO #DownlineCust (CustID)
-		SELECT custid
+		SELECT c.custid
 		FROM custInfo c WITH(NOLOCK)
-		WHERE recommend = @CustID AND c.custid <> @CustId
+			INNER JOIN @tmpCust t ON c.recommend = t.custid
+		WHERE c.roleid = 1
 	END	
 
 	SELECT custid, ReasonId AS OldReasonId FROM @tmpCust 
 	UNION ALL
-	SELECT custid, pa.ReasonId AS OldReasonId
+	SELECT dl.custid, pa.ReasonId AS OldReasonId
 	FROM #DownlineCust dl
 		INNER JOIN ProblemAccount pa WITH(NOLOCK) ON dl.custid = pa.custid
 
