@@ -13,9 +13,9 @@ AS
 	Original:
 
 	Revisions:  
-	- 20200525@Eden: Create New SP  [RedmineID: #132736]
-	- 20200818@Eden: Auto Update Bet Limit Control [RedmineID: #139701]
-
+		- 20200525@Eden: Create New SP  [RedmineID: #132736]
+		- 20200818@Eden: Auto Update Bet Limit Control [RedmineID: #139701]
+		- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -63,15 +63,17 @@ BEGIN
 		LiveIndicator TINYINT,
 		RestrictVIP BIT,
 		ProductList VARCHAR(200),
-		SportTypeList VARCHAR(MAX),
+		SportTypeList VARCHAR(MAX),		
 		BetTypeList VARCHAR(MAX),
+		LeagueGroupList VARCHAR(MAX),
 		LeagueList VARCHAR(MAX),
+		ExcludedLeagueGroupList VARCHAR(MAX),
 		IsAllProduct BIT,
 		IsAllSporttype BIT,
 		IsAllBettype BIT,
 		IsAllLeague BIT
 	)
-
+	
 	INSERT INTO #OLdbetLimitTypeTbl(
 		 BetLimitTypeID
 		,BetLimitType  
@@ -82,7 +84,9 @@ BEGIN
 		,ProductList   
 		,SportTypeList 
 		,BetTypeList   
-		,LeagueList    
+		,LeagueGroupList
+		,ExcludedLeagueGroupList
+		,LeagueList  			
 		,IsAllProduct  
 		,IsAllSporttype
 		,IsAllBettype  
@@ -104,7 +108,9 @@ BEGIN
 		@ProductList VARCHAR(200),
 		@SportTypeList VARCHAR(MAX),
 		@BetTypeList VARCHAR(MAX),
-		@LeagueList VARCHAR(MAX)
+		@LeagueList VARCHAR(MAX),
+		@LeagueGroupList VARCHAR(MAX),
+		@ExcludedLeagueGroupList VARCHAR(MAX)
 
 	SELECT @BetLimitType  		= BetLimitType  
 		,@BeginTime     		= BeginTime     
@@ -115,6 +121,8 @@ BEGIN
 		,@SportTypeList 		= CASE WHEN IsAllSporttype = 1 THEN '0' ELSE SportTypeList  END  
 		,@BetTypeList   		= CASE WHEN IsAllBettype = 1 THEN '0' ELSE BetTypeList  END     
 		,@LeagueList    		= CASE WHEN IsAllLeague = 1 THEN '' ELSE LeagueList  END      
+		,@LeagueGroupList 		= LeagueGroupList
+		,@ExcludedLeagueGroupList = ExcludedLeagueGroupList
 	FROM #OLdbetLimitTypeTbl
 
 	DELETE 
@@ -146,6 +154,8 @@ BEGIN
 						+ 'BetType="'+ coalesce(cast(@BettypeList as varchar(50)),space(1)) + '" '
 						+ 'LiveIndicator="'+ coalesce(cast(@LiveIndicator as varchar(50)),space(1)) + '" '  
 						+ 'LeagueID="'+ coalesce(cast(@LeagueList as varchar(50)),space(1)) + '" ' 
+						+ 'LeagueGroupList="'+ coalesce(cast(@LeagueGroupList as varchar(MAX)),space(1)) + '" ' 
+						+ 'ExcludedLeagueGroupList="'+ coalesce(cast(@ExcludedLeagueGroupList as varchar(MAX)),space(1)) + '" ' 
 						+ 'SpecificTime="'+ coalesce(cast(CASE WHEN @BeginTime IS NOT NULL THEN 1 ELSE 0 END as varchar(50)),space(1)) + '" ' 
 						+ 'FromTime="'+ coalesce(cast(@BeginTime as varchar(50)),space(1)) + '" ' 
 						+ 'ToTime="'+ coalesce(cast(@EndTime as varchar(50)),space(1)) + '" ' 

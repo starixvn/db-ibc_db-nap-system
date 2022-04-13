@@ -17,7 +17,7 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
-
+	- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
 	Parameter explanation:
 	-@LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 
