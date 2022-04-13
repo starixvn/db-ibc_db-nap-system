@@ -112,14 +112,25 @@ BEGIN
 	INTO #BetLimitControlType
 	FROM BetLimitControlType t WITH(NOLOCK)
 
-	UPDATE t
-	SET IsAllProduct = CASE WHEN td.ProductID = 0 THEN 1 ELSE 0 END,
-		IsAllSporttype = CASE WHEN td.Sporttype = 0 THEN 1 ELSE 0 END,
-		IsAllBettype = CASE WHEN td.Bettype = 0 THEN 1 ELSE 0 END,
-		IsAllLeague = CASE WHEN td.LeagueID = 0 THEN 1 ELSE 0 END
-	FROM #BetLimitControlType t 
-		INNER JOIN BetLimitControlTypeDetail td WITH(NOLOCK)
-			ON t.BetLimitTypeID = td.BetLimitTypeID
+	;WITH Temp AS (SELECT 
+					IsAllProduct = MAX(CASE WHEN td.ProductID = 0 THEN 1 ELSE 0 END),
+					IsAllSporttype = MAX(CASE WHEN td.Sporttype = 0 THEN 1 ELSE 0 END),
+					IsAllBettype = MAX(CASE WHEN td.Bettype = 0 THEN 1 ELSE 0 END),
+					IsAllLeague = MIN(CASE WHEN td.LeagueID > 0 THEN 0 ELSE 1 END),
+					t.BetLimitTypeID
+				FROM #BetLimitControlType t 
+					INNER JOIN BetLimitControlTypeDetail td WITH(NOLOCK)
+						ON t.BetLimitTypeID = td.BetLimitTypeID
+				GROUP BY t.BetLimitTypeID
+	)
+	UPDATE bc
+	SET IsAllProduct = t.IsAllProduct,
+		IsAllSporttype = t.IsAllSporttype,
+		IsAllBettype = t.IsAllBettype,
+		IsAllLeague = t.IsAllLeague
+	FROM #BetLimitControlType bc 
+		INNER JOIN Temp t
+			ON t.BetLimitTypeID = bc.BetLimitTypeID
 
 	SELECT * 
 	FROM #BetLimitControlType t
