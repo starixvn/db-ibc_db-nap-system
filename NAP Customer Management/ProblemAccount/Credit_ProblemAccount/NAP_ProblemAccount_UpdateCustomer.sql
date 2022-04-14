@@ -26,6 +26,7 @@ AS
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20200720@Johnson: add void time & limit amount [redmine:#135253]	
 		- 20200210@Elodie: Return OldReasonId value [Redmine:#156935]
+		- 20220414@Elodie: Return Downline of customer list [Redmine:#170135]
 	Parameter's explaination: 
 	
 */
