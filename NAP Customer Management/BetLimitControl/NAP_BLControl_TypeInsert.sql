@@ -6,6 +6,7 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_TypeInsert]
 	@BettypeList VARCHAR(MAX) =  '',
 	@LiveIndicator	TINYINT = NULL,
 	@LeagueGroupList VARCHAR(MAX) = '',
+	@IsExcludedLeagueGroup BIT = 0,
 	@LeagueList VARCHAR(MAX) =  '',
 	@BeginTime TIME = NULL,
 	@EndTime TIME = NULL,
@@ -23,7 +24,7 @@ AS
 
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
-
+	- 20220302@Johnson: Add league group [RedmineID: #156808]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -88,6 +89,7 @@ BEGIN
 		@ProductList = @ProductList,
 		@SporttypeList = @SporttypeList,
 		@BettypeList = @BettypeList,
+		@IsExcludedLeagueGroup = @IsExcludedLeagueGroup,
 		@LeagueGroupList = @LeagueGroupList,
 		@LeagueList = @LeagueList,
 		@ErrorCode = @ErrorCode OUTPUT,
@@ -102,9 +104,10 @@ BEGIN
 	SELECT @EndTime = DATEADD(ms,59999,@EndTime)
 	DECLARE @Insert TABLE (BetLimitTypeID INT)
 
-	INSERT INTO BetLimitControlType(BetLimitType,BeginTime,EndTime,LiveIndicator,RestrictVIP)
+	INSERT INTO BetLimitControlType(BetLimitType,BeginTime,EndTime,LiveIndicator,RestrictVIP,ExcludedLeagueGroupList)
 	OUTPUT Inserted.BetLimitTypeID INTO @Insert(BetLimitTypeID)
-	SELECT @BetLimitType,@BeginTime,@EndTime,@LiveIndicator,@RestrictVIP
+	SELECT @BetLimitType,@BeginTime,@EndTime,@LiveIndicator,@RestrictVIP, 
+			CASE WHEN @IsExcludedLeagueGroup = 1 THEN @LeagueGroupList ELSE '' END
 
 	INSERT INTO BetLimitControlTypeDetail(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
 	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID
@@ -122,6 +125,8 @@ BEGIN
 						+ 'BetType="'+ coalesce(cast(@BettypeList as varchar(50)),space(1)) + '" '
 						+ 'LiveIndicator="'+ coalesce(cast(@LiveIndicator as varchar(50)),space(1)) + '" '  
 						+ 'LeagueID="'+ coalesce(cast(@LeagueList as varchar(50)),space(1)) + '" ' 
+						+ 'IsExcludedLeagueGroup="'+ coalesce(cast(@IsExcludedLeagueGroup as varchar(50)),space(1)) + '" ' 
+						+ 'LeagueGroupList="'+ coalesce(cast(@LeagueGroupList as varchar(MAX)),space(1)) + '" ' 
 						+ 'SpecificTime="'+ coalesce(cast(CASE WHEN @BeginTime IS NOT NULL THEN 1 ELSE 0 END as varchar(50)),space(1)) + '" ' 
 						+ 'FromTime="'+ coalesce(cast(@BeginTime as varchar(50)),space(1)) + '" ' 
 						+ 'ToTime="'+ coalesce(cast(@EndTime as varchar(50)),space(1)) + '" ' 

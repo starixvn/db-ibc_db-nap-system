@@ -4,7 +4,7 @@ ALTER PROCEDURE [dbo].[Dot_Member_BetLimitControl_CustSettingSelect]
 	 ,@SportType    SMALLINT
 	 ,@Bettype		SMALLINT
 	 ,@LeagueID		INT
-	 ,@LeagueGroupID INT = 0
+	 ,@LeagueGroupID INT = -1
 	 ,@LiveIndicator BIT = NULL
 	 ,@ProductID TINYINT = NULL
 	 ,@OddsMaxBet MONEY = NULL
@@ -17,9 +17,9 @@ AS
 	Original:
 
 	Revisions:  
-	- 20200602@Eden: Create New SP  [RedmineID: #132736]
-	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
-
+		- 20200602@Eden: Create New SP  [RedmineID: #132736]
+		- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
+		- 20220304@Johnson: Add league group [RedmineID: #156808]
 	Parameter explanation:
 
 	Example: 
@@ -57,7 +57,8 @@ BEGIN
 			AND btd.Sporttype IN (@SportType,0)
 			AND btd.Bettype IN (@Bettype,0)
 			AND btd.LeagueID IN (ISNULL(@LeagueID,btd.LeagueID),0)
-			AND btd.LeagueGroupID IN (@LeagueGroupID,0)
+			AND btd.LeagueGroupID IN (@LeagueGroupID,-1)
+			AND @LeagueGroupID NOT IN (SELECT val FROM dbo.strSplit(ISNULL(bt.ExcludedLeagueGroupList,''),',') WHERE val <> '')
 			AND bt.LiveIndicator IN(@LiveIndicator,2)
 			AND (@IsVIP = 0 OR bt.RestrictVIP = 1)
 			AND btd.ProductID IN (@ProductID,0)
