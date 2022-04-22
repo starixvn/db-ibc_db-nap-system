@@ -23,6 +23,7 @@ AS
 
 	Revisions:
 		- 20211117@Elodie: Initial SP [Redmine:#164148]
+		- 20220511@Johnson: Add Creator into ProblemAccount [redmine:#171686]
 	Parameter's explaination: 
 		- @LimitAmount = 0: unlimited
 	
@@ -89,6 +90,7 @@ BEGIN
 
 		EXEC dbo.Acc_CustomerInfo_Execrep_12
 			@CustId = @CustId,
+			@UserID = @UserID,
 			@RoleId = @RoleId,
 			@ReasonId = @ReasonId,
 			@PreventActionId = @PreventActionId,
