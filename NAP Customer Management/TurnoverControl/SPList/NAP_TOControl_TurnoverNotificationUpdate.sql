@@ -18,6 +18,8 @@ AS
 
 	Revisions:
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
+		- 20220427@July: SQL Server upgrade to 2019 phase 5 - Change STRING_SPLIT [Redmine: #171831]
+
 	Parameter's explaination:
 */
 BEGIN
@@ -25,16 +27,29 @@ BEGIN
 	
 	;WITH tmp AS
 	(
-		SELECT m.val AS matchid, c.val AS custid, l.val AS nlevel, h.val AS IsGroupHeadline, p.val AS ProfileID
-		FROM dbo.strSplit(@matchids,',') m
-			INNER JOIN dbo.strSplit(@supers,',') c ON m.rank = c.rank
-			INNER JOIN dbo.strSplit(@IsGroupHeadlines,',') h ON m.rank = h.rank
-			INNER JOIN dbo.strSplit(@nlevel,',') l ON m.rank = l.rank
-			CROSS APPLY (
-					SELECT val
-					FROM  dbo.strSplit(@ProfileID,',') pf 
-				)p
+		SELECT m.value AS matchid, c.value AS custid, l.value AS nlevel, h.value AS IsGroupHeadline, p.value AS ProfileID
+		FROM (
+			SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS [rank]
+			FROM STRING_SPLIT(@matchids,',')
+		)m
+		INNER JOIN (
+			SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS [rank]
+			FROM STRING_SPLIT (@supers,',')
+		)c ON m.[rank] = c.[rank]
+		INNER JOIN (
+			SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS [rank]
+			FROM STRING_SPLIT (@IsGroupHeadlines,',')
+		)h ON m.[rank] = h.[rank]
+		INNER JOIN (
+			SELECT value, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS [rank]
+			FROM STRING_SPLIT (@nlevel,',')
+		)l ON m.[rank] = l.[rank]
+		CROSS APPLY (
+			SELECT value
+			FROM STRING_SPLIT(@ProfileID,',') 
+		)p
 	)
+
 	UPDATE t WITH(ROWLOCK,UPDLOCK)
 	SET t.IsNotified = tmp.nlevel
 	FROM dbo.TOControl_Setting t
