@@ -26,12 +26,14 @@ AS
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20200720@Johnson: add void time & limit amount [redmine:#135253]	
 		- 20200210@Elodie: Return OldReasonId value [Redmine:#156935]
+		- 20220414@Elodie: Return Downline of customer list [Redmine:#170135]
 	Parameter's explaination: 
 	
 */
 BEGIN
 	SET NOCOUNT ON
 	DECLARE	@startRun DATETIME, @duration INT, @SubIssueTypeId TINYINT
+	CREATE TABLE #DownlineCust (CustID INT PRIMARY KEY)
 	DECLARE @SetBit1 INT, @Pos TINYINT, @SuccessDownlineList VARCHAR(MAX) = '', @ReasonName VARCHAR(100), @ActionName VARCHAR(100), @Old_ReasonName VARCHAR(100), @Old_ActionName VARCHAR(100)
 	DECLARE @CustId INT, 
 			@UserName NVARCHAR(50), 
@@ -111,7 +113,36 @@ BEGIN
 	FROM dbo.ProblemAccount pa WITH (ROWLOCK)
 		INNER JOIN @tmpCust t ON t.CustId = pa.CustId	
 	
+	IF @RoleID = 4 --Super			
+	BEGIN
+		INSERT INTO #DownlineCust (CustID)
+		SELECT c.custid
+		FROM custInfo c WITH(NOLOCK)
+			INNER JOIN @tmpCust t ON c.srecommend = t.custid
+		WHERE c.roleid IN (3,2,1)
+	END
+	ELSE IF @RoleID = 3 --Master
+	BEGIN
+		INSERT INTO #DownlineCust (CustID)
+		SELECT c.custid
+		FROM custInfo c WITH(NOLOCK)
+			INNER JOIN @tmpCust t ON c.mrecommend = t.custid
+		WHERE c.roleid IN (2,1)
+	END
+	ELSE IF @RoleID = 2 --Agent
+	BEGIN
+		INSERT INTO #DownlineCust (CustID)
+		SELECT c.custid
+		FROM custInfo c WITH(NOLOCK)
+			INNER JOIN @tmpCust t ON c.recommend = t.custid
+		WHERE c.roleid = 1
+	END	
+
 	SELECT custid, ReasonId AS OldReasonId FROM @tmpCust 
+	UNION ALL
+	SELECT dl.custid, pa.ReasonId AS OldReasonId
+	FROM #DownlineCust dl
+		INNER JOIN ProblemAccount pa WITH(NOLOCK) ON dl.custid = pa.custid
 
 	WHILE (1=1)
 	BEGIN		
