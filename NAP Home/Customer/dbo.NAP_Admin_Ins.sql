@@ -21,6 +21,7 @@ AS
 	Revisions:
 		- 20140219@Kos: Sync user with AdminSiteUser
 		- 20191016@Kos: Remove inactive products phase 2 [Redmine: #118699]
+		- 20220110@Eden: Saba Casino use DCS Setting [RedmineID: #164280]
 
 	Param's Explanation:
 	• @ErrCode:
@@ -52,8 +53,8 @@ BEGIN
 		RETURN
 	END
 
-	INSERT INTO dbo.custinfo (username, [custid], [currency], [MaxPerMatch], [MaxPerMatch2], [MaxPerMatch3], [MaxPerMatch5], [MaxPerMatch8], [MaxPerMatch10], [MaxPerMatch11], [MaxPerMatch12], [MaxPerMatch99], [MaxPerMatch161], [MaxPerMatch99MP], [MaxPerBall161], [roleid], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableCasino], [DisableOutright], [DisableNumber], [SyncCasino], [danger], [danger2], [danger3], [Enabled], [closed])
-	VALUES (@UserName, @CustId, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
+	INSERT INTO dbo.custinfo (username, [custid], [currency], [MaxPerMatch], [MaxPerMatch2], [MaxPerMatch3], [MaxPerMatch5], [MaxPerMatch8], [MaxPerMatch10], [MaxPerMatch11], [MaxPerMatch99], [MaxPerMatch161], [MaxPerMatch99MP], [MaxPerBall161], [roleid], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [DisableNumber], [danger], [danger2], [danger3], [Enabled], [closed])
+	VALUES (@UserName, @CustId, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
 
 	IF @@ERROR <> 0
 		BEGIN
