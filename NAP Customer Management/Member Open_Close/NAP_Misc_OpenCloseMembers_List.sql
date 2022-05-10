@@ -1,5 +1,4 @@
 /*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
-
 ALTER PROCEDURE [dbo].[NAP_Misc_OpenCloseMembers_List] 
 	@username VARCHAR(30),
 	@TotalItems INT = 0 OUTPUT,
@@ -20,6 +19,7 @@ AS
 		- 20190514@Paul: Create new SP [RedmineID: #113198]
 		- 20190527@Elodie: New account status for CN88 [Redmine: 113198]
 		- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
+		- 20220110@Eden: Saba Casino use DCS Setting [RedmineID: #164280]
 	
 	Example: NAP_customerUpdClosebyList_sel
 				@username = 'SSS',
@@ -129,7 +129,6 @@ BEGIN
 				master.username master,
 				agent.username agent,
 				ci.username member, 
-				ci.SyncCasino,
 				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed
 		FROM custInfo(NOLOCK) ci
 			INNER JOIN custInfo(NOLOCK) master ON master.custid = ci.mrecommend
@@ -146,7 +145,6 @@ BEGIN
 		SELECT ci.custid,
 				agent.username agent,
 				ci.username member, 
-				ci.SyncCasino,
 				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed
 		FROM custInfo(NOLOCK) ci
 			INNER JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
@@ -160,7 +158,7 @@ BEGIN
 	BEGIN
 		SELECT ci.custid,
 				ci.username member, 
-				ci.SyncCasino,
+		
 				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed
 		FROM custInfo(NOLOCK) ci
 			INNER JOIN CustProductStatus cps WITH (NOLOCK) ON cps.CustID = ci.custid
