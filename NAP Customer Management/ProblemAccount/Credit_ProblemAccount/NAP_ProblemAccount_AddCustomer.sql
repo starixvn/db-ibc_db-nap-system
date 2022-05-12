@@ -24,6 +24,7 @@ AS
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20200720@Johnson: Void Winning Ticket by Time and Limited Amount [redmine:#135253]
+		- 20220422@Johnson: Add Creator into ProblemAccount [redmine: #171686]
 	Parameter's explaination: 
 		- @LimitAmount = 0: unlimited
 	
@@ -115,6 +116,7 @@ BEGIN
 
 		EXEC dbo.Acc_CustomerInfo_Execrep_12
 			@CustId = @CustId,
+			@UserID = @UserID,
 			@RoleId = @RoleId,
 			@ReasonId = @ReasonId,
 			@PreventActionId = @PreventActionId,

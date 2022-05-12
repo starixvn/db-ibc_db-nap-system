@@ -21,6 +21,7 @@ AS
 		- 20200218@Johnson: Initial SP [Redmine:#128077]
 		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
 		- 20200721@Johnson: add void time & limit amount [redmine:#135253]
+		- 20220422@Johnson: Add Creator into ProblemAccount [redmine:#171686]
 	Parameter's explaination: 
 	
 */
@@ -119,8 +120,8 @@ BEGIN
 		AND isAcknowledgement = 1
 		AND isVip = 0
 		
-	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, SubIssueTypeId, VoidTime, LimitAmount)	
-	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0, @SubIssueTypeId, @VoidTime, @LimitAmount
+	INSERT INTO dbo.ProblemAccount (CustId, ProblemStatus, ReasonId, ActionID, Comment, MaxBet, MaxPerEvent, CreatedDate, IsReviewed, IsAbnormalMember, SubIssueTypeId, VoidTime, LimitAmount, Creator)	
+	SELECT CustId, 0, @ReasonID, @ActionID, @Comment, MaxBet, MaxPerEvent, GETDATE(), 0, 0, @SubIssueTypeId, @VoidTime, @LimitAmount, @UserID
 	FROM @tmpCust t
 	WHERE custid IS NOT NULL
 	
