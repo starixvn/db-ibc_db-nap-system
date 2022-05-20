@@ -1,5 +1,5 @@
 ﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_Cust_Insert]
+Create PROCEDURE [dbo].[NAP_Cust_Insert]
 	@CustId			INT							OUTPUT,	
 	@Username		VARCHAR (30),
 	@UserPwd		VARCHAR (40)	= '',
@@ -26,6 +26,7 @@ AS
 	Revisions:
 		- 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
 	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		- 20220517@Winfred: Insert new OTP Login requried for VPN's users [redmine:170994]
 	    
 	Param's Explanation:
 	• @CustId :
@@ -112,6 +113,19 @@ BEGIN
 		@LogDate		= @LogDate,
 		@LoginIP		= @LoginIP,
 		@Language		= @Language,
+		@ErrCode		= @ErrCode OUTPUT,
+		@ErrMsg			= @ErrMsg OUTPUT
+	IF @ErrCode > 0
+	BEGIN
+		SELECT @ErrCode = @ErrCode, @ErrMsg = @ErrMsg
+		RETURN	
+	END
+
+	-- Create new NAP OTP admin
+	EXEC [dbo].[NAP_Admin_OTPIns] 
+		@CustId			= @CustId,
+		@System			= 'NAP SC',
+		@UserId			= @CurrentUserId,
 		@ErrCode		= @ErrCode OUTPUT,
 		@ErrMsg			= @ErrMsg OUTPUT
 	IF @ErrCode > 0
