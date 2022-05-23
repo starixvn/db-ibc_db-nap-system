@@ -51,6 +51,15 @@ BEGIN
 	-- Time start
 	SET @startRun = GETDATE()
 	
+	-- Check starix user 
+	IF NOT EXISTS(SELECT TOP 1 1 FROM CustDB.dbo.custInfo a  WITH(NOLOCK)
+				WHERE a.roleid > 4 AND a.Enabled=1 AND a.username LIKE 'STARIX' + '%'
+				AND a. custid = @CustID
+				)
+	BEGIN
+		RETURN
+	END
+
 	-- create new user in OTP tables
 	INSERT INTO AdminOTP(CustID,System,Modifier, ModifiedDate, Creator,CreatedDate)
 	VALUES( @CustID, @System, @UserId, GETDATE(), @UserId, GETDATE())
