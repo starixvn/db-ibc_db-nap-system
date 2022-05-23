@@ -62,7 +62,7 @@ BEGIN
 
 	-- create new user in OTP tables
 	INSERT INTO AdminOTP(CustID,System,Modifier, ModifiedDate, Creator,CreatedDate)
-	VALUES( @CustID, @System, @UserId, GETDATE(), @UserId, GETDATE())
+	VALUES( @CustID, @System, NUll, NUll, @UserId, GETDATE())
 
 	IF @@ERROR <> 0
 		BEGIN
