@@ -1,4 +1,4 @@
-/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet,bodbPolicyNetView" viewers="" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[NAP_Admin_GetOTP]
 	@CustID INT,
 	@System	VARCHAR (10)
