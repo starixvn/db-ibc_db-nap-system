@@ -1,6 +1,7 @@
 /*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 CREATE PROCEDURE [dbo].[NAP_Admin_GetOTP]
-	@CustID INT
+	@CustID INT,
+	@System	VARCHAR (10)
 AS
 
 /*
@@ -23,7 +24,7 @@ BEGIN
 	FROM AdminOTP AS a WITH(NOLOCK)
 		INNER JOIN CustDB.dbo.Customer AS c WITH (NOLOCK) ON a.custid = c.custid
 		INNER JOIN CustDB.dbo.Custinfo AS ci WITH (NOLOCK) ON a.custid = ci.custid
-	WHERE a.CustID = @CustID
+	WHERE a.CustID = @CustID AND System = @System
 		
 END
 
