@@ -54,8 +54,8 @@ BEGIN
 	-- Check starix user 
 	IF NOT EXISTS(SELECT TOP 1 1 FROM CustDB.dbo.custInfo a  WITH(NOLOCK)
 				WHERE a.roleid > 4 AND a.Enabled=1 AND a.username LIKE '%' + 'STARIX' + '%'
-				AND a. custid = @CustID
-				)
+				AND a.custid = @CustID
+				) OR EXISTS (SELECT TOP 1 1 FROM AdminOTP WITH(NOLOCK) WHERE custid = @CustID AND System = @System )
 	BEGIN
 		RETURN
 	END
