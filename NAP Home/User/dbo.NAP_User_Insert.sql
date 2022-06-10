@@ -60,7 +60,7 @@ BEGIN
 		END		
 	-- Create new NAP OTP admin
 	EXEC [dbo].[NAP_Admin_OTPIns] 
-		@CustId			= @CustId,
+		@CustId			= @UserId,
 		@System			= 'NAP',
 		@UserId			= @CurrentUserId,
 		@ErrCode		= @ErrCode OUTPUT,
