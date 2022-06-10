@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 Create PROCEDURE [dbo].[NAP_Cust_Insert]
 	@CustId			INT							OUTPUT,	
 	@Username		VARCHAR (30),
