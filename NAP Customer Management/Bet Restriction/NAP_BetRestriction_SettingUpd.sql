@@ -14,7 +14,8 @@ AS
 	Original:
 
 	Revisions:  
-	- 20190829@Eden: Create New SP [RedmineID: #117727]
+		- 20190829@Eden: Create New SP [RedmineID: #117727]
+		- 20220615@Tacy: Hot modify Select Into statement to avoid dump [Redmine: #174035]
 
 	Parameter explanation:
 	@ErrCode : 
@@ -38,11 +39,24 @@ AS
 
 	*/
 BEGIN
+	SET NOCOUNT ON
+
 	DECLARE @SettingID	SMALLINT, @LiveBetAcceptStatus BIT, @SeizeBetTicketStatus BIT, @BetLimitStatus BIT
 	, @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31710	
 	, @SportType SMALLINT, @RestrictionLevel VARCHAR(50)	
 	, @LiveBetAcceptStatus_Old BIT, @SeizeBetTicketStatus_Old BIT, @BetLimitStatus_Old BIT
 	, @Type VARCHAR(20)
+
+	CREATE TABLE #Setting (
+			SettingId				SMALLINT,
+			LiveBetAcceptStatus		BIT,
+			SeizeBetTicketStatus	BIT,
+			BetLimitStatus			BIT,
+			IsProcessed				BIT,
+			LogDataNew				VARCHAR(500),
+			LogDataOld				VARCHAR(500),
+			IsProcessedLog			BIT
+			)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -51,6 +65,8 @@ BEGIN
 
 	EXEC sp_xml_preparedocument @hDoc OUTPUT, @SettingXML
 
+	INSERT INTO #Setting 
+		(SettingId, LiveBetAcceptStatus, SeizeBetTicketStatus, BetLimitStatus, IsProcessed, LogDataNew, LogDataOld, IsProcessedLog)
 	SELECT  st.SettingId,
 			st.LiveBetAcceptStatus,
 			st.SeizeBetTicketStatus,
@@ -59,7 +75,6 @@ BEGIN
 			CAST (NULL AS VARCHAR(500)) AS LogDataNew,
 			CAST (NULL AS VARCHAR(500)) AS LogDataOld,
 			CAST (0 AS BIT) AS IsProcessedLog
-	INTO #Setting
 	FROM OPENXML(@hDoc, 'R/Setting')
 	WITH 
 	(
