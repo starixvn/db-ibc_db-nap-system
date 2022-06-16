@@ -1,5 +1,4 @@
 /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet, Dot_Member" viewers="" isFunction="0"></info>*/
-
 ALTER PROCEDURE NAP_ProblemAccount_UpdateCustomer
 	@CustomerList		VARCHAR(MAX),
 	@RoleId				TINYINT,
@@ -27,6 +26,7 @@ AS
 		- 20200720@Johnson: add void time & limit amount [redmine:#135253]	
 		- 20200210@Elodie: Return OldReasonId value [Redmine:#156935]
 		- 20220414@Elodie: Return Downline of customer list [Redmine:#170135]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 
 	
 */
@@ -72,8 +72,9 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, currency, CustID)
 	SELECT ci.Username, ci.currency, ci.custid
-	FROM dbo.f_StringSplit(@CustomerList, ',') f
-		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.value = ci.username
+	WHERE f.value <> ''
 	
 	IF @PreventActionId = 2 --Void Winning Tickets
 		AND @UpdateLimitAmount = 1 AND @LimitAmount > 0

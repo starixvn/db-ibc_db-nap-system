@@ -15,6 +15,7 @@ AS
 
 	Revisions:
 		- 20210303@Johnson: Initial SP [Redmine:#149477]		
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 		
 		- @level = 0: all; 2,3,4: SMA
 		- @site  = sitename
@@ -31,8 +32,9 @@ BEGIN
 	SELECT @level = NULLIF(@level,0)
 	
 	INSERT INTO @tmpSite(site)
-	SELECT val 
-	FROM dbo.strSplit(@site,',')
+	SELECT value 
+	FROM STRING_SPLIT(@site,',')
+	WHERE value <> ''
 		
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 	

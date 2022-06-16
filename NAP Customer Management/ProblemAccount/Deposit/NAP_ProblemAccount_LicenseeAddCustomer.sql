@@ -22,6 +22,7 @@ AS
 		- 20200327@Johnson: Wrongly convert exchange rate of Reduce Bet Limit [redmine:#131318]
 		- 20200721@Johnson: add void time & limit amount [redmine:#135253]
 		- 20220422@Johnson: Add Creator into ProblemAccount [redmine:#171686]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 
 	
 */
@@ -51,8 +52,9 @@ BEGIN
 	SELECT @startRun = GETDATE()
 	
 	INSERT INTO @tmpCust(Username)
-	SELECT Val
-	FROM dbo.strSplit(@CustomerList, ',') f
+	SELECT value
+	FROM STRING_SPLIT(@CustomerList, ',') f
+	WHERE value <> ''
 
 	UPDATE t
 	SET t.custid = c.custid,

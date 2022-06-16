@@ -17,6 +17,7 @@ AS
 		- 20200219@Johnson: Initial SP [Redmine:#128077]
 		- 20201016@Elodie: Output all cust list is removed PA [Redmine:#141756]
 		- 20201215@Johnson: check & output result status when unmark PA for member level [redmine:#146400]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 
 		* 100: invalid accounts
 		* 101: unmarked problem accounts
@@ -34,9 +35,9 @@ BEGIN
 	SET	@startRun = GETDATE()
 
 	INSERT INTO @tmpCust(Username, CustID,roleid,isDeposit)
-	SELECT DISTINCT f.val, ci.custid, ci.roleid, CASE WHEN s.custid IS NOT NULL THEN 1 ELSE 0 END
-	FROM dbo.strSplit(@CustomerList, ',') f
-		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	SELECT DISTINCT f.value, ci.custid, ci.roleid, CASE WHEN s.custid IS NOT NULL THEN 1 ELSE 0 END
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON f.value = ci.username
 		LEFT JOIN Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
 		
 	SELECT @strUsername = ''

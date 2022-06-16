@@ -1,4 +1,6 @@
-﻿ALTER PROCEDURE [dbo].Age_CustomerSelCheckListSmartPunter
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbDownlineNet,bodbdownlinenetview" viewers="" isFunction="0" isNested="0" ></info>*/
+
+ALTER PROCEDURE [dbo].Age_CustomerSelCheckListSmartPunter
 	@ListUserName		VARCHAR(MAX),	
 	@UserId				INT=0,
 	@IsRestricted		BIT=0,
@@ -11,6 +13,7 @@ AS
 	DB: DBCUST.CustDB
 	Task: Check a list customer is smart punter or not RedmineID: #67772
 	Revisions:  		
+		- 20220613@Elodie: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]  
 */
  BEGIN
     SET nocount ON
@@ -33,9 +36,8 @@ AS
       )
 
 
-    INSERT #username
-             (username)     
-    SELECT [val] FROM strSplit(@ListUserName,',')
+    INSERT #username (username)     
+    SELECT value FROM string_split(@ListUserName,',') where value <> ''
 
     UPDATE u
     SET    custid = c.custid,
@@ -99,6 +101,3 @@ AS
       END
 END  
 GO
-
-GRANT EXECUTE ON [dbo].Age_CustomerSelCheckListSmartPunter TO BODBDownlineNetView
-GRANT EXECUTE ON [dbo].Age_CustomerSelCheckListSmartPunter TO BODBDownlineNet

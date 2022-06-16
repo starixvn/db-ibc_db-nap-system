@@ -17,6 +17,7 @@ AS
 
 	Revisions:
 		- 20200219@Johnson: Initial SP [Redmine:#128077]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter's explaination: 
 	
@@ -32,8 +33,8 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, CustID)
 	SELECT ci.Username, ci.custid
-	FROM dbo.strSplit(@CustomerList, ',') f
-		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.value = ci.username
 	WHERE srecommend IN (SELECT custid FROM Dep_CustSuper s WITH(NOLOCK))
 		AND ci.roleid = 1
 	

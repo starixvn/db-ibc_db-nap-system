@@ -21,6 +21,7 @@ BEGIN
 	Revisions:
 			--20170601@Winnie: Apply color for closed account [RedmineID: #74494]
 			- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
+			- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Explanation's Param:
 		• @custid: list custid need to be updated
@@ -41,7 +42,7 @@ BEGIN
 	IF(@updatetype=0)
 	BEGIN
 		insert into @TempCust
-		select custid from CustProductStatus(nolock) where custid in (select val from dbo.StrSplit(@CustIDs,',')) and CloseInfo = 0
+		select custid from CustProductStatus(nolock) where custid in (select value from STRING_SPLIT(@CustIDs,',')) and CloseInfo = 0
 		if not exists (select top 1 1 from @TempCust)
 		begin
 			select @ErrMsg = 'Cannot update ! Members are closed',
@@ -109,7 +110,7 @@ BEGIN
 	IF(@updatetype=1)
 	BEGIN
 		insert into @TempCust
-		select custid from CustProductStatus(nolock) where custid in (select val from dbo.StrSplit(@CustIDs,',')) and CloseInfo > 0
+		select custid from CustProductStatus(nolock) where custid in (select value from STRING_SPLIT(@CustIDs,',')) and CloseInfo > 0
 	
 		if not exists (select top 1 1 from @TempCust)
 		begin

@@ -18,6 +18,7 @@ AS
 
 	Revisions:
 		- 20200219@Johnson: Initial SP [Redmine:#128077]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter's explaination: 
 	
@@ -32,8 +33,8 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, CustID, site, isVip)
 	SELECT ci.Username, ci.custid,s.site, CASE WHEN cv.custid IS NULL THEN 0 ELSE 1 END
-	FROM dbo.strSplit(@CustomerList, ',') f
-		INNER JOIN dbo.customer ci WITH (NOLOCK) ON f.val = ci.username
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		INNER JOIN dbo.customer ci WITH (NOLOCK) ON f.value = ci.username
 		INNER JOIN Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
 		LEFT JOIN Dep_CustVip cv WITH(NOLOCK) ON ci.custid = cv.custid
 	WHERE ci.roleid = 1

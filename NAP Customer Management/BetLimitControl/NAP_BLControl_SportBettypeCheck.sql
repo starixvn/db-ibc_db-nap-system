@@ -19,6 +19,7 @@ AS
 		- 20200525@Eden: Create New SP  [RedmineID: #132736]
 		- 20211112@Eden: Alpha/NAP - In-house Replication (isDeleted & RepUpdateTime) [RedmineID: #164321]
 		- 20220302@Johnson: Add league group [RedmineID: #156808]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter explanation:
 	- @ErrorCode: 
 		1: The bet limit type exist already.
@@ -40,24 +41,22 @@ AS
 BEGIN
 	SELECT DISTINCT 
 		m.ProductID, 
-		CASE WHEN @SporttypeList = '0' THEN m.sporttype ELSE sp.val END AS Sporttype
+		CASE WHEN @SporttypeList = '0' THEN m.sporttype ELSE sp.value END AS Sporttype
 	INTO #Sport
 	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
-		INNER JOIN dbo.f_StringSplit(@ProductList,',') p1 ON m.ProductID = p1.val OR @ProductList = '0'
-		LEFT JOIN dbo.f_StringSplit(@SporttypeList,',') sp ON m.Sporttype = sp.val OR @SporttypeList = '0'
+		INNER JOIN STRING_SPLIT(@ProductList,',') p1 ON m.ProductID = p1.value OR @ProductList = '0'
+		LEFT JOIN STRING_SPLIT(@SporttypeList,',') sp ON m.Sporttype = sp.value OR @SporttypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
-	OPTION (MAXRECURSION 0)
 	
 	SELECT DISTINCT 
 		m.ProductID,
 		m.Sporttype,
-		CASE WHEN @BettypeList = '0' THEN m.bettype ELSE bt.val END AS Bettype
+		CASE WHEN @BettypeList = '0' THEN m.bettype ELSE bt.value END AS Bettype
 	INTO #Bettype
 	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
 		INNER JOIN #Sport s ON m.Sporttype = s.Sporttype
-		LEFT JOIN dbo.f_StringSplit(@BettypeList,',') bt ON m.Bettype = bt.val OR @BettypeList = '0'
+		LEFT JOIN STRING_SPLIT(@BettypeList,',') bt ON m.Bettype = bt.value OR @BettypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
-	OPTION (MAXRECURSION 0)
 	
 	DECLARE @ErrorProducts VARCHAR(MAX) = '',
 			@ErrorSporttypes VARCHAR(MAX) = '',
@@ -96,16 +95,16 @@ BEGIN
 		RETURN
 	END
 
-	SELECT val AS LeagueID 
+	SELECT value AS LeagueID 
 	INTO #League
-	FROM dbo.f_StringSplit(@LeagueList,',') le
-	OPTION (MAXRECURSION 0)
+	FROM STRING_SPLIT(@LeagueList,',') le
+	WHERE value <> ''
 		
-	SELECT val AS LeagueGroupID 
+	SELECT value AS LeagueGroupID 
 	INTO #LeagueGroup
-	FROM dbo.f_StringSplit(@LeagueGroupList,',') lg
-	OPTION (MAXRECURSION 0)
-		
+	FROM STRING_SPLIT(@LeagueGroupList,',') lg
+	WHERE value <> ''
+
 	SELECT l.Sporttype,l.LeagueID, l.LeagueGroupID
 	INTO #SportLeague
 	FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)

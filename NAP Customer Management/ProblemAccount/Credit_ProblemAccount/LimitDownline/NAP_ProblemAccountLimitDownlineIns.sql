@@ -14,7 +14,8 @@ AS
 	DB: DBCUST/CustDB
 
 	Revisions:
-		- 20210301@Johnson: Initial SP [Redmine:#149477]		
+		- 20210301@Johnson: Initial SP [Redmine:#149477]	
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 		
 		- cntMember: number of SMA add successfully
 */
@@ -32,8 +33,9 @@ BEGIN
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, RoleId TINYINT, isExists BIT DEFAULT(0), IsLog BIT DEFAULT(0))	
 
 	INSERT INTO @tmpUsername(Username)
-	SELECT DISTINCT Val
-	FROM dbo.strSplit(@CustomerList, ',') f
+	SELECT DISTINCT value
+	FROM STRING_SPLIT(@CustomerList, ',') f
+	WHERE value <> ''
 
 	INSERT INTO @tmpCust(Username, CustID, RoleId)
 	SELECT c.Username, c.custid, c.roleid

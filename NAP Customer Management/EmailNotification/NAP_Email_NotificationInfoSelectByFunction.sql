@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Email_NotificationInfoSelectByFunction]
 (
 	@fromdate DATETIME 
@@ -16,6 +16,7 @@ AS
 
 	Revisions:
 		- 20171012@Elodie: Get email notifications for Loss Limit monitoring function [Redmine:#82892]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter's explaination: 
 		- @NotifiedByFunction_Flag
@@ -41,7 +42,7 @@ BEGIN
 	BEGIN
 		SELECT EN.ID,EN.NotificationInfo,EN.CreatedDate,EN.ActionID
 		FROM dbo.EmailNotification EN WITH (NOLOCK)
-			INNER JOIN dbo.strSplit(@ActionIDs,',') AC ON EN.ActionID =AC.val 
+			INNER JOIN STRING_SPLIT(@ActionIDs,',') AC ON EN.ActionID =AC.value 
 		WHERE EN.IsNotifiedbyTOControl = 0 AND EN.CreatedDate >= @fromdate AND CreatedDate < @todate
 		
 	END
@@ -51,16 +52,13 @@ BEGIN
 	BEGIN
 		SELECT EN.ID,EN.NotificationInfo,EN.CreatedDate,EN.ActionID
 		FROM dbo.EmailNotification EN WITH (NOLOCK)
-			INNER JOIN dbo.strSplit(@ActionIDs,',') AC ON EN.ActionID =AC.val 
+			INNER JOIN STRING_SPLIT(@ActionIDs,',') AC ON EN.ActionID =AC.value 
 		WHERE EN.IsNotifiedbyLossMonitoring = 0 AND EN.CreatedDate >= @fromdate AND CreatedDate < @todate
 		
 	END
 END
 GO
 
-GRANT EXECUTE ON [dbo].[NAP_Email_NotificationInfoSelectByFunction] TO [bodbAdminNet]
-
-GO
 
 
 

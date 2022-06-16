@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Email_NotificationInfoUpdateByFunction]
 (
 	@NotificationIDList VARCHAR(MAX)
@@ -15,6 +15,7 @@ AS
 
 	Revisions:
 		- 20171012@Elodie: Update email notifications for Loss Limit monitoring function [Redmine:#82892]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 
 		- @NotificationIDList: ID of table EmailNotification
 			
@@ -37,7 +38,7 @@ BEGIN
 		UPDATE EN	
 			SET IsNotifiedbyTOControl = @IsNotifiedValue
 		FROM dbo.EmailNotification EN WITH (ROWLOCK,UPDLOCK)
-			INNER JOIN dbo.strSplit(@NotificationIDList,',') AC ON EN.ID = AC.val 
+			INNER JOIN STRING_SPLIT(@NotificationIDList,',') AC ON EN.ID = AC.value 
 		
 	END
 	-- FOR Loss monitoring
@@ -46,14 +47,10 @@ BEGIN
 		UPDATE EN	
 			SET EN.IsNotifiedbyLossMonitoring = @IsNotifiedValue
 		FROM dbo.EmailNotification EN WITH (ROWLOCK,UPDLOCK)
-			INNER JOIN dbo.strSplit(@NotificationIDList,',') AC ON EN.ID = AC.val 
+			INNER JOIN STRING_SPLIT(@NotificationIDList,',') AC ON EN.ID = AC.value 
 		
 	END
 END
-GO
-
-GRANT EXECUTE ON [dbo].[NAP_Email_NotificationInfoUpdateByFunction] TO [bodbAdminNet]
-
 GO
 
 

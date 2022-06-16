@@ -11,6 +11,7 @@ AS
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
 	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
+	- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter explanation:
 
@@ -38,9 +39,9 @@ BEGIN
 	DECLARE @Update_Cust_Tbl TABLE ( CustID INT PRIMARY KEY, Currency INT,Username VARCHAR(30), IsFinished BIT DEFAULT 0)
 	
 	INSERT INTO @InputCust_Tbl(CustID)
-	SELECT p.val
-	FROM dbo.f_StringSplit(@CustIDList,',') p
-	OPTION (MAXRECURSION 0)
+	SELECT p.value
+	FROM STRING_SPLIT(@CustIDList,',') p
+	WHERE value <> ''
 
 	--> Process for all Customers belong to list of licensees
 	INSERT INTO @Update_Cust_Tbl(CustID,Currency,Username)

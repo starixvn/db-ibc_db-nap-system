@@ -24,6 +24,7 @@ AS
 	Revisions:
 		- 20211117@Elodie: Initial SP [Redmine:#164148]
 		- 20220511@Johnson: Add Creator into ProblemAccount [redmine:#171686]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 
 		- @LimitAmount = 0: unlimited
 	
@@ -37,8 +38,9 @@ BEGIN
 	DECLARE @tmpCust TABLE (Username VARCHAR(30), CustId INT, currency INT, RoleId TINYINT, IsFinished BIT DEFAULT(0))	
 
 	INSERT INTO @tmpList(Username)
-	SELECT Val
-	FROM dbo.f_StringSplit(@CustomerList, ',') f
+	SELECT value
+	FROM STRING_SPLIT(@CustomerList, ',') f
+	WHERE value <> ''
 
 	INSERT INTO @tmpCust(Username, CustID, currency, RoleId)
 	SELECT c.Username, c.custid, currency, c.roleid

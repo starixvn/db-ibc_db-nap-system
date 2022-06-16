@@ -20,6 +20,7 @@ AS
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
 		- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
 		- 20210722@Tina: fix the issue that closeinfo cannot replicate on time [redmine: #158917]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter's explaination:
 */
@@ -35,8 +36,8 @@ BEGIN
 	INSERT INTO @tmpCust(Username, CustID, StatusID)
 	SELECT ci.Username, ci.custid,
 		CASE WHEN ci.Enabled = 1 THEN CASE WHEN cps.closed = 1 THEN 3 WHEN cps.reject = 1 THEN 2 ELSE 1 END ELSE 4 END AS CustStatus
-	FROM dbo.f_StringSplit(@CustomerList, ',') f
-		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.value = ci.username
 		CROSS APPLY  (SELECT CASE WHEN CloseInfo > 0 THEN 1 ELSE 0 END AS closed
 										, CASE WHEN SuspendInfo > 0 THEN 1 ELSE 0 END AS reject
 									FROM dbo.CustProductStatus  WITH(NOLOCK)
