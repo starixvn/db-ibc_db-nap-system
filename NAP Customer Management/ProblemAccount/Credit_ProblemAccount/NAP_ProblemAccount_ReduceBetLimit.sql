@@ -19,6 +19,7 @@ AS
 
 	Revisions:
 		- 20200210@Elodie: Initial SP [Redmine:#127446]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter's explaination: 
 	
@@ -33,8 +34,8 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, CustID)
 	SELECT ci.Username, ci.custid
-	FROM dbo.f_StringSplit(@CustomerList, ',') f
-		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		INNER JOIN dbo.custInfo ci WITH (NOLOCK) ON f.value = ci.username
 
 	UPDATE t 
 	SET t.MaxBet = pa.MaxBet,

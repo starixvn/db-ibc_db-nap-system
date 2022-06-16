@@ -22,6 +22,7 @@ AS
 		- 20201016@Elodie: Output all downline list is removed PA [Redmine:#141756]
 		- 20201214@Johnson: check & output result status when unmark PA for member level [redmine:#146400]
 		- 20210625@Johnson: Unmark multiple SMA PA accounts [redmine:#155453]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 	Parameter's explaination: 
 		-tblError result:
 			* 100: invalid accounts
@@ -39,11 +40,10 @@ BEGIN
 	SET	@startRun = GETDATE()
 
 	INSERT INTO @tmpCust(Username, CustID, roleid,isDeposit)
-	SELECT DISTINCT f.val, ci.custid, ci.roleid, CASE WHEN s.custid IS NOT NULL THEN 1 ELSE 0 END as isDeposit
-	FROM dbo.f_StringSplit(@CustomerList, ',') f
-		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON f.val = ci.username
+	SELECT DISTINCT f.value, ci.custid, ci.roleid, CASE WHEN s.custid IS NOT NULL THEN 1 ELSE 0 END as isDeposit
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		LEFT JOIN dbo.custInfo ci WITH (NOLOCK) ON f.value = ci.username
 		LEFT JOIN dbo.Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
-	OPTION (MAXRECURSION 0)
 	
 	
 	SELECT @strUsername = ''

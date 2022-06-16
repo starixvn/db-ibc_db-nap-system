@@ -1,2 +1,2 @@
-NAP Customer Management\ProblemAccount\Credit_ProblemAccount\NAP_ProblemAccount_RemoveCustomer.sql
-NAP Customer Management\ProblemAccount\Credit_ProblemAccount\NAP_ProblemAccount_UpdateCustomer.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeInsert.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeUpdate.sql

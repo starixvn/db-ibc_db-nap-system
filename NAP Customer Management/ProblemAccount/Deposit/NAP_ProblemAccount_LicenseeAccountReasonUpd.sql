@@ -25,6 +25,7 @@ AS
 		- 20200221@Johnson: Initial SP [Redmine:#128077]
 		- 20200721@Johnson: add void time & limit amount [redmine: #135253]
 		- 20200210@Elodie: Return OldReasonId value [Redmine:#156935]
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter's explaination: 
 	
@@ -59,8 +60,8 @@ BEGIN
 
 	INSERT INTO @tmpCust(Username, CustID, currency)
 	SELECT ci.Username, ci.custid, ci.currency
-	FROM dbo.strSplit(@CustomerList, ',') f
-		INNER JOIN dbo.customer ci WITH (NOLOCK) ON f.val = ci.username
+	FROM STRING_SPLIT(@CustomerList, ',') f
+		INNER JOIN dbo.customer ci WITH (NOLOCK) ON f.value = ci.username
 		INNER JOIN Dep_CustSuper s WITH(NOLOCK) ON ci.srecommend = s.custid
 	WHERE ci.roleid = 1
 					

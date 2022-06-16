@@ -10,6 +10,7 @@ AS
 
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
+	- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter explanation:
 	EXEC NAP_BLControl_PerformanceChecking_ReduceBetLimit '1676188,1176092,28201722'
@@ -33,9 +34,9 @@ BEGIN
 	DECLARE @Cust_Tbl TABLE ( CustID INT, Currency INT, IsFinished BIT DEFAULT 0)
 
 	INSERT INTO @Cust_Tbl(CustID)
-	SELECT p.val
-	FROM dbo.f_StringSplit(@CustIDList,',') p
-	OPTION (MAXRECURSION 0)
+	SELECT p.value
+	FROM STRING_SPLIT(@CustIDList,',') p
+	WHERE value <> ''
 
 	UPDATE t
 	SET t.Currency = c.currency

@@ -20,6 +20,7 @@ AS
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
+	- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -64,9 +65,9 @@ BEGIN
 	DECLARE @CustTbl TABLE ( UserName VARCHAR(30), Currency INT, IsFinished BIT DEFAULT 0)
 
 	INSERT INTO @CustTBL(UserName)
-	SELECT DISTINCT p.val
-	FROM dbo.f_StringSplit(@Usernames,',') p
-	OPTION (MAXRECURSION 0)
+	SELECT DISTINCT p.value
+	FROM STRING_SPLIT(@Usernames,',') p
+	WHERE value <> ''
 
 	UPDATE t
 	SET t.Currency = c.currency
