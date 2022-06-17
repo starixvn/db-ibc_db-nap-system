@@ -21,6 +21,7 @@ AS
 		- 20220302@Johnson: Add league group [RedmineID: #156808]
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20220610@Tacy: Alpha/NAP - Remove IsDeleted field in League Table [RedmineID: #171699]
+		- 20220617@Johnson: define temp table to avoid dump db [redmine:#174035]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -41,20 +42,23 @@ AS
 
 	*/
 BEGIN
+	CREATE TABLE #Sport(ProductID TINYINT,Sporttype SMALLINT)
+	CREATE TABLE #Bettype(ProductID TINYINT,Sporttype SMALLINT,Bettype SMALLINT)
+	
+	INSERT INTO #Sport(ProductID,Sporttype)
 	SELECT DISTINCT 
 		m.ProductID, 
-		CASE WHEN @SporttypeList = '0' THEN m.sporttype ELSE sp.value END AS Sporttype
-	INTO #Sport
+		CASE WHEN @SporttypeList = '0' THEN m.sporttype ELSE sp.value END AS Sporttype	
 	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
 		INNER JOIN STRING_SPLIT(@ProductList,',') p1 ON m.ProductID = p1.value OR @ProductList = '0'
 		LEFT JOIN STRING_SPLIT(@SporttypeList,',') sp ON m.Sporttype = sp.value OR @SporttypeList = '0'
 	WHERE m.ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 	
+	INSERT INTO #Bettype(ProductID,Sporttype,Bettype)
 	SELECT DISTINCT 
 		m.ProductID,
 		m.Sporttype,
-		CASE WHEN @BettypeList = '0' THEN m.bettype ELSE bt.value END AS Bettype
-	INTO #Bettype
+		CASE WHEN @BettypeList = '0' THEN m.bettype ELSE bt.value END AS Bettype	
 	FROM DBEXT.bodb02.dbo.SportBettypeMatrix m WITH(NOLOCK)
 		INNER JOIN #Sport s ON m.Sporttype = s.Sporttype
 		LEFT JOIN STRING_SPLIT(@BettypeList,',') bt ON m.Bettype = bt.value OR @BettypeList = '0'
@@ -96,19 +100,22 @@ BEGIN
 
 		RETURN
 	END
-
-	SELECT value AS LeagueID 
-	INTO #League
+	CREATE TABLE #League(LeagueID INT)
+	CREATE TABLE #LeagueGroup(LeagueGroupID INT)	
+	CREATE TABLE #SportLeague(Sporttype SMALLINT, LeagueID INT, LeagueGroupID INT)
+	
+	INSERT INTO #League(LeagueID)
+	SELECT value AS LeagueID 	
 	FROM STRING_SPLIT(@LeagueList,',') le
 	WHERE value <> ''
-		
+	
+	INSERT INTO #LeagueGroup(LeagueGroupID)	
 	SELECT value AS LeagueGroupID 
-	INTO #LeagueGroup
 	FROM STRING_SPLIT(@LeagueGroupList,',') lg
 	WHERE value <> ''
 
-	SELECT l.Sporttype,l.LeagueID, l.LeagueGroupID
-	INTO #SportLeague
+	INSERT INTO #SportLeague(Sporttype,LeagueID,LeagueGroupID)
+	SELECT l.Sporttype,l.LeagueID, l.LeagueGroupID	
 	FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
 		INNER JOIN #League le ON l.LeagueID = le.LeagueID
 		INNER JOIN #Sport s ON l.Sporttype = s.Sporttype
