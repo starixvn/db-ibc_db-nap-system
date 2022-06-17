@@ -189,6 +189,7 @@ BEGIN
 		WHERE SettingID = @SettingID
 	END
 	
+	DROP TABLE #Setting
 END
 GO
 
