@@ -19,15 +19,40 @@ AS
 		- 20181219@Kan: TO Control - Change condition of bettype - [Redmine: 106656]
 		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
 		- 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
+		- 20220520@Kathy: Alpha - My Monitor Accounts for Risk & Control [Redmine:170467]
+
 */
 BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @srecommend INT, @bettype SMALLINT, @statusID TINYINT, @TransID BIGINT
-	DECLARE @isvalid BIT = 0
+	DECLARE @isvalidSB BIT = 0
+			,@isvalidSB_3rdSB BIT = 0
+
 	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid
 	FROM inserted 
 	
+	SELECT	@isvalidSB = MAX(CASE WHEN ProductID = 1 THEN 1 ELSE 0 END)
+			,@isvalidSB_3rdSB = MAX(CASE WHEN ProductID IN (1,63,69) THEN 1 ELSE 0 END)
+	FROM	dbo.SportBettypeMatrix WITH (NOLOCK)
+	WHERE	BetType = @bettype
+			AND ((ProductID = 1 
+					AND BetType NOT IN (9,29,10)
+					AND bettype NOT BETWEEN 801 AND 899
+				) OR ProductID IN (63,69)
+			)
+				
+	SELECT	@isvalidSB = ISNULL(@isvalidSB,0)
+			,@isvalidSB_3rdSB = ISNULL(@isvalidSB_3rdSB,0)
+
+	IF @isvalidSB_3rdSB = 1
+	BEGIN
+		INSERT INTO dbo.WLMonitored_TicketDetails_Pending(TransId, CustId, Bettype, Actual_Stake, Winlost, SettlementTime)
+		SELECT transid, custid, Bettype, actual_stake, winlost, ISNULL(SettlementTime, GETDATE())
+		FROM inserted
+		WHERE	@statusID BETWEEN 111 AND 113 OR @statusID IN (102,103) 
+	END
+
 	IF @srecommend in ( 
 		836203,--12BETSuperTB
 		836226,--12BETSuperRMB
@@ -57,12 +82,7 @@ BEGIN
 		RETURN
 	
 	-- Process for sportbook bettype for TO Control only
-	SET @isvalid = (SELECT TOP 1 1  
-					FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-					WHERE ProductID = 1 AND BetType = @bettype
-					 AND BetType NOT IN (9,29,10)
-					 )
-	IF @isvalid = 0
+	IF @isvalidSB = 0
 	BEGIN
 		RETURN;
 	END

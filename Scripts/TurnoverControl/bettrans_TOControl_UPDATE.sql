@@ -18,18 +18,60 @@ AS
 		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
 		- 20190701@Patrick: Enhance trigger update - [Redmine: #112219]
 	    - 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
+		- 20220520@Kathy: Alpha - My Monitor Accounts for Risk & Control [Redmine:170467]
 */
 BEGIN
 	
 	SET NOCOUNT ON;
 
 	DECLARE @n TINYINT
-	DECLARE @srecommend INT, @statusid TINYINT, @bettype SMALLINT
-	DECLARE @isvalid BIT = 0
+	DECLARE @srecommend INT, @statusid TINYINT, @bettype SMALLINT, @rowcount INT
+	DECLARE @SettlementDate SMALLDATETIME
+			,@isvalidSB BIT = 0
+			,@isvalidSB_3rdSB BIT = 0
+
 	SELECT TOP 2 @n = 1, @srecommend = srecommend, @statusid = statusid, @bettype = bettype
 	FROM inserted
 
-	IF @@ROWCOUNT = 1
+	SET @rowcount = @@ROWCOUNT
+
+	SELECT	@isvalidSB = MAX(CASE WHEN ProductID = 1 THEN 1 ELSE 0 END)
+			,@isvalidSB_3rdSB = MAX(CASE WHEN ProductID IN (1,63,69) THEN 1 ELSE 0 END)
+	FROM	dbo.SportBettypeMatrix WITH (NOLOCK)
+	WHERE	BetType = @bettype
+			AND ((ProductID = 1 
+					AND BetType NOT IN (9,29,10)
+					AND bettype NOT BETWEEN 801 AND 899
+				) OR ProductID IN (63,69)
+			)
+
+	SELECT	@isvalidSB = ISNULL(@isvalidSB,0)
+			,@isvalidSB_3rdSB = ISNULL(@isvalidSB_3rdSB,0)
+
+	IF @isvalidSB_3rdSB = 1
+	BEGIN
+		SET @SettlementDate = CAST(GETDATE() AS DATE)
+
+		INSERT INTO dbo.WLMonitored_TicketDetails_Pending(TransId, CustId, Bettype, Actual_Stake, Winlost, SettlementTime)
+		SELECT i.transid, i.custid, i.bettype
+				,CASE 
+					WHEN d.statusID IN (0) 
+						AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (102, 103)) THEN i.actual_stake -- running to settle/void
+					WHEN (d.statusID BETWEEN 111 AND 113 OR d.statusID IN (102, 103)) 
+						AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (102, 103)) THEN 0 -- settle/void to settle/void
+					ELSE -d.actual_stake END -- settle/void to running
+				,-d.winlost + i.winlost
+				,CASE WHEN i.SettlementTime = d.SettlementTime THEN GETDATE() ELSE ISNULL(i.SettlementTime, GETDATE()) END
+		FROM inserted i
+			INNER JOIN deleted d
+				ON i.transid = d.transid
+		WHERE	(i.statusID <> d.statusID OR i.winlost <> d.winlost OR i.actual_stake <> d.actual_stake)
+				AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (0,102,103))
+				AND (d.statusID BETWEEN 111 AND 113 OR d.statusID IN (0,102,103))
+				AND (i.winlostdate >= @SettlementDate AND d.winlostdate >= @SettlementDate)
+	END 
+
+	IF @rowcount = 1
 	BEGIN
 		-- 101: reject; 102:void
 		IF @statusid IN (101, 102) AND @srecommend IN ( 
@@ -65,12 +107,7 @@ BEGIN
 			IF ((SELECT TOP 1 statusid FROM deleted) IN (0, 111, 112, 113)) -- just need to get top 1 from the batch because all tickets' status in one batch is the same
 				RETURN -- This is normal settment case, stake of ticket does not change ==> return
 	
-	SET @isvalid = (SELECT TOP 1 1  
-					FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-					WHERE ProductID = 1 AND BetType = @bettype
-					 AND BetType NOT IN (9,29,10)
-					 )
-	IF @isvalid = 0
+	IF @isvalidSB = 0
 	BEGIN
 		RETURN;
 	END
