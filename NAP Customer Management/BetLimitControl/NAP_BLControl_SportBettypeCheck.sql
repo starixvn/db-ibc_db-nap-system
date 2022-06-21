@@ -20,6 +20,8 @@ AS
 		- 20211112@Eden: Alpha/NAP - In-house Replication (isDeleted & RepUpdateTime) [RedmineID: #164321]
 		- 20220302@Johnson: Add league group [RedmineID: #156808]
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20220610@Tacy: Alpha/NAP - Remove IsDeleted field in League Table [RedmineID: #171699]
+
 	Parameter explanation:
 	- @ErrorCode: 
 		1: The bet limit type exist already.
@@ -111,7 +113,6 @@ BEGIN
 		INNER JOIN #League le ON l.LeagueID = le.LeagueID
 		INNER JOIN #Sport s ON l.Sporttype = s.Sporttype
 	WHERE s.ProductID = 1
-		AND ISNULL(l.IsDeleted,0) = 0
 	
 	
 	SELECT @ErrorLeagueGroupIDs = ''
