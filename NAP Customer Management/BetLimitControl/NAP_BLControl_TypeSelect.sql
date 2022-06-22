@@ -18,6 +18,7 @@ AS
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
+	- 20220617@Johnson: define temp table to avoid dump db [redmine:#174035]
 	Parameter explanation:
 	-@LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 
@@ -43,9 +44,9 @@ BEGIN
 		RETURN
 
 	CREATE TABLE #BTC_SportBettypeReference(
-		ProductID INT, 
-		Sporttype INT, 
-		Bettype   INT, 
+		ProductID TINYINT, 
+		Sporttype SMALLINT, 
+		Bettype   SMALLINT, 
 		IsLive    BIT
 		PRIMARY KEY (ProductID,Sporttype,Bettype,IsLive)
 	)
@@ -56,6 +57,13 @@ BEGIN
 		INNER JOIN DBEXT.bodb02.dbo.Bettype s WITH(NOLOCK) ON m.Bettype = s.typeid
 	WHERE ProductID IN (SELECT ProductID FROM BetLimitControlProduct WITH(NOLOCK))
 	
+	CREATE TABLE #BetLimitControlType(BetLimitTypeID INT, BetLimitType varchar(50),BeginTime TIME, EndTime TIME,LiveIndicator tinyint,
+			RestrictVIP BIT, ProductList VARCHAR(MAX), SportTypeList VARCHAR(MAX), BetTypeList VARCHAR(MAX), LeagueGroupList VARCHAR(MAX),ExcludedLeagueGroupList VARCHAR(MAX),
+			LeagueList VARCHAR(MAX), IsAllProduct BIT, IsAllSporttype BIT, IsAllBettype BIT, IsAllLeague BIT)
+			
+	INSERT INTO #BetLimitControlType(BetLimitTypeID,BetLimitType,BeginTime,EndTime,LiveIndicator,
+			RestrictVIP ,ProductList,SportTypeList,BetTypeList,LeagueGroupList,ExcludedLeagueGroupList,
+			LeagueList,IsAllProduct,IsAllSporttype,IsAllBettype,IsAllLeague)
 	SELECT  BetLimitTypeID,
 			BetLimitType,
 			BeginTime,
@@ -108,8 +116,7 @@ BEGIN
 		IsAllProduct = CAST (0 AS BIT), 
 		IsAllSporttype = CAST (0 AS BIT),
 		IsAllBettype = CAST (0 AS BIT),
-		IsAllLeague = CAST (0 AS BIT)
-	INTO #BetLimitControlType
+		IsAllLeague = CAST (0 AS BIT)	
 	FROM BetLimitControlType t WITH(NOLOCK)
 
 	;WITH Temp AS (SELECT 
