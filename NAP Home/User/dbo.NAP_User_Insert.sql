@@ -21,6 +21,7 @@ AS
 
 	Revisions:
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+	    - 20220517@Winfred: Search OTP Login requried for VPN's users [redmine:170994]
 		     
 	Param's Explanation: 	
 	WRITE LOG template:
@@ -57,7 +58,18 @@ BEGIN
 				@ErrMsg = 'Fail to add new UserId ' + CONVERT(VARCHAR(10), @UserId)
 			RETURN
 		END		
-
+	-- Create new NAP OTP admin
+	EXEC [dbo].[NAP_Admin_OTPIns] 
+		@CustId			= @UserId,
+		@System			= 'NAP',
+		@UserId			= @CurrentUserId,
+		@ErrCode		= @ErrCode OUTPUT,
+		@ErrMsg			= @ErrMsg OUTPUT
+	IF @ErrCode > 0
+	BEGIN
+		SELECT @ErrCode = @ErrCode, @ErrMsg = @ErrMsg
+		RETURN	
+	END
 	-- Write log
 	SET @xml = (
 		SELECT @UserId			AS '@ui'
