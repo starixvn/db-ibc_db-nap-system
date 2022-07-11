@@ -1,6 +1,4 @@
-USE [bodb02]
-GO
-
+/*<info serverAlias="DB053-bodb02" executers="" isFunction="0"></info>*/
 ALTER TRIGGER [dbo].[bettrans_TOControl_UPDATE]
    ON  [dbo].[bettrans]
    AFTER UPDATE
@@ -19,15 +17,16 @@ AS
 		- 20181219@Kan: TO Control add new Esport bet types - [Redmine: 106656]
 		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
 		- 20190701@Patrick: Enhance trigger update - [Redmine: #112219]
+	    - 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
 */
 BEGIN
 	
 	SET NOCOUNT ON;
 
 	DECLARE @n TINYINT
-	DECLARE @srecommend INT, @statusid TINYINT
+	DECLARE @srecommend INT, @statusid TINYINT, @bettype SMALLINT, @IsInvalidBettype BIT
 	
-	SELECT TOP 2 @n = 1, @srecommend = srecommend, @statusid = statusid
+	SELECT TOP 2 @n = 1, @srecommend = srecommend, @statusid = statusid, @bettype = bettype
 	FROM inserted
 
 	IF @@ROWCOUNT = 1
@@ -58,6 +57,12 @@ BEGIN
 		) RETURN -- do not need to control TO for big licensee supers 
 	END
 
+	SET @IsInvalidBettype = (SELECT TOP 1 1  
+							 FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+					         WHERE ProductID = 1 AND BetType = @bettype
+					         )
+	IF @IsInvalidBettype IS NULL RETURN;
+
 	SELECT TOP 2 @n = 1
 	FROM inserted
 
@@ -70,9 +75,7 @@ BEGIN
 	SELECT i.transid, i.statusID, d.statusID
 	FROM inserted i
 		INNER JOIN deleted d ON i.transid = d.transid
-	WHERE ((i.bettype < 31 AND i.bettype NOT IN (9,29,10)) 
-				OR i.bettype BETWEEN 121 AND 999 OR i.bettype BETWEEN 1301 AND 1399 OR i.bettype BETWEEN 9001 AND 9399 OR i.bettype = 38)
-		AND i.betfrom <> 'p'
+	WHERE i.betfrom <> 'p'
 	
 END 
 GO

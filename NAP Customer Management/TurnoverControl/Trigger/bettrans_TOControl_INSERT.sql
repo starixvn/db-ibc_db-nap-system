@@ -1,3 +1,4 @@
+/*<info serverAlias="DB053-bodb02" executers="" isFunction="0"></info>*/
 ALTER TRIGGER [dbo].[bettrans_TOControl_INSERT]
    ON  [dbo].[bettrans]
    AFTER INSERT
@@ -17,26 +18,22 @@ AS
 		- 20180626@Helen: Tuning trigger - [Redmine:97442]
 		- 20181219@Kan: TO Control - Change condition of bettype - [Redmine: 106656]
 		- 20190305@Razor: SMA TO Control - Integrate Bet Builder - [Redmine: 108391]
-	
+		- 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
 */
 BEGIN
-	--DECLARE @XMLString XML = NULL, @HasError BIT = 0 
-			
 	SET NOCOUNT ON;
 
-	DECLARE @srecommend INT, @bettype INT, @statusID TINYINT, @TransID BIGINT
+	DECLARE @srecommend INT, @bettype SMALLINT, @statusID TINYINT, @TransID BIGINT
 	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid
 	FROM inserted 
 
 	-- Process for sportbook bettype for TO Control only
-	IF NOT (
-		@bettype < 31
-		OR @bettype BETWEEN 121 AND 999
-		OR @bettype BETWEEN 1301 AND 1399
-		OR @bettype BETWEEN 9001 AND 9399
-		OR @bettype = 38
-	)
-		RETURN
+	DECLARE @IsInvalidBettype BIT
+	SET @IsInvalidBettype = (SELECT TOP 1 1  
+							 FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+					         WHERE ProductID = 1 AND BetType = @bettype
+					         )
+	IF @IsInvalidBettype IS NULL RETURN;
 
 	IF @srecommend in ( 
 		836203,--12BETSuperTB
