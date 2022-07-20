@@ -28,12 +28,15 @@ BEGIN
 	FROM inserted 
 
 	-- Process for sportbook bettype for TO Control only
-	DECLARE @IsInvalidBettype BIT
-	SET @IsInvalidBettype = (SELECT TOP 1 1  
-							 FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-					         WHERE ProductID = 1 AND BetType = @bettype
-					         )
-	IF @IsInvalidBettype IS NULL RETURN;
+	IF NOT EXISTS (
+		SELECT TOP 1 1  
+		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+		WHERE ProductID = 1 AND BetType = @bettype
+			AND BetType NOT IN (9,29,10)
+	)
+	BEGIN
+		RETURN;
+	END
 
 	IF @srecommend in ( 
 		836203,--12BETSuperTB

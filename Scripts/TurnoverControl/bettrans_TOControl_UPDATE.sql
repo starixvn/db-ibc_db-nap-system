@@ -24,7 +24,7 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @n TINYINT
-	DECLARE @srecommend INT, @statusid TINYINT, @bettype SMALLINT, @IsInvalidBettype BIT
+	DECLARE @srecommend INT, @statusid TINYINT, @bettype SMALLINT
 	
 	SELECT TOP 2 @n = 1, @srecommend = srecommend, @statusid = statusid, @bettype = bettype
 	FROM inserted
@@ -57,11 +57,15 @@ BEGIN
 		) RETURN -- do not need to control TO for big licensee supers 
 	END
 
-	SET @IsInvalidBettype = (SELECT TOP 1 1  
-							 FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-					         WHERE ProductID = 1 AND BetType = @bettype
-					         )
-	IF @IsInvalidBettype IS NULL RETURN;
+	IF NOT EXISTS (
+		SELECT TOP 1 1  
+		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+		WHERE ProductID = 1 AND BetType = @bettype
+		 AND BetType NOT IN (9,29,10)
+	)
+	BEGIN
+		RETURN;
+	END
 
 	SELECT TOP 2 @n = 1
 	FROM inserted
