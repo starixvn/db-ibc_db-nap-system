@@ -24,20 +24,10 @@ BEGIN
 	SET NOCOUNT ON;
 
 	DECLARE @srecommend INT, @bettype SMALLINT, @statusID TINYINT, @TransID BIGINT
+	DECLARE @isvalid BIT = 0
 	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid
 	FROM inserted 
-
-	-- Process for sportbook bettype for TO Control only
-	IF NOT EXISTS (
-		SELECT TOP 1 1  
-		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-		WHERE ProductID = 1 AND BetType = @bettype
-			AND BetType NOT IN (9,29,10)
-	)
-	BEGIN
-		RETURN;
-	END
-
+	
 	IF @srecommend in ( 
 		836203,--12BETSuperTB
 		836226,--12BETSuperRMB
@@ -66,9 +56,19 @@ BEGIN
 	IF (@bettype BETWEEN 801 AND 899) AND (@statusID NOT BETWEEN 101 AND 103)
 		RETURN
 	
+	-- Process for sportbook bettype for TO Control only
+	SET @isvalid = (SELECT TOP 1 1  
+					FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+					WHERE ProductID = 1 AND BetType = @bettype
+					 AND BetType NOT IN (9,29,10)
+					 )
+	IF @isvalid = 0
+	BEGIN
+		RETURN;
+	END
+
 	INSERT INTO TOControl_TicketDetails_Insert (transid,bettype, statusID)
 	VALUES (@TransID,@bettype, @statusID)
-	
 END 
 
 GO

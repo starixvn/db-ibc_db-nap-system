@@ -25,7 +25,7 @@ BEGIN
 
 	DECLARE @n TINYINT
 	DECLARE @srecommend INT, @statusid TINYINT, @bettype SMALLINT
-	
+	DECLARE @isvalid BIT = 0
 	SELECT TOP 2 @n = 1, @srecommend = srecommend, @statusid = statusid, @bettype = bettype
 	FROM inserted
 
@@ -57,16 +57,6 @@ BEGIN
 		) RETURN -- do not need to control TO for big licensee supers 
 	END
 
-	IF NOT EXISTS (
-		SELECT TOP 1 1  
-		FROM dbo.SportBettypeMatrix WITH (NOLOCK)
-		WHERE ProductID = 1 AND BetType = @bettype
-		 AND BetType NOT IN (9,29,10)
-	)
-	BEGIN
-		RETURN;
-	END
-
 	SELECT TOP 2 @n = 1
 	FROM inserted
 
@@ -75,6 +65,16 @@ BEGIN
 			IF ((SELECT TOP 1 statusid FROM deleted) IN (0, 111, 112, 113)) -- just need to get top 1 from the batch because all tickets' status in one batch is the same
 				RETURN -- This is normal settment case, stake of ticket does not change ==> return
 	
+	SET @isvalid = (SELECT TOP 1 1  
+					FROM dbo.SportBettypeMatrix WITH (NOLOCK)
+					WHERE ProductID = 1 AND BetType = @bettype
+					 AND BetType NOT IN (9,29,10)
+					 )
+	IF @isvalid = 0
+	BEGIN
+		RETURN;
+	END
+
 	INSERT INTO dbo.TOControl_TicketDetails_Update(TransId, StatusIDInserted, StatusIDDeleted)
 	SELECT i.transid, i.statusID, d.statusID
 	FROM inserted i
