@@ -16,7 +16,8 @@ AS
 		- 20191231@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine: #126348]
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
-			
+		- 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
+		
 	Param's explaination
 */
 BEGIN
@@ -203,7 +204,7 @@ BEGIN
 										AS stake																							
 								) AS t
 				WHERE matchid > 0 AND m.statusID NOT BETWEEN 101 AND 103
-			  		AND ((b.bettype < 31 and b.bettype NOT IN (9,29,10)) OR b.bettype between 121 and 999 OR b.bettype BETWEEN 1301 and 1399 OR b.bettype BETWEEN 9001 and 9399 OR b.bettype = 38)
+			  		--AND ((b.bettype < 31 and b.bettype NOT IN (9,29,10)) OR b.bettype between 121 and 999 OR b.bettype BETWEEN 1301 and 1399 OR b.bettype BETWEEN 9001 and 9399 OR b.bettype = 38)
 					AND 1 = CASE WHEN srecommend IS NULL
 									OR mrecommend IS NULL
 									OR recommend IS NULL
