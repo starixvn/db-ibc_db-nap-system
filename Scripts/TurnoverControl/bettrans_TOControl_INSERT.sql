@@ -32,12 +32,12 @@ BEGIN
 	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid
 	FROM inserted 
 	
-	SELECT	@isvalidSB = MAX(CASE WHEN ProductID = 1 THEN 1 ELSE 0 END)
+	SELECT	@isvalidSB = MAX(CASE WHEN ProductID = 1 AND BetType NOT IN (9,29,10) THEN 1 ELSE 0 END)
 			,@isvalidSB_3rdSB = MAX(CASE WHEN ProductID IN (1,63,69) THEN 1 ELSE 0 END)
 	FROM	dbo.SportBettypeMatrix WITH (NOLOCK)
 	WHERE	BetType = @bettype
 			AND ((ProductID = 1 
-					AND BetType NOT IN (9,29,10)
+					--AND BetType NOT IN (9,29,10)
 					AND bettype NOT BETWEEN 801 AND 899
 				) OR ProductID IN (63,69)
 			)
