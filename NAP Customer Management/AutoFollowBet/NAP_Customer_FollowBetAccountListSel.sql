@@ -23,10 +23,10 @@ BEGIN
 	DECLARE @_site VARCHAR(10) = NULLIF (@site,''),
 			@_currency TINYINT = NULLIF(@currency,0)
 	
-	CREATE TABLE #Result (custid INT PRIMARY KEY, username VARCHAR(30), agentID INT, DummyUsername VARCHAR(30), DummyAgentID INT, currency TINYINT, site VARCHAR(10), creator INT, createdDate DATETIME, isActive BIT)
+	CREATE TABLE #Result (custid INT PRIMARY KEY, username VARCHAR(30), agentID INT, DummyCustID INT, DummyUsername VARCHAR(30), DummyAgentID INT, currency TINYINT, site VARCHAR(10), creator INT, createdDate DATETIME, isActive BIT)
 	
-	INSERT INTO #Result(custid, username, agentID, DummyUsername, currency, site, creator, createdDate, isActive)
-	SELECT c.custid, c.username, c.recommend as agentID, cf.DummyUsername, c.currency, c.site, cf.creator, cf.createdDate, cf.IsActive		
+	INSERT INTO #Result(custid, username, agentID, DummyCustID, DummyUsername, currency, site, creator, createdDate, isActive)
+	SELECT c.custid, c.username, c.recommend as agentID, cf.DummyCustID, cf.DummyUsername, c.currency, c.site, cf.creator, cf.createdDate, cf.IsActive		
 	FROM Acc_CustFollowBet cf WITH(NOLOCK)
 		INNER JOIN customer c WITH(NOLOCK) ON cf.custid = c.custid
 	WHERE cf.DummyAgentID = @DummyAgentID
@@ -37,7 +37,7 @@ BEGIN
 					ELSE 0 END
 		AND cf.IsActive = @IsActive
 			
-	SELECT rs.custid, rs.username, c.username as Agent, DummyUsername, e.currency, rs.site, creator.username as AddedBy, rs.createdDate, rs.isActive
+	SELECT rs.custid, rs.username, c.username as Agent, DummyCustID, DummyUsername, e.currency, rs.site, creator.username as AddedBy, rs.createdDate, rs.isActive
 	FROM #Result rs
 		INNER JOIN customer c WITH(NOLOCK) ON rs.agentID = c.custid
 		INNER JOIN customer creator WITH(NOLOCK) ON rs.creator = creator.custid

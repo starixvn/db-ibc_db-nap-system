@@ -28,14 +28,17 @@ BEGIN
 			@strUsername VARCHAR(MAX) ='',
 			@DummyAgent VARCHAR(30),
 			@DummyUsernameList VARCHAR(MAX) = '',
-			@maxID INT
+			@maxID INT,
+			@cntCust INT
 	
 	SELECT @startRun = GETDATE()
 	
-	DECLARE @tmpCust TABLE (ID INT PRIMARY KEY IDENTITY(1,1),username VARCHAR(30), custid INT)
+	DECLARE @tmpCust TABLE (ID INT PRIMARY KEY IDENTITY(1,1),username VARCHAR(30), custid INT, DummyCustID INT)
 	
 	INSERT INTO @tmpCust(username)
-	SELECT value FROM STRING_SPLIT(@CustList,',')
+	SELECT DISTINCT value FROM STRING_SPLIT(@CustList,',')
+	
+	SELECT @cntCust = @@ROWCOUNT 
 	
 	UPDATE t
 	SET t.custid = c.custid
@@ -73,6 +76,20 @@ BEGIN
 		RETURN
 	END
 	
+	;WITH T AS (
+		SELECT TOP(@cntCust) custid, ROW_NUMBER() OVER(ORDER BY custid) ID
+		FROM custinfo WITH(NOLOCK)
+		WHERE srecommend NOT IN (SELECT custid FROM Dep_CustSuper WITH(NOLOCK))
+			AND roleid IN (2,3,4)
+			AND currency = 20
+			AND custid NOT IN (SELECT DummyCustID FROM Acc_CustFollowBet WITH(NOLOCK))		
+			AND custid > 100
+	)
+	UPDATE c
+	SET c.DummyCustID = t.CustID
+	FROM @tmpCust c
+		INNER JOIN T ON c.ID = T.ID
+	
 	SELECT @DummyAgent = username
 	FROM customer WITH(NOLOCK)
 	WHERE custid = @DummyAgentID
@@ -84,12 +101,13 @@ BEGIN
 	INSERT INTO [dbo].[Acc_CustFollowBet]
            ([CustID]
            ,[DummyAgentID]
+		   ,[DummyCustID]
            ,[DummyUsername]
            ,[Creator]
            ,[isActive]
            ,[CreatedDate]
            ,[ModifiedDate])
-	SELECT custid, @DummyAgentID, @DummyAgent + CAST((ID+ISNULL(@maxID,0)) AS VARCHAR(10)),
+	SELECT custid, @DummyAgentID, DummyCustID, @DummyAgent + CAST((ID+ISNULL(@maxID,0)) AS VARCHAR(10)),
 			@userid, 1 as isActive, GETDATE(), GETDATE()
 	FROM @tmpCust
 	
