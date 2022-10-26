@@ -15,7 +15,7 @@ AS
 	
 	Revisions:
 		- 20220907@Johnson: initial sp [redmine: #176975]
-	
+		- 20221026@Johnson: add isFollow [redmine:##179336]
 	Paramter's Explanations:
 		- @CustList = 'member01,member02'
 		
@@ -106,9 +106,10 @@ BEGIN
            ,[Creator]
            ,[isActive]
            ,[CreatedDate]
-           ,[ModifiedDate])
+           ,[ModifiedDate]
+		   ,[isFollow])
 	SELECT custid, @DummyAgentID, DummyCustID, @DummyAgent + CAST((ID+ISNULL(@maxID,0)) AS VARCHAR(10)),
-			@userid, 1 as isActive, GETDATE(), GETDATE()
+			@userid, 1 as isActive, GETDATE(), GETDATE(), 1 as isFollow
 	FROM @tmpCust
 	
 	SELECT @DummyUsernameList = @DummyUsernameList + ',' + @DummyAgent + CAST((ID+ISNULL(@maxID,0)) AS VARCHAR(10))
