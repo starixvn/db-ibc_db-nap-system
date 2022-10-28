@@ -4,7 +4,8 @@ ALTER PROCEDURE [dbo].[NAP_Customer_FollowBetAccountListSel]
 	@currency TINYINT = 0,
 	@site VARCHAR(10) = '',
 	@DummyAgentID INT,	
-	@isActive BIT = 1
+	@isActive BIT = 1,
+	@isFollow BIT = 1
 AS
 /*
 	Created: 20220908@Johnson
@@ -13,7 +14,7 @@ AS
 	
 	Revisions:
 		- 20220908@Johnson: initial sp [redmine: #176975]
-	
+		- 20221026@Johnson: add isFollow [redmine:##179336]
 	Paramter's Explanations:
 				
 */
@@ -23,10 +24,10 @@ BEGIN
 	DECLARE @_site VARCHAR(10) = NULLIF (@site,''),
 			@_currency TINYINT = NULLIF(@currency,0)
 	
-	CREATE TABLE #Result (custid INT PRIMARY KEY, username VARCHAR(30), agentID INT, DummyCustID INT, DummyUsername VARCHAR(30), DummyAgentID INT, currency TINYINT, site VARCHAR(10), creator INT, createdDate DATETIME, isActive BIT)
+	CREATE TABLE #Result (custid INT PRIMARY KEY, username VARCHAR(30), agentID INT, DummyCustID INT, DummyUsername VARCHAR(30), DummyAgentID INT, currency TINYINT, site VARCHAR(10), creator INT, createdDate DATETIME, isActive BIT, isFollow BIT)
 	
-	INSERT INTO #Result(custid, username, agentID, DummyCustID, DummyUsername, currency, site, creator, createdDate, isActive)
-	SELECT c.custid, c.username, c.recommend as agentID, cf.DummyCustID, cf.DummyUsername, c.currency, c.site, cf.creator, cf.createdDate, cf.IsActive		
+	INSERT INTO #Result(custid, username, agentID, DummyCustID, DummyUsername, currency, site, creator, createdDate, isActive, isFollow)
+	SELECT c.custid, c.username, c.recommend as agentID, cf.DummyCustID, cf.DummyUsername, c.currency, c.site, cf.creator, cf.createdDate, cf.IsActive, cf.isFollow		
 	FROM Acc_CustFollowBet cf WITH(NOLOCK)
 		INNER JOIN customer c WITH(NOLOCK) ON cf.custid = c.custid
 	WHERE cf.DummyAgentID = @DummyAgentID
@@ -36,8 +37,9 @@ BEGIN
 					WHEN @username = '' THEN 1
 					ELSE 0 END
 		AND cf.IsActive = @IsActive
+		AND 1 = CASE WHEN @isFollow = 0 OR (@isFollow = 1 AND cf.IsFollow = @isFollow) THEN 1 ELSE 0 END
 			
-	SELECT rs.custid, rs.username, c.username as Agent, DummyCustID, DummyUsername, e.currency, rs.site, creator.username as AddedBy, rs.createdDate, rs.isActive
+	SELECT rs.custid, rs.username, c.username as Agent, DummyCustID, DummyUsername, e.currency, rs.site, creator.username as AddedBy, rs.createdDate, rs.isActive, rs.isFollow
 	FROM #Result rs
 		INNER JOIN customer c WITH(NOLOCK) ON rs.agentID = c.custid
 		INNER JOIN customer creator WITH(NOLOCK) ON rs.creator = creator.custid
