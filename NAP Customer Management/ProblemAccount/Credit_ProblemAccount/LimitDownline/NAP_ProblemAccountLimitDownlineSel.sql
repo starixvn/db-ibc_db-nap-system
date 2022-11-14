@@ -16,6 +16,7 @@ AS
 	Revisions:
 		- 20210303@Johnson: Initial SP [Redmine:#149477]		
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20221114@Johnson: enhance sp [redmine: #180413]
 	Parameter's explaination: 		
 		- @level = 0: all; 2,3,4: SMA
 		- @site  = sitename
@@ -42,24 +43,30 @@ BEGIN
 	BEGIN
 		SELECT @TotalItems = COUNT(1)				
 		FROM ProblemAccountLimitDownline p WITH(NOLOCK)
-			INNER JOIN customer c WITH(NOLOCK) ON p.custid = c.custid
-			INNER JOIN custinfo u WITH(NOLOCK) ON p.userid = u.custid
-		WHERE c.username LIKE '%' + @username + '%'
-			AND c.roleid = ISNULL(@level,c.roleid)
-			AND c.roleid IN (2,3,4)
-			AND c.site IN (SELECT site FROM @tmpSite)
+			CROSS APPLY (SELECT TOP (1) c.custid
+							FROM customer c WITH(NOLOCK) 
+							INNER JOIN custinfo u WITH(NOLOCK) ON p.userid = u.custid
+						WHERE c.username LIKE '%' + @username + '%'
+							AND c.roleid = ISNULL(@level,c.roleid)
+							AND c.roleid IN (2,3,4)
+							AND c.site IN (SELECT site FROM @tmpSite)
+							AND p.custid = c.custid
+						)tmp
 	END
 	
 	;WITH T AS (
-	SELECT c.custid, c.username, c.roleid, c.currency, c.site, u.username as AddedBy, p.CreatedDate,
+	SELECT tmp.custid, username, roleid, currency, site, AddedBy, p.CreatedDate,
 		ROW_NUMBER() OVER(ORDER BY p.CreatedDate DESC) rn
 	FROM ProblemAccountLimitDownline p WITH(NOLOCK)
-		INNER JOIN customer c WITH(NOLOCK) ON p.custid = c.custid
-		INNER JOIN custinfo u WITH(NOLOCK) ON p.userid = u.custid
-	WHERE c.username LIKE '%' + @username + '%'
-		AND c.roleid = ISNULL(@level,c.roleid)
-		AND c.roleid IN (2,3,4)
-		AND c.site IN (SELECT site FROM @tmpSite)
+		CROSS APPLY (SELECT TOP (1)  c.custid, c.username, c.roleid, c.currency, c.site, u.username as AddedBy
+							FROM customer c WITH(NOLOCK) 
+							INNER JOIN custinfo u WITH(NOLOCK) ON p.userid = u.custid
+						WHERE c.username LIKE '%' + @username + '%'
+							AND c.roleid = ISNULL(@level,c.roleid)
+							AND c.roleid IN (2,3,4)
+							AND c.site IN (SELECT site FROM @tmpSite)
+							AND p.custid = c.custid
+						)tmp
 	)	
 	SELECT custid, username, e.currency, roleid, site, AddedBy, CreatedDate
 	FROM T
