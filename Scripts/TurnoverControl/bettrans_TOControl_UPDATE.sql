@@ -19,6 +19,7 @@ AS
 		- 20190701@Patrick: Enhance trigger update - [Redmine: #112219]
 	    - 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
 		- 20220520@Kathy: Alpha - My Monitor Accounts for Risk & Control [Redmine:170467]
+		- 20221121@Kathy: Check setting when capture data [Redmine:#180716]
 */
 BEGIN
 	
@@ -29,6 +30,8 @@ BEGIN
 	DECLARE @SettlementDate SMALLDATETIME
 			,@isvalidSB BIT = 0
 			,@isvalidSB_3rdSB BIT = 0
+
+	DECLARE @tmpCustWLMonitored_Setting TABLE (TransId BIGINT, Recommend INT, CustId INT, Bettype SMALLINT, Actual_Stake MONEY, StatusId TINYINT, Winlost MONEY, SettlementTime DATETIME, WinlostDate SMALLDATETIME)
 
 	SELECT TOP 2 @n = 1, @srecommend = srecommend, @statusid = statusid, @bettype = bettype
 	FROM inserted
@@ -49,25 +52,33 @@ BEGIN
 
 	IF @isvalidSB_3rdSB = 1
 	BEGIN
-		SET @SettlementDate = CAST(GETDATE() AS DATE)
+		INSERT INTO @tmpCustWLMonitored_Setting(TransId, Recommend, CustId, Bettype, Actual_Stake, StatusId, Winlost, SettlementTime, WinlostDate)
+		SELECT	i.TransId, i.recommend, i.custid, i.bettype, i.actual_stake, i.statusid, i.winlost, i.settlementtime, i.winlostdate
+		FROM	inserted i
+		WHERE	EXISTS (SELECT TOP 1 1 FROM dbo.CustWLMonitored_Setting c WITH(NOLOCK) WHERE c.recommend = i.recommend AND c.custid IN (0, i.custid))
 
-		INSERT INTO dbo.WLMonitored_TicketDetails_Pending(TransId, CustId, Bettype, Actual_Stake, Winlost, SettlementTime)
-		SELECT i.transid, i.custid, i.bettype
-				,CASE 
-					WHEN d.statusID IN (0) 
-						AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (102, 103)) THEN i.actual_stake -- running to settle/void
-					WHEN (d.statusID BETWEEN 111 AND 113 OR d.statusID IN (102, 103)) 
-						AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (102, 103)) THEN 0 -- settle/void to settle/void
-					ELSE -d.actual_stake END -- settle/void to running
-				,-d.winlost + i.winlost
-				,CASE WHEN i.SettlementTime = d.SettlementTime THEN GETDATE() ELSE ISNULL(i.SettlementTime, GETDATE()) END
-		FROM inserted i
-			INNER JOIN deleted d
-				ON i.transid = d.transid
-		WHERE	(i.statusID <> d.statusID OR i.winlost <> d.winlost OR i.actual_stake <> d.actual_stake)
-				AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (0,102,103))
-				AND (d.statusID BETWEEN 111 AND 113 OR d.statusID IN (0,102,103))
-				AND (i.winlostdate >= @SettlementDate AND d.winlostdate >= @SettlementDate)
+		IF @@ROWCOUNT > 0
+		BEGIN
+			SET @SettlementDate = CAST(GETDATE() AS DATE)
+
+			INSERT INTO dbo.WLMonitored_TicketDetails_Pending (TransId, CustId, Bettype, Actual_Stake, Winlost, SettlementTime)
+			SELECT i.transid, i.custid, i.bettype
+					,CASE 
+						WHEN d.statusID IN (0) 
+							AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (102, 103)) THEN i.actual_stake -- running to settle/void
+						WHEN (d.statusID BETWEEN 111 AND 113 OR d.statusID IN (102, 103)) 
+							AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (102, 103)) THEN 0 -- settle/void to settle/void
+						ELSE -d.actual_stake END -- settle/void to running
+					,-d.winlost + i.winlost
+					,CASE WHEN i.SettlementTime = d.SettlementTime THEN GETDATE() ELSE ISNULL(i.SettlementTime, GETDATE()) END
+			FROM @tmpCustWLMonitored_Setting i
+				INNER JOIN deleted d
+					ON i.transid = d.transid
+			WHERE	(i.statusID <> d.statusID OR i.winlost <> d.winlost OR i.actual_stake <> d.actual_stake)
+					AND (i.statusID BETWEEN 111 AND 113 OR i.statusID IN (0,102,103))
+					AND (d.statusID BETWEEN 111 AND 113 OR d.statusID IN (0,102,103))
+					AND (i.winlostdate >= @SettlementDate AND d.winlostdate >= @SettlementDate)
+		END
 	END 
 
 	IF @rowcount = 1
