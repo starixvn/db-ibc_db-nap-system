@@ -21,16 +21,17 @@ AS
 		- 20220711@July: Using sportbettypematrix to detect bettype of sportbook - [Redmine: 175141]
 		- 20220520@Kathy: Alpha - My Monitor Accounts for Risk & Control [Redmine:170467]
 		- 20221121@Kathy: Check setting when capture data [Redmine:#180716]
+		- 20221215@Kathy: Monitor SMA win loss [Redmine:#179067]
 
 */
 BEGIN
 	SET NOCOUNT ON;
 
-	DECLARE @srecommend INT, @bettype SMALLINT, @statusID TINYINT, @TransID BIGINT, @Recommend INT, @CustId INT
+	DECLARE @srecommend INT, @bettype SMALLINT, @statusID TINYINT, @TransID BIGINT, @Recommend INT, @mRecommend INT, @CustId INT
 	DECLARE @isvalidSB BIT = 0
 			,@isvalidSB_3rdSB BIT = 0
 
-	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid, @Recommend = recommend, @CustId = custid
+	SELECT @srecommend = srecommend, @bettype = bettype, @statusID = statusID, @TransID = transid, @Recommend = recommend, @mRecommend = mrecommend, @CustId = custid
 	FROM inserted 
 	
 	SELECT	@isvalidSB = MAX(CASE WHEN ProductID = 1 AND BetType NOT IN (9,29,10) THEN 1 ELSE 0 END)
@@ -46,10 +47,10 @@ BEGIN
 	SELECT	@isvalidSB = ISNULL(@isvalidSB,0)
 			,@isvalidSB_3rdSB = ISNULL(@isvalidSB_3rdSB,0)
 
-	IF @isvalidSB_3rdSB = 1 AND EXISTS (SELECT TOP 1 1 FROM dbo.CustWLMonitored_Setting c WITH(NOLOCK) WHERE c.recommend = @recommend AND c.custid IN (0, @CustId))
+	IF @isvalidSB_3rdSB = 1 AND EXISTS (SELECT TOP 1 1 FROM dbo.CustWLMonitored_Setting c WITH(NOLOCK) WHERE c.recommend IN (@recommend, @mrecommend, @srecommend) AND c.custid IN (0, -1, @CustId))
 	BEGIN		
-		INSERT INTO dbo.WLMonitored_TicketDetails_Pending(TransId, CustId, Bettype, Actual_Stake, Winlost, SettlementTime)
-		SELECT transid, custid, Bettype, actual_stake, winlost, ISNULL(SettlementTime, GETDATE())
+		INSERT INTO dbo.WLMonitored_TicketDetails_Pending(TransId, CustId, Bettype, Actual_Stake, Winlost, aWinlost, mWinlost, sWinlost, SettlementTime)
+		SELECT transid, custid, Bettype, actual_stake, winlost, aWinlost, mWinlost, sWinlost, ISNULL(SettlementTime, GETDATE())
 		FROM inserted i
 		WHERE	@statusID BETWEEN 111 AND 113 OR @statusID IN (102,103) 
 	END
