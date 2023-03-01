@@ -14,6 +14,7 @@ AS
 		- 20210812@Sol: Enhance sps of setting related to new MB core - [Redmine: #160074]
 		- 20210906@Sol: HF - fixed wrong balance of master - [Redmine: #160131]
 		- 20220120@Evan: Split transfer tickets out of bettrans - [Redmine: #164196]
+		- 20230227@Evan: Balance-Up support transfer 247 [Redmine: #173554]
 	Parameter's explaination: 
 		
 */
@@ -249,7 +250,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 4
 			) s ON b.srecommend = s.custid
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.srecommend
 
 	END
@@ -420,7 +424,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 3
 			) s ON b.mrecommend = s.custid -- get index on mrecommend
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.mrecommend
 		
 	END
@@ -591,7 +598,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 2
 			) s ON b.recommend = s.custid
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.recommend
 	END
 
@@ -761,7 +771,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 1
 			) s ON b.custid = s.custid
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
+	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.custid
 	END
 	--------------
