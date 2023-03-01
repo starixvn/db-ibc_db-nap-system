@@ -206,7 +206,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 4
 			) s ON b.srecommend = s.custid
-		WHERE b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT TOP 1 1 FROM #SportBettype s WHERE s.Bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -251,8 +251,8 @@ BEGIN
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 4
 			) s ON b.srecommend = s.custid
 		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
-	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
-	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
 	            ELSE 1 END
 		GROUP BY b.srecommend
 
@@ -379,7 +379,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 3
 			) s ON b.mrecommend = s.custid -- get index on mrecommend
-		WHERE b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE  b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT s.bettype FROM #SportBettype s WHERE s.bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -425,8 +425,8 @@ BEGIN
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 3
 			) s ON b.mrecommend = s.custid -- get index on mrecommend
 		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
-	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
-	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
 	            ELSE 1 END
 		GROUP BY b.mrecommend
 		
@@ -553,7 +553,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 2
 			) s ON b.recommend = s.custid
-		WHERE  b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE   b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT s.bettype FROM #SportBettype s WHERE s.bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -599,8 +599,8 @@ BEGIN
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 2
 			) s ON b.recommend = s.custid
 		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
-	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
-	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
 	            ELSE 1 END
 		GROUP BY b.recommend
 	END
@@ -726,7 +726,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 1
 			) s ON b.custid = s.custid
-		WHERE b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE  b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT s.bettype FROM #SportBettype s WHERE s.bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -772,8 +772,8 @@ BEGIN
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 1
 			) s ON b.custid = s.custid
 		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
-	            WHEN bettype = 20000 AND winlostdate > @BalanceUpDate THEN 0 --> new bal
-	            WHEN winlostdate < @BalanceUpDate THEN 0 --> old data
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
 	            ELSE 1 END
 		GROUP BY b.custid
 	END
