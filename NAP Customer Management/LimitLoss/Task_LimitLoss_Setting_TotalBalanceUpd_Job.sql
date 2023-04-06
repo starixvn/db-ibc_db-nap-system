@@ -779,16 +779,29 @@ BEGIN
 	END
 	--------------
 
-	----check move bet date again to make sure it is not changed
-	DECLARE @IsDiff BIT = 0, @NewMoveBetDate SMALLDATETIME = NULL
-	EXEC bodb02.dbo.Acc_Transfer_CheckMoveBetDate @moveBetsDay, @IsDiff = @IsDiff OUTPUT, @NewMoveBetDate = @NewMoveBetDate OUTPUT
+	----check MB date, BU date again to make sure it is not changed
+	DECLARE @IsDiff	SMALLINT = 1, @NewMoveBetDate SMALLDATETIME = NULL,@NewBalanceUpDate SMALLDATETIME = NULL
 
-	IF (@IsDiff = 1)
+	SELECT @NewMoveBetDate = NULL, @NewBalanceUpDate = NULL
+	EXEC bodb02.dbo.Acc_ReCheck_MBUDate
+		@MBDate = @moveBetsDay,
+		@BUDate = @balanceUpDay,
+		@IsDiff = @IsDiff OUTPUT,
+		@NewMBDate = @NewMoveBetDate OUTPUT,
+		@NewBUDate = @NewBalanceUpDate OUTPUT
+
+	IF @IsDiff = -1 
+	BEGIN
+		RETURN	
+	END
+
+	WHILE (@IsDiff = 1)
 	BEGIN
 		--delete all data
 		DELETE FROM #tmpBalance
 
 		SET @moveBetsDay = @NewMoveBetDate
+		SET @balanceUpDay = @NewBalanceUpDate
 		GOTO IfIsDiffTrue
 
 	END
