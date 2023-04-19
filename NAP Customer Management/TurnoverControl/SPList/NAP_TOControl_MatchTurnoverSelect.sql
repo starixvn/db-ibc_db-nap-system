@@ -24,6 +24,7 @@ AS
 		- 20200115@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
 		- 20200120@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
+		- 20230419@July: Turnover monitor showing live and non-live not correctly - [Redmine: #187148]
 	
 	Parameter's explaination: 
 	HARDCODE for @PercentLevel
@@ -175,6 +176,10 @@ BEGIN
 		INNER JOIN #MatchList m WITH (NOLOCK) ON m.matchID = pf.matchid
 		INNER JOIN dbo.custInfo c WITH (NOLOCK) ON pf.custID = c.custid
 		INNER JOIN dbo.exchange e WITH (NOLOCK) on c.currency = e.exchangeid
+	ORDER BY m.leagueid DESC
+		, pf.matchID ASC
+		, c.username ASC
+		, pf.ProfileID
 		
 	DROP TABLE #MatchList
 
