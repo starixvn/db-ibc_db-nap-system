@@ -22,6 +22,7 @@ AS
 		- 20191016@Kos: Remove inactive products phase 2 [Redmine: #118699]
 		- 20220110@Eden: Saba Casino use DCS Setting [RedmineID: #164280]
 		- 20221013@Eden: Remove unused columns from Custinfo table [RedmineID: #179014]
+		- 20221123@Elodie: Migrate NG and Keno to DCS structure [Redmine: #179711]
 
 	Param's Explanation:
 	• @ErrCode:
@@ -53,8 +54,8 @@ BEGIN
 		RETURN
 	END
 
-	INSERT INTO dbo.custinfo (username, [custid], [currency], [roleid], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [DisableNumber], [danger], [danger2], [danger3], [Enabled], [closed])
-	VALUES (@UserName, @CustId, NULL, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
+	INSERT INTO dbo.custinfo (username, [custid], [currency], [roleid], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [danger], [danger2], [danger3], [Enabled], [closed])
+	VALUES (@UserName, @CustId, NULL, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
 
 	IF @@ERROR <> 0
 		BEGIN
@@ -82,7 +83,4 @@ BEGIN
 		RETURN
 	END CATCH
 END
-GO
-
-GRANT EXECUTE ON NAP_Admin_Ins TO bodbAdminNet
 GO
