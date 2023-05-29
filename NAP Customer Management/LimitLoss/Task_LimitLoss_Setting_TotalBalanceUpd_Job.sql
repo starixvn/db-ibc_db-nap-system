@@ -795,7 +795,7 @@ BEGIN
 		RETURN	
 	END
 
-	WHILE (@IsDiff = 1)
+	IF (@IsDiff = 1)
 	BEGIN
 		--delete all data
 		DELETE FROM #tmpBalance
