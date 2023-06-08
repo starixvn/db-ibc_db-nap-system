@@ -14,6 +14,7 @@ AS
 		- 20210812@Sol: Enhance sps of setting related to new MB core - [Redmine: #160074]
 		- 20210906@Sol: HF - fixed wrong balance of master - [Redmine: #160131]
 		- 20220120@Evan: Split transfer tickets out of bettrans - [Redmine: #164196]
+		- 20230227@Evan: Balance-Up support transfer 247 [Redmine: #173554]
 	Parameter's explaination: 
 		
 */
@@ -205,7 +206,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 4
 			) s ON b.srecommend = s.custid
-		WHERE b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT TOP 1 1 FROM #SportBettype s WHERE s.Bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -249,7 +250,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 4
 			) s ON b.srecommend = s.custid
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.srecommend
 
 	END
@@ -375,7 +379,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 3
 			) s ON b.mrecommend = s.custid -- get index on mrecommend
-		WHERE b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE  b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT s.bettype FROM #SportBettype s WHERE s.bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -420,7 +424,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 3
 			) s ON b.mrecommend = s.custid -- get index on mrecommend
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.mrecommend
 		
 	END
@@ -546,7 +553,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 2
 			) s ON b.recommend = s.custid
-		WHERE  b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE   b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT s.bettype FROM #SportBettype s WHERE s.bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -591,7 +598,10 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 2
 			) s ON b.recommend = s.custid
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.recommend
 	END
 
@@ -716,7 +726,7 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 1
 			) s ON b.custid = s.custid
-		WHERE b.bettype < 19999 AND b.statusID IN (111, 112, 113)
+		WHERE  b.statusID IN (111, 112, 113)
 			AND (
 				b.winlostdate < @yesterday
 				OR NOT EXISTS (SELECT s.bettype FROM #SportBettype s WHERE s.bettype = b.bettype AND s.RefTable IN (1, 2))
@@ -761,14 +771,29 @@ BEGIN
 			INNER JOIN (
 				SELECT custid FROM #Cust_LimitLoss_Setting WHERE roleId = 1
 			) s ON b.custid = s.custid
-		WHERE ((bettype = 19999 and winlostdate <= @moveBetsDay) OR bettype > 19999)
+		WHERE 1 = CASE WHEN bettype = 19999 AND winlostdate > @MoveBetsDay THEN 0 --> new sum
+	            WHEN bettype = 20000 AND winlostdate > @balanceUpDay THEN 0 --> new bal
+	            WHEN winlostdate < @balanceUpDay THEN 0 --> old data
+	            ELSE 1 END
 		GROUP BY b.custid
 	END
 	--------------
 
-	----check move bet date again to make sure it is not changed
-	DECLARE @IsDiff BIT = 0, @NewMoveBetDate SMALLDATETIME = NULL
-	EXEC bodb02.dbo.Acc_Transfer_CheckMoveBetDate @moveBetsDay, @IsDiff = @IsDiff OUTPUT, @NewMoveBetDate = @NewMoveBetDate OUTPUT
+	----check MB date, BU date again to make sure it is not changed
+	DECLARE @IsDiff	SMALLINT = 1, @NewMoveBetDate SMALLDATETIME = NULL,@NewBalanceUpDate SMALLDATETIME = NULL
+
+	SELECT @NewMoveBetDate = NULL, @NewBalanceUpDate = NULL
+	EXEC bodb02.dbo.Acc_ReCheck_MBUDate
+		@MBDate = @moveBetsDay,
+		@BUDate = @balanceUpDay,
+		@IsDiff = @IsDiff OUTPUT,
+		@NewMBDate = @NewMoveBetDate OUTPUT,
+		@NewBUDate = @NewBalanceUpDate OUTPUT
+
+	IF @IsDiff = -1 
+	BEGIN
+		RETURN	
+	END
 
 	IF (@IsDiff = 1)
 	BEGIN
@@ -776,6 +801,7 @@ BEGIN
 		DELETE FROM #tmpBalance
 
 		SET @moveBetsDay = @NewMoveBetDate
+		SET @balanceUpDay = @NewBalanceUpDate
 		GOTO IfIsDiffTrue
 
 	END
