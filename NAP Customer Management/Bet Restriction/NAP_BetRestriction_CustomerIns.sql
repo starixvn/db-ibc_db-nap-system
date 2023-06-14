@@ -11,8 +11,9 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	 ,@FollowAccount	NVARCHAR(50) = NULL
 	 ,@ErrMsg			NVARCHAR(MAX) = '' OUTPUT	
 	 ,@ErrCode			TINYINT = 0 OUTPUT
+	 ,@LeagueGroupID VARCHAR(4000) = NULL  -- Add New Param #183663
 )
-AS
+AS 
 /*
 	Created: 20190815@Eden
 	Task : Insert Bet Restriction for Customer
@@ -21,7 +22,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
-
+	- 20230303@Helios: Add Column LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 	
 	Parameter explanation:
 	@ErrCode = :
@@ -29,6 +30,10 @@ AS
 			1 - Invalid Username
 			2 - <Username> has already exists in the Bet Restriction list.
 			3 - Invalid 8RM Account.
+	@LeagueGroupID = :
+			ALL : Selected ALL
+			NULL : Selected None
+			1,2,3,4... : Selected League
 
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
@@ -42,14 +47,16 @@ AS
 		@MaxPerMatch = 1000.00, 
 		@FollowAccount = '8RM888',
 		@ErrMsg = @ErrMsg OUTPUT,
-		@ErrCode =@ErrCode OUTPUT
+		@ErrCode =@ErrCode OUTPUT,
+        @LeagueGroupID = '2,4,6,8,12,22,55'
+
 	SELECT @ErrCode, @ErrMsg
 
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31701
 	DECLARE @site  NVARCHAR(50)
-	DECLARE @FollowAccountID INT, @CustID INT
+	DECLARE @FollowAccountID INT, @CustID INT , @LeagueGroupName VARCHAR(4000)
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -104,7 +111,8 @@ BEGIN
 			SeizeBetTicket, 
 			MaxBet, 
 			MaxPerMatch, 
-			FollowAccount
+			FollowAccount,
+			LeagueGroupID    -- Add new Column #183663
 		   )
 		SELECT  @CustID, 
 				@SportType, 
@@ -112,7 +120,8 @@ BEGIN
 				@SeizeBetTicket, 
 				@MaxBet, 
 				@MaxPerMatch, 
-				@FollowAccountID
+				@FollowAccountID,
+				CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END  -- Add new Column #183663
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
@@ -123,15 +132,27 @@ BEGIN
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
-	DECLARE @LogDataNew VARCHAR(500)
+
+	SELECT @LeagueGroupName = CASE 
+								WHEN @LeagueGroupID IS NULL THEN ''
+								WHEN @LeagueGroupID = 'All' THEN 'All'
+								ELSE
+									STUFF ((SELECT ', ' + lg.GroupName
+									FROM DBACC.bodb02.dbo.LeagueGroup lg WITH (NOLOCK)
+									INNER JOIN STRING_SPLIT (@LeagueGroupID , ',') AS t ON t.value = lg.GroupID
+									FOR XML PATH('')), 1, 1, '')
+							  END
+
+	DECLARE @LogDataNew VARCHAR(4000)
 	SELECT  @LogDataNew = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
-						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
 						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '   
+						+ 'LeagueGroupName="'+ coalesce(cast(@LeagueGroupName as varchar(4000)) , space(1)) + '" '  -- Add new LogChanged #183663
+						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
-						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 

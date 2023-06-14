@@ -11,6 +11,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerUpd] (
 	 ,@FollowAccount	NVARCHAR(50) = NULL
 	 ,@ErrMsg			NVARCHAR(MAX) = '' OUTPUT
 	 ,@ErrCode			TINYINT = 0 OUTPUT
+	 ,@LeagueGroupID    VARCHAR(4000) = NULL -- Add New Param #183663
 )
 AS
 /*
@@ -21,12 +22,17 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
+	- 20230306@Helios: Update LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
 			3 - Invalid 8RM Account.
 			4 - This record no longer exists in the Bet Restriction List.
+	@LeagueGroupID = :
+			ALL : Selected ALL
+			NULL : Selected None
+			1,2,3,4... : Selected League
 
 	Example: 
 	declare @ErrMsg NVARCHAR(MAX),@ErrCode TINYINT
@@ -39,7 +45,8 @@ AS
 		@MaxPerMatch = 2000.00, 
 		@FollowAccount = '8RM888',
 		@ErrMsg = @ErrMsg OUTPUT,
-		@ErrCode =@ErrCode OUTPUT
+		@ErrCode =@ErrCode OUTPUT,
+		@LeagueGroupID = '3,5,8,6,12,44,55'
 	SELECT @ErrCode, @ErrMsg
 
 	*/
@@ -53,7 +60,10 @@ BEGIN
 			@MaxPerMatch_Old    MONEY, 
 			@FollowAccountID_Old  INT,
 			@UserName	NVARCHAR(50),
-			@FollowAccount_Old	NVARCHAR(50)
+			@FollowAccount_Old	NVARCHAR(50),
+			@LeagueGroupName VARCHAR(4000),
+			@LeagueGroupID_Old VARCHAR(4000),
+			@LeagueGroupName_Old VARCHAR(4000)  --Add param Log LeagueGroupID_Old
 
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
@@ -64,7 +74,9 @@ BEGIN
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
 		   @MaxBet_Old = MaxBet, 
 		   @MaxPerMatch_Old = MaxPerMatch, 
-		   @FollowAccountID_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount,
+		   @LeagueGroupID_Old = LeagueGroupID  -- Add Data Old LeagueGroupID
+
 	FROM BetRestriction_Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
 		  AND SportType = @SportType;
@@ -109,6 +121,7 @@ BEGIN
 		AND ISNULL(@MaxBet_Old,-1) = ISNULL(@MaxBet,-1)
 		AND ISNULL(@MaxPerMatch_Old,-1) = ISNULL(@MaxPerMatch,-1)
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
+		AND ISNULL(@LeagueGroupID_Old , '') = ISNULL(@LeagueGroupID, '')  -- Add validate #183663
 	BEGIN
 		SELECT @ErrMsg = N'No change'
 		RETURN
@@ -122,7 +135,8 @@ BEGIN
 			SeizeBetTicket = @SeizeBetTicket, 
 			MaxBet = @MaxBet, 
 			MaxPerMatch = @MaxPerMatch, 
-			FollowAccount = @FollowAccountID
+			FollowAccount = @FollowAccountID,
+			LeagueGroupID = CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END -- Edit LeagueGroupID #183663
 		WHERE CustID = @CustID
 			AND SportType = @SportType;  
 	END TRY
@@ -135,25 +149,49 @@ BEGIN
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
-	DECLARE @LogDataNew VARCHAR(500), @LogDataOld VARCHAR(500)
+	DECLARE @LogDataNew VARCHAR(4000), @LogDataOld VARCHAR(4000)
+
+
+	SELECT @LeagueGroupName = CASE 
+								WHEN @LeagueGroupID IS NULL THEN ' '
+								WHEN @LeagueGroupID = 'All' THEN 'All'
+								ELSE
+									STUFF ((SELECT ', ' + lg.GroupName
+									FROM DBACC.bodb02.dbo.LeagueGroup lg WITH (NOLOCK)
+									INNER JOIN STRING_SPLIT (@LeagueGroupID , ',') AS t ON t.value = lg.GroupID
+									FOR XML PATH('')), 1, 1, '')
+							  END
+		 , @LeagueGroupName_Old = CASE 
+								WHEN @LeagueGroupID_Old IS NULL THEN ' '
+								WHEN @LeagueGroupID_Old = 'All' THEN 'All'
+								ELSE
+									STUFF ((SELECT ', ' + lg.GroupName
+									FROM DBACC.bodb02.dbo.LeagueGroup lg WITH (NOLOCK)
+									INNER JOIN STRING_SPLIT (@LeagueGroupID_Old , ',') AS t ON t.value = lg.GroupID
+									FOR XML PATH('')), 1, 1, '')
+								END
+
 	SELECT  @LogDataNew = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
-						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
 						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '  
+						+ 'LeagueGroupName="'+ coalesce(cast(@LeagueGroupName as varchar(4000)) , space(1)) + '" '  -- Add new LogChanged #183663
+						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
-						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
+						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />',
+
 			@LogDataOld = '<R '
 						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
-						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),'FUL') + '" '
 						+ 'SBT="'+ CASE WHEN @SeizeBetTicket_Old IS NULL THEN 'FUL' WHEN @SeizeBetTicket_Old = 0 THEN 'None' ELSE cast(@SeizeBetTicket_Old as varchar(50)) END  + '" '  
+						+ 'LeagueGroupName="'+ coalesce(cast(@LeagueGroupName_Old as varchar(4000)) , space(1)) + '" '  -- Add new LogChanged #183663
+						+ 'FA="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
 						+ 'maxb="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
-						+ 'FA="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		
@@ -180,5 +218,3 @@ BEGIN
 	END	                     
 END
 GO
-
-

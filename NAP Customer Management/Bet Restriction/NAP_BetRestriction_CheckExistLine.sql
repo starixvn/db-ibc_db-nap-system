@@ -64,7 +64,7 @@ BEGIN
 						 ) down
 		WHERE ci.custid = @CustID
 	END
-	ELSE-- IF @SportType = 2 else Run Sport 2 or 5 or 9 --  [RedmineID: #183662]
+	ELSE
 	BEGIN
 		SELECT ci.CustID,
 			   CAST(CASE WHEN upCust.CustID IS NOT NULL THEN 1 ELSE 0 END AS BIT ) AS IsUplineExists,
@@ -75,7 +75,7 @@ BEGIN
 			   upCust.username AS ExistingUplineUserName,
 			   --Upline_SeizeBetTicket = COALESCE(Aup.SeizeBetTicket,MUp.SeizeBetTicket,SUp.SeizeBetTicket),				--  [RedmineID: #183662]
 			   CAST(CASE WHEN down.ExistingDownLine IS NOT NULL THEN 1 ELSE 0 END AS BIT ) IsDownlineExists
-			   --,down.Min_Downline_SeizeBetTicket																			--  [RedmineID: #183662]
+			   --down.Min_Downline_SeizeBetTicket																			--  [RedmineID: #183662]
 		FROM customer ci WITH(NOLOCK) 
 			 LEFT JOIN BetRestriction_Customer AUp WITH(NOLOCK) 
 				ON AUp.CustID = ci.recommend AND AUp.SportType = @SportType AND ci.CustID  <> ci.recommend
@@ -100,6 +100,7 @@ BEGIN
 						 ) down
 		WHERE ci.custid = @CustID
 	END
+	
 END
 GO
 
