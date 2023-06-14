@@ -11,6 +11,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
+	- 20230306@Helios: Add Show LeagueGroupID [RedmineID: #183663]
 
 	Example: EXEC NAP_BetRestriction_CustomerSelDetail @CustID = 1176092, @SportType = 1
 	
@@ -24,7 +25,8 @@ BEGIN
 		   bc.MaxBet, 
 		   bc.MaxPerMatch, 
 		   bc.FollowAccount AS FollowAccountID,
-		   rm.username AS [FollowAccount]
+		   rm.username AS [FollowAccount],
+		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID -- [RedmineID: #183663]
 	FROM BetRestriction_Customer bc WITH(NOLOCK)
 		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.[FollowAccount]

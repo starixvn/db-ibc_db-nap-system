@@ -10,8 +10,9 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSel] (
 	,@PageIndex		INT = 1
 	,@TotalItems	INT = 0 OUTPUT
 	,@IsTest		BIT = 0
-)
+) 
 AS
+
 /*
 	Created: 20190815@Eden
 	Task : Get Bet Restriction Customer 
@@ -22,6 +23,8 @@ AS
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20210617@Tina: Lock account & indirect close account [redmine: #148600]
 	- 20210802@Johnson: add @sporttype to support bet restriction for basketball [redmine:#158229]
+	- 20230303@Helios: Remove Column ProblemAccount AND Get NewColumn LeagueGroupID [redmine:#183663]
+
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
 		@Status = : All, Active, View Only, Suspended, Inactive
@@ -74,9 +77,10 @@ BEGIN
 		   e.Currency,
 		   bc.MaxBet, 
 		   bc.MaxPerMatch, 
-		   CASE WHEN cp.CustId IS NOT NULL THEN 'YES' ELSE 'NO' END AS ProblemAccount,
+		   --CASE WHEN cp.CustId IS NOT NULL THEN 'YES' ELSE 'NO' END AS ProblemAccount,          -- Change By [redmine:#183663]
 		   bc.FollowAccount AS FollowAccountID,
-		   rm.username AS [FollowAccount]
+		   rm.username AS [FollowAccount],
+		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID    -- Change By [redmine:#183663]
 	INTO #BetRestriction_Customer
 	FROM BetRestriction_Customer bc WITH(NOLOCK)
 		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
@@ -92,7 +96,7 @@ BEGIN
 					) ca
 		 LEFT JOIN custAccount head WITH(NOLOCK) ON ca.groupID = head.groupID AND head.IsGroupHeadLine = 1
 		 LEFT JOIN custInfo headname WITH(NOLOCK) ON headname.custid = head.custid
-		 LEFT JOIN CS_ProblemAccount cp  WITH(NOLOCK) ON cp.CustId = bc.CustID  
+		 --LEFT JOIN CS_ProblemAccount cp  WITH(NOLOCK) ON cp.CustId = bc.CustID    -- Change By [redmine:#183663]
 		 LEFT JOIN Customer Agent WITH(NOLOCK) ON agent.custid = ci.recommend
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.FollowAccount
 		 LEFT JOIN Site s WITH(NOLOCK) ON s.site = c.site
@@ -122,10 +126,11 @@ BEGIN
 		Currency nvarchar(50),
 		MaxBet money,
 		MaxPerMatch money,
-		ProblemAccount VARCHAR(3),
+		--ProblemAccount VARCHAR(3), -- Change By [redmine:#183663]
 		FollowAccountID int,
 		[FollowAccount] nvarchar(50),
-		RowNumber INT PRIMARY KEY CLUSTERED
+		RowNumber INT PRIMARY KEY CLUSTERED,
+	    LeagueGroupID varchar(4000) -- Change By [redmine:#183663]
 	)
 	
 	INSERT INTO #BetRestriction_Customer2(
@@ -143,10 +148,11 @@ BEGIN
 		Currency,
 		MaxBet,
 		MaxPerMatch,
-		ProblemAccount,
+		--ProblemAccount, -- Change By [redmine:#183663]
 		FollowAccountID,
 		[FollowAccount],
-		RowNumber
+		RowNumber,
+		LeagueGroupID -- Change By [redmine:#183663]
 	)
 	SELECT CustID,
 		SportType,
@@ -162,10 +168,11 @@ BEGIN
 		Currency,
 		MaxBet,
 		MaxPerMatch,
-		ProblemAccount,
+		--ProblemAccount, -- Change By [redmine:#183663]
 		FollowAccountID,
 		[FollowAccount], 
-		ROW_NUMBER() OVER (ORDER BY Headline, Account) AS RowNumber
+		ROW_NUMBER() OVER (ORDER BY Headline, Account) AS RowNumber,
+		LeagueGroupID -- Change By [redmine:#183663]
 	FROM #BetRestriction_Customer tmp
 	WHERE tmp.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE tmp.SiteID END 
 		AND tmp.Status = CASE WHEN ISNULL(@Status,'All') <> 'All' THEN @Status ELSE tmp.Status END 
@@ -175,7 +182,12 @@ BEGIN
 
 	SELECT * 
 	FROM #BetRestriction_Customer2
-	WHERE RowNumber BETWEEN @rowstart AND @rowend 		
+	WHERE RowNumber BETWEEN @rowstart AND @rowend 
+	
+ DROP TABLE #Setting
+ DROP TABLE #BetRestriction_Customer
+ DROP TABLE #BetRestriction_Customer2
+
 END
 GO
 
