@@ -1,17 +1,18 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
-	  @UserName			NVARCHAR(50)
-	 ,@UserId			INT
-	 ,@IP				VARCHAR(15) = ''
-	 ,@SportType		SMALLINT = 1
-	 ,@LiveBetAccept	SMALLINT = NULL
-	 ,@SeizeBetTicket	TINYINT = NULL
-	 ,@MaxBet			MONEY = NULL
-	 ,@MaxPerMatch		MONEY = NULL
-	 ,@FollowAccount	NVARCHAR(50) = NULL
-	 ,@ErrMsg			NVARCHAR(MAX) = '' OUTPUT	
-	 ,@ErrCode			TINYINT = 0 OUTPUT
-	 ,@LeagueGroupID VARCHAR(4000) = NULL  -- Add New Param #183663
+	  @UserName				NVARCHAR(50)
+	 ,@UserId				INT
+	 ,@IP					VARCHAR(15) = ''
+	 ,@SportType			SMALLINT = 1
+	 ,@LiveBetAccept		SMALLINT = NULL
+	 ,@SeizeBetTicket		TINYINT = NULL
+	 ,@MaxBet				MONEY = NULL
+	 ,@MaxPerMatch			MONEY = NULL
+	 ,@FollowAccount		NVARCHAR(50) = NULL
+	 ,@AccumulateBalance	BIT = 0
+	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT	
+	 ,@ErrCode				TINYINT = 0 OUTPUT
+	 ,@LeagueGroupID		VARCHAR(4000) = NULL  -- Add New Param #183663
 )
 AS 
 /*
@@ -23,6 +24,7 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230303@Helios: Add Column LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 	
 	Parameter explanation:
 	@ErrCode = :
@@ -46,6 +48,7 @@ AS
 		@MaxBet = 100.00, 
 		@MaxPerMatch = 1000.00, 
 		@FollowAccount = '8RM888',
+		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT,
         @LeagueGroupID = '2,4,6,8,12,22,55'
@@ -112,6 +115,7 @@ BEGIN
 			MaxBet, 
 			MaxPerMatch, 
 			FollowAccount,
+			AccumulateBalance,
 			LeagueGroupID    -- Add new Column #183663
 		   )
 		SELECT  @CustID, 
@@ -121,6 +125,7 @@ BEGIN
 				@MaxBet, 
 				@MaxPerMatch, 
 				@FollowAccountID,
+				@AccumulateBalance,
 				CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END  -- Add new Column #183663
 	END TRY
 	BEGIN CATCH
@@ -149,7 +154,8 @@ BEGIN
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
 						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '   
 						+ 'LeagueGroupName="'+ coalesce(cast(@LeagueGroupName as varchar(4000)) , space(1)) + '" '  -- Add new LogChanged #183663
-						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
+						+ 'AB="'+ CASE WHEN ISNULL(@AccumulateBalance,0) = 0 THEN 'No' ELSE 'Yes' END + '" '
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 

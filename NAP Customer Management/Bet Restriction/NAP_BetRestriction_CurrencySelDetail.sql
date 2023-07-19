@@ -12,8 +12,9 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 
-	Example: EXEC NAP_BetRestriction_CurrencySelDetail @ExchangeID = 5, @SportType = 1, @Type = 1
+	Example: EXEC NAP_BetRestriction_CurrencySelDetail @ExchangeID = 50, @SportType = 1, @Type = 1
 	*/
 BEGIN
 	SELECT e.currency, 
@@ -23,6 +24,7 @@ BEGIN
 		   bc.LiveBetAccept, 
 		   bc.SeizeBetTicket, 
 		   bc.FollowAccount AS FollowAccountID,
+		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
 		   ci.username AS FollowAccount
 	FROM BetRestriction_Currency bc WITH(NOLOCK)
 		 INNER JOIN exchange e WITH(NOLOCK) ON bc.ExchangeID = e.exchangeid
