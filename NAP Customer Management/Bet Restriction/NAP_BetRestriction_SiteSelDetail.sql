@@ -11,6 +11,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 
 	Example: EXEC NAP_BetRestriction_SiteSelDetail @SiteID = 1, @SportType = 1
 	
@@ -23,6 +24,7 @@ BEGIN
 		   bs.LiveBetAccept, 
 		   bs.SeizeBetTicket, 
 		   bs.FollowAccount AS FollowAccountID,
+		   CASE WHEN ISNULL(bs.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
 		   ci.username AS FollowAccount
 	FROM BetRestriction_Site bs WITH(NOLOCK)
 		 INNER JOIN [Site] s WITH(NOLOCK) ON bs.SiteID = s.siteid

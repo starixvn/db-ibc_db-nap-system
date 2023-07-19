@@ -13,6 +13,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 
 	Example:   
 	declare @TotalPages	INT 
@@ -42,6 +43,7 @@ BEGIN
 		SeizeBetTicket tinyint,
 		FollowAccountID int,
 		[FollowAccount] nvarchar(50),
+		AccumulateBalance BIT,
 		RowNumber INT PRIMARY KEY CLUSTERED
 	)
 
@@ -54,6 +56,7 @@ BEGIN
 		SeizeBetTicket,
 		FollowAccountID,
 		FollowAccount,
+		AccumulateBalance,
 		RowNumber
 	)
 	SELECT e.currency, 
@@ -64,6 +67,7 @@ BEGIN
 		   bc.SeizeBetTicket, 
 		   bc.FollowAccount AS FollowAccountID,
 		   ci.username AS FollowAccount,
+		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
 		   ROW_NUMBER() OVER (ORDER BY e.currency) AS RowNumber
 	FROM BetRestriction_Currency bc WITH(NOLOCK)
 		 INNER JOIN exchange e WITH(NOLOCK) ON bc.ExchangeID = e.exchangeid

@@ -1,14 +1,15 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteIns] (
-	  @SiteID			INT
-	 ,@UserId			INT
-	 ,@IP				VARCHAR(15) = ''
-	 ,@SportType		SMALLINT = 1
-	 ,@LiveBetAccept	SMALLINT = NULL
-	 ,@SeizeBetTicket	TINYINT = NULL
-	 ,@FollowAccount	NVARCHAR(50) = NULL
-	 ,@ErrMsg			NVARCHAR(MAX) = '' OUTPUT	
-	 ,@ErrCode			TINYINT = 0 OUTPUT
+	  @SiteID				INT
+	 ,@UserId				INT
+	 ,@IP					VARCHAR(15) = ''
+	 ,@SportType			SMALLINT = 1
+	 ,@LiveBetAccept		SMALLINT = NULL
+	 ,@SeizeBetTicket		TINYINT = NULL
+	 ,@FollowAccount		NVARCHAR(50) = NULL
+	 ,@AccumulateBalance	BIT = 0
+	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT	
+	 ,@ErrCode				TINYINT = 0 OUTPUT
 )
 AS
 /*
@@ -19,6 +20,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 
 	Parameter explanation:
 	@ErrCode = :
@@ -35,6 +37,7 @@ AS
 		@LiveBetAccept = NULL , 
 		@SeizeBetTicket = 0 , 
 		@FollowAccount = NULL,--'8RM888',
+		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
 	SELECT @ErrCode, @ErrMsg
@@ -85,13 +88,15 @@ BEGIN
 		SportType,
         LiveBetAccept, 
         SeizeBetTicket, 
-        FollowAccount
+        FollowAccount,
+		AccumulateBalance
        )
     SELECT  @SiteID, 
             @SportType,
 			@LiveBetAccept, 
             @SeizeBetTicket, 
-            @FollowAccountID
+            @FollowAccountID,
+			@AccumulateBalance
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
@@ -108,7 +113,8 @@ BEGIN
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
 						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '  
-						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
+						+ 'AB="'+ CASE WHEN ISNULL(@AccumulateBalance,0) = 0 THEN 'No' ELSE 'Yes' END + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 

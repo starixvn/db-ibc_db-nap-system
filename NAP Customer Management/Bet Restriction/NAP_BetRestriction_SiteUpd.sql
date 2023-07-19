@@ -1,14 +1,15 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteUpd] (
-	  @SiteID			INT
-	 ,@UserId			INT
-	 ,@IP				VARCHAR(15) = ''
-	 ,@SportType		SMALLINT = 1
-	 ,@LiveBetAccept	SMALLINT = NULL
-	 ,@SeizeBetTicket	TINYINT = NULL
-	 ,@FollowAccount	NVARCHAR(50) = NULL
-	 ,@ErrMsg			NVARCHAR(MAX) = '' OUTPUT
-	 ,@ErrCode			TINYINT = 0 OUTPUT
+	  @SiteID				INT
+	 ,@UserId				INT
+	 ,@IP					VARCHAR(15) = ''
+	 ,@SportType			SMALLINT = 1
+	 ,@LiveBetAccept		SMALLINT = NULL
+	 ,@SeizeBetTicket		TINYINT = NULL
+	 ,@FollowAccount		NVARCHAR(50) = NULL
+	 ,@AccumulateBalance	BIT = 0
+	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT
+	 ,@ErrCode				TINYINT = 0 OUTPUT
 )
 AS
 /*
@@ -19,6 +20,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 
 	Parameter explanation:
 	@ErrCode = :
@@ -34,6 +36,7 @@ AS
 		@LiveBetAccept = 10 , 
 		@SeizeBetTicket = 20 , 
 		@FollowAccount = '8RM888',
+		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
 		@ErrCode =@ErrCode OUTPUT
 	SELECT @ErrCode, @ErrMsg
@@ -46,14 +49,16 @@ BEGIN
 			@SeizeBetTicket_Old TINYINT, 
 			@FollowAccountID_Old  INT,
 			@site NVARCHAR(50),
-			@FollowAccount_Old	NVARCHAR(50)
+			@FollowAccount_Old	NVARCHAR(50),
+			@AccumulateBalance_Old BIT
 	
 	SET @ErrCode = 0
 	SET @StartRun = GETDATE()
 
 	SELECT @LiveBetAccept_Old = LiveBetAccept, 
 		   @SeizeBetTicket_Old = SeizeBetTicket,  
-		   @FollowAccountID_Old = FollowAccount
+		   @FollowAccountID_Old = FollowAccount,
+		   @AccumulateBalance_Old = AccumulateBalance
 	FROM BetRestriction_Site WITH(NOLOCK)
 	WHERE SiteID = @SiteID
 		  AND SportType = @SportType;
@@ -79,6 +84,7 @@ BEGIN
 	IF	ISNULL(@LiveBetAccept_Old,-99) = ISNULL(@LiveBetAccept,-99)
 		AND ISNULL(@SeizeBetTicket_Old,200) = ISNULL(@SeizeBetTicket,200)
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
+		AND ISNULL(@AccumulateBalance_Old,0)= ISNULL(@AccumulateBalance,0)
 	BEGIN
 		SELECT @ErrMsg = N'No change'
 		RETURN
@@ -91,7 +97,8 @@ BEGIN
 		UPDATE BetRestriction_Site WITH(ROWLOCK)
 		SET LiveBetAccept = @LiveBetAccept, 
 			SeizeBetTicket = @SeizeBetTicket, 
-			FollowAccount = @FollowAccountID
+			FollowAccount = @FollowAccountID,
+			AccumulateBalance = @AccumulateBalance
 		WHERE SiteID = @SiteID AND SportType = @SportType
 	END TRY
 	BEGIN CATCH
@@ -109,15 +116,17 @@ BEGIN
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
 						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '  
-						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" ' 
+						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
+						+ 'AB="'+ CASE WHEN ISNULL(@AccumulateBalance, 0) = 0 THEN 'No' ELSE 'Yes' END + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />',
 			@LogDataOld = '<R '
 						+ 'Site="'+ coalesce(cast(@Site as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
 						+ 'LBA="'+ coalesce(cast(@LiveBetAccept_Old as varchar(50)),'FUL') + '" '
-						+ 'SBT="'+ CASE WHEN @SeizeBetTicket_Old IS NULL THEN 'FUL' WHEN @SeizeBetTicket_Old = 0 THEN 'None' ELSE cast(@SeizeBetTicket_Old as varchar(50)) END  + '" '  
-						+ 'FA="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" ' 
+						+ 'SBT="'+ CASE WHEN @SeizeBetTicket_Old IS NULL THEN 'FUL' WHEN @SeizeBetTicket_Old = 0 THEN 'None' ELSE cast(@SeizeBetTicket_Old as varchar(50)) END  + '" ' 
+						+ 'FA="'+ coalesce(cast(@FollowAccount_Old as varchar(50)),space(1)) + '" '						
+						+ 'AB="'+ CASE WHEN ISNULL(@AccumulateBalance_Old, 0) = 0 THEN 'No' ELSE 'Yes' END + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

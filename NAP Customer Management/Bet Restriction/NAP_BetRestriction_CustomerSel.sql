@@ -24,6 +24,7 @@ AS
 	- 20210617@Tina: Lock account & indirect close account [redmine: #148600]
 	- 20210802@Johnson: add @sporttype to support bet restriction for basketball [redmine:#158229]
 	- 20230303@Helios: Remove Column ProblemAccount AND Get NewColumn LeagueGroupID [redmine:#183663]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
@@ -79,6 +80,7 @@ BEGIN
 		   bc.MaxPerMatch, 
 		   --CASE WHEN cp.CustId IS NOT NULL THEN 'YES' ELSE 'NO' END AS ProblemAccount,          -- Change By [redmine:#183663]
 		   bc.FollowAccount AS FollowAccountID,
+		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
 		   rm.username AS [FollowAccount],
 		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID    -- Change By [redmine:#183663]
 	INTO #BetRestriction_Customer
@@ -129,6 +131,7 @@ BEGIN
 		--ProblemAccount VARCHAR(3), -- Change By [redmine:#183663]
 		FollowAccountID int,
 		[FollowAccount] nvarchar(50),
+		AccumulateBalance BIT,
 		RowNumber INT PRIMARY KEY CLUSTERED,
 	    LeagueGroupID varchar(4000) -- Change By [redmine:#183663]
 	)
@@ -151,6 +154,7 @@ BEGIN
 		--ProblemAccount, -- Change By [redmine:#183663]
 		FollowAccountID,
 		[FollowAccount],
+		AccumulateBalance,
 		RowNumber,
 		LeagueGroupID -- Change By [redmine:#183663]
 	)
@@ -171,6 +175,7 @@ BEGIN
 		--ProblemAccount, -- Change By [redmine:#183663]
 		FollowAccountID,
 		[FollowAccount], 
+		AccumulateBalance,
 		ROW_NUMBER() OVER (ORDER BY Headline, Account) AS RowNumber,
 		LeagueGroupID -- Change By [redmine:#183663]
 	FROM #BetRestriction_Customer tmp
