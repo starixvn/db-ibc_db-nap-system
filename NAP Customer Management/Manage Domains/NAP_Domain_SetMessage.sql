@@ -10,6 +10,7 @@ AS
 
 	Revisions:
 		- 20230911@Tacy: NAP CM - Manage Domain [RedmineID: #194024]
+		- 20231114@Tacy: Update Thai Language [RedmineID: #194024]
 
 	Param's Explanation:
 		- @MsgContentsType: to identify normal message or changed settings message
@@ -69,7 +70,7 @@ BEGIN
 		SELECT @Content_en = @cnt + N' domain(s) activated. You can find further details in Available Domains function.'
 			, @Content_cs = @cnt +  N'域名已启用。您可以在可用域名功能中找到更多详细资讯。'
 			, @Content_ch = @cnt +  N'域名已啟用。 您可以在可用域名功能中找到更多詳細資訊。'
-			, @Content_th = @cnt +  N' domain(s) activated. You can find further details in Available Domains function.'
+			, @Content_th = N'เปิดใช้งาน ' + @cnt +  N' โดเมนแล้ว คุณสามารถดูรายละเอียดเพิ่มเติมได้ในฟังก์ชันโดเมนที่มีอยู่'
 			, @Content_vn = @cnt +  N' tên miền đã được kích hoạt. Bạn có thể xem thêm chi tiết trong chức năng Tên Miền Khả Dụng.'
 
 		--Insert Msg
