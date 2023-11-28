@@ -96,7 +96,8 @@ BEGIN
 														  
 																	),0)
 													END,
-							TARGET.IsGlobalLockTOLimit = SOURCE.IsGlobalLockTOLimit
+							TARGET.IsGlobalLockTOLimit = SOURCE.IsGlobalLockTOLimit,
+							TARGET.ModifiedDate = GETDATE()
 								
 			WHEN NOT MATCHED THEN	
 				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID, IsGlobalLockTOLimit)

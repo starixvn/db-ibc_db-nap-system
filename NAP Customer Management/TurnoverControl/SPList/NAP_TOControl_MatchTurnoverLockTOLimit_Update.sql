@@ -64,6 +64,7 @@ BEGIN
 	UPDATE dbo.TOControl_Setting WITH(ROWLOCK, UPDLOCK)
 	SET 
 		IsEventLockTOLimit = @IsEventLockTOLimit
+		,ModifiedDate = GETDATE()
 	WHERE CustID = @CustID AND matchid = @MatchID AND IsGroupHeadLine = @IsGroupHeadline
 	
 

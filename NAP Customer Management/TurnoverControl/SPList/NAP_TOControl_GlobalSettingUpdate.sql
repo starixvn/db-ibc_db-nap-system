@@ -127,7 +127,8 @@ BEGIN
 												WHERE ABS(t.HouseTurnOver*100/@MaxTurnover) >= PercentValue AND IsNotified = 1
 													AND SiteID = @SiteID
 												),0)
-								END				
+								END	,
+			t.ModifiedDate = GETDATE()
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
 	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadLine AND t.ProfileID = @ProfileID

@@ -19,6 +19,7 @@ AS
 	Revisions:
 		- 20200114@Malcolm: Separate setting and notification into Live/Non-Live and bettypes [Redmine : #126348]
 		- 20220427@July: SQL Server upgrade to 2019 phase 5 - Change STRING_SPLIT [Redmine: #171831]
+		- 20231127@Max: Nap CM - Turnover Control - TO control service was running with a delay of approximately 1 hour [Redmine: #197464]
 
 	Parameter's explaination:
 */
@@ -51,7 +52,7 @@ BEGIN
 	)
 
 	UPDATE t WITH(ROWLOCK,UPDLOCK)
-	SET t.IsNotified = tmp.nlevel
+	SET t.IsNotified = tmp.nlevel, t.ModifiedDate = GETDATE()
 	FROM dbo.TOControl_Setting t
 		INNER JOIN tmp ON t.matchid = tmp.matchid AND t.custid = tmp.custid AND t.IsGroupHeadLine = tmp.IsGroupHeadline AND tmp.ProfileID = t.ProfileID
 	

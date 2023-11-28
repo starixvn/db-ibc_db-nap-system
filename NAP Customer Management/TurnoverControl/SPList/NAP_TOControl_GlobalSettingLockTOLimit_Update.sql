@@ -67,7 +67,8 @@ BEGIN
 	
 	UPDATE t
 		SET 
-			t.IsGlobalLockTOLimit = @IsGlobalLockTOLimit		
+			t.IsGlobalLockTOLimit = @IsGlobalLockTOLimit	
+			,t.ModifiedDate = GETDATE()
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 	WHERE t.CustID = @CustID AND IsGroupHeadLine = @IsGroupHeadLine
 
