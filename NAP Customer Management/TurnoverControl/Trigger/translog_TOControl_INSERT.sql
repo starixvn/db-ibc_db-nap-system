@@ -1,3 +1,4 @@
+/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
 ALTER TRIGGER [dbo].[translog_TOControl_INSERT]
    ON  [dbo].[translog]
    AFTER INSERT
@@ -12,6 +13,7 @@ AS
 		- 20180315@Helen: Integrate Super Live product - [Redmine:89986]
 		- 20180622@Don: Tuning trigger - [Redmine:97313]
 		- 20180626@Helen: Tuning trigger - [Redmine:97442]
+		- 20231127@Max: Nap CM - Turnover Control - TO control service was running with a delay of approximately 1 hour [Redmine: #197464]
 	
 */
 BEGIN
@@ -20,9 +22,11 @@ BEGIN
 	
 	--DECLARE @XMLString XML = NULL, @HasError BIT = 0 
 	DECLARE  @srecommend INT, @statusID TINYINT, @TransID BIGINT, @bettype INT, @eventID INT
+		,@SiteDBGroupID SMALLINT
 	
 	SELECT @srecommend = srecommend, @statusID = statusID, @TransID = translogid, @eventID = eventID, @bettype = gameID
-	FROM inserted 
+		,@SiteDBGroupID = SiteDBGroupID
+	FROM inserted
 		
 	-- SUPER LIVE, tickets insert into translog
 	--IF (EXISTS (SELECT 1 FROM inserted WHERE eventID > 0 AND gameID BETWEEN 801 AND 899))
@@ -50,7 +54,7 @@ BEGIN
 		17433116--NewhonbetSuperRMB
 	) RETURN -- do not need to control TO for big licensee supers
 	
-	IF (@eventID > 0 AND @bettype BETWEEN 801 AND 899)
+	IF (@eventID > 0 AND @bettype BETWEEN 801 AND 899) AND @SiteDBGroupID IN (0,3) --only process for credit
 	BEGIN
 		INSERT INTO TOControl_TicketDetails_Insert (transid,bettype, statusID)
 		VALUES (@TransID,@bettype, @statusID)

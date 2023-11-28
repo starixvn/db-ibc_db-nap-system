@@ -20,6 +20,7 @@ AS
 
 	Revisions:
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
+		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
 		
 	Parameter's explaination:
 	 
@@ -34,7 +35,8 @@ BEGIN
 			@duration			INT,
 			@IsEventLockTOLimit_Old	BIT,
 			@FunctionKey		NVARCHAR(50),
-			@ProfileName		VARCHAR(50)
+			@ProfileName		VARCHAR(50),
+			@Remark				VARCHAR(500)
 	
 	SET	@startRun = GETDATE()
 
@@ -89,14 +91,27 @@ BEGIN
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)
 	
-	
-	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-		@Userid = @UserID,
-		@Custid = @CustID,
-		@ActionID = 762,
-		@TrackingValue = @LogData,
-		@TrackingValue2 = @TrackingValue2,
-		@Duration = @duration					
+	BEGIN TRY
+		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+			@Userid = @UserID,
+			@Custid = @CustID,
+			@ActionID = 762,
+			@TrackingValue = @LogData,
+			@TrackingValue2 = @TrackingValue2,
+			@Duration = @duration
+	END TRY
+	BEGIN CATCH
+		SELECT @Remark = 'ErrMsg=' + LEFT(ERROR_MESSAGE(), 350)
+
+		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+			@Userid = @UserID,
+			@Custid = @CustID,
+			@ActionID = 762,
+			@TrackingValue = @LogData,
+			@TrackingValue2 = @TrackingValue2,
+			@Duration = @duration,
+			@Doing = @Remark
+	END CATCH
 						
 END
 GO
