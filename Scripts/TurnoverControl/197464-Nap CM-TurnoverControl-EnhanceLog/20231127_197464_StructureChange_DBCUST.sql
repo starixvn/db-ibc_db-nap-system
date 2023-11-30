@@ -31,7 +31,7 @@ GO
 ALTER TABLE [dbo].[TOControl_TransitionProcessedLog] ADD  CONSTRAINT [DF_TransitionProcessedLog_CreatedDate]  DEFAULT (getdate()) FOR [CreatedDate]
 GO
 
-CREATE CLUSTERED INDEX [IX_TransitionProcessedLog_CreatedDate] ON [dbo].[TOControl_TransitionProcessedLog]
+CREATE CLUSTERED INDEX [CIX_TransitionProcessedLog_CreatedDate] ON [dbo].[TOControl_TransitionProcessedLog]
 (
 	[CreatedDate] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [DATA]

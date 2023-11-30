@@ -44,13 +44,13 @@ BEGIN
 		, adjusted_HouseTurnOver, IsGroupHeadline, sporttype, liveindicator, bettype)
 	EXEC DBTOC.bodb02.dbo.TASK_TOControl_GetTransition @RowId = @__lastRowId
 
+	IF @@ROWCOUNT = 0
+		RETURN
+
 	--Capture all data get from output of TASK_TOControl_GetTransition (TOControl_Transition)
 	INSERT INTO dbo.TOControl_TransitionProcessedLog (MinRowId, MaxRowId)
 	SELECT MIN(t.RowId), MAX(t.RowId)
 	FROM #TmpTableRaw t
-
-	IF @@ROWCOUNT = 0
-		RETURN
 
 	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, ProfileID , adjusted_TurnOver, adjusted_HouseTurnOver)
 	SELECT t1.CustID, matchid,IsGroupHeadline, spt.sporttype, pf.profileID
