@@ -24,7 +24,8 @@ AS
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20190521@Helen: store the same TrackingValue for both old and new TrackingValue - [Redmine:113472]
 		- 20200110@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
-		
+		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
+
 	Parameter's explaination:
 	
 */
@@ -37,7 +38,8 @@ BEGIN
 	DECLARE @startRun	DATETIME,
 			@endRun		DATETIME,
 			@duration	INT,
-			@FunctionKey NVARCHAR(50)
+			@FunctionKey NVARCHAR(50),
+			@Remark		VARCHAR(500)
 			
 	SET	@startRun = GETDATE()
 
@@ -107,13 +109,27 @@ BEGIN
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" />'
 	
-	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@Userid = @UserID,
-				@CustID = @CustID,
-				@ActionID = 670,
-				@TrackingValue = @TrackingValue2,
-				@TrackingValue2 = @TrackingValue2,
-				@Duration = @duration
+	BEGIN TRY
+		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@Userid = @UserID,
+					@CustID = @CustID,
+					@ActionID = 670,
+					@TrackingValue = @TrackingValue2,
+					@TrackingValue2 = @TrackingValue2,
+					@Duration = @duration
+	END TRY
+	BEGIN CATCH
+		SELECT @Remark = 'ErrMsg=' + LEFT(ERROR_MESSAGE(), 350)
+
+		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@Userid = @UserID,
+					@CustID = @CustID,
+					@ActionID = 670,
+					@TrackingValue = @TrackingValue2,
+					@TrackingValue2 = @TrackingValue2,
+					@Duration = @duration,
+					@Doing = @Remark
+	END CATCH
 				
 END
 GO

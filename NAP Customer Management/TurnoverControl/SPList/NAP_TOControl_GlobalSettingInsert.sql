@@ -25,6 +25,7 @@ AS
 		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 		- 20201223@Max: Hotfix - ToControl_Percentlevel is not updated if user place bet made house TO negative then add SMA to ToControl [Redmine: #147580]
+		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
 		
 	Parameter's explaination:
 		Sample data for @GlobalSetting: 
@@ -39,7 +40,8 @@ BEGIN
 	DECLARE @startRun	DATETIME,
 			@endRun		DATETIME,
 			@duration	INT,
-			@FunctionKey NVARCHAR(50)
+			@FunctionKey NVARCHAR(50),
+			@Remark		VARCHAR(500)
 
 	DECLARE @MaxTurnover_Log VARCHAR(1000)
 			
@@ -166,12 +168,25 @@ BEGIN
 	SET @duration  = DATEDIFF(millisecond,@startRun,@endRun)
 
 	-- WRITE LOG
-	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@Userid = @UserID,
-				@CustID = @CustID,
-				@ActionID = 668,
-				@TrackingValue = @LogData,
-				@Duration = @duration
+	BEGIN TRY
+		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@Userid = @UserID,
+					@CustID = @CustID,
+					@ActionID = 668,
+					@TrackingValue = @LogData,
+					@Duration = @duration
+	END TRY
+	BEGIN CATCH
+		SELECT @Remark = 'ErrMsg=' + LEFT(ERROR_MESSAGE(), 350)
+
+		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@Userid = @UserID,
+					@CustID = @CustID,
+					@ActionID = 668,
+					@TrackingValue = @LogData,
+					@Duration = @duration,
+					@Doing = @Remark
+	END CATCH
 
 END
 GO

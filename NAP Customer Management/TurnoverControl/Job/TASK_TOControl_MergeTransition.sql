@@ -16,6 +16,7 @@ Revisions:
 	- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 	- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
 	- 20211221@July: Change the link server name from DBEXT to DBTOC - [Redmine: #166411]
+	- 20231127@Max: Nap CM - Turnover Control - TO control service was running with a delay of approximately 1 hour [Redmine: #197464]
 
 Param explanation:
 */
@@ -45,6 +46,11 @@ BEGIN
 
 	IF @@ROWCOUNT = 0
 		RETURN
+
+	--Capture all data get from output of TASK_TOControl_GetTransition (TOControl_Transition)
+	INSERT INTO dbo.TOControl_TransitionProcessedLog (MinRowId, MaxRowId)
+	SELECT MIN(t.RowId), MAX(t.RowId)
+	FROM #TmpTableRaw t
 
 	INSERT INTO #TmpTable(CustID, matchid, IsGroupHeadline, sporttype, ProfileID , adjusted_TurnOver, adjusted_HouseTurnOver)
 	SELECT t1.CustID, matchid,IsGroupHeadline, spt.sporttype, pf.profileID
@@ -90,7 +96,8 @@ BEGIN
 														  
 																	),0)
 													END,
-							TARGET.IsGlobalLockTOLimit = SOURCE.IsGlobalLockTOLimit
+							TARGET.IsGlobalLockTOLimit = SOURCE.IsGlobalLockTOLimit,
+							TARGET.ModifiedDate = GETDATE()
 								
 			WHEN NOT MATCHED THEN	
 				INSERT (CustID, matchid, IsGroupHeadLine, MaxTurnOver, TotalTurnOver, HouseTurnover, IsNotified, PercentLevel, ProfileID, IsGlobalLockTOLimit)

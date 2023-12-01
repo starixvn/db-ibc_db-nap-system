@@ -8,6 +8,7 @@ AS
 	DB: DBAGE.bodb02
 	Revisions:
 		- 20190702@Patrick: Intial [Redmine: #112219]
+		- 20231127@Max: Nap CM - Turnover Control - TO control service was running with a delay of approximately 1 hour [Redmine: #197464]
 
 	Param explanation:
 */
@@ -15,16 +16,14 @@ BEGIN
 	SET NOCOUNT ON
 
 	DECLARE @MaxID BIGINT = 0
+		,@ArchiveDate DATETIME
 
-	SELECT @MaxID = sValue
-	FROM dbo.TOControl_Tickets_Setting WITH (ROWLOCK)
-	WHERE sKey = 'TOControl_Update'
+	SET @ArchiveDate = DATEADD(DAY, -3, GETDATE())
 
-	--Keep 10000 very first rows in the table
-	IF @MaxID - 10000 <= 0
-	RETURN
-
-	SET @MaxID = @MaxID - 10000
+	--Keep data least 3 days
+	SELECT @MaxID = MAX(t.rowid)
+	FROM dbo.TOControl_TicketDetails_Update t WITH (NOLOCK)
+	WHERE t.CreatedDate < @ArchiveDate
 
 	WHILE EXISTS (
 		SELECT TOP 1 1 FROM dbo.TOControl_TicketDetails_Update WITH (NOLOCK) 
@@ -37,4 +36,5 @@ BEGIN
 
 		WAITFOR DELAY '00:00:00:100'
 	END
+
 END

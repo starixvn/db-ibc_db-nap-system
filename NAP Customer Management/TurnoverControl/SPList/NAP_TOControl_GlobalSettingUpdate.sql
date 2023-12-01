@@ -28,6 +28,7 @@ AS
 		- 20200102@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 		- 20201223@Max: Hotfix - ToControl_Percentlevel is not updated if user place bet made house TO negative then add SMA to ToControl [Redmine: #147580]
+		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
 		
 	Parameter's explaination:
 	 
@@ -43,7 +44,8 @@ BEGIN
 	DECLARE @startRun	DATETIME,
 			@endRun		DATETIME,
 			@duration	INT,
-			@FunctionKey NVARCHAR(50)
+			@FunctionKey NVARCHAR(50),
+			@Remark		VARCHAR(500)
 	
 	DECLARE @MaxLevel TINYINT	
 			, @SiteID INT
@@ -125,7 +127,8 @@ BEGIN
 												WHERE ABS(t.HouseTurnOver*100/@MaxTurnover) >= PercentValue AND IsNotified = 1
 													AND SiteID = @SiteID
 												),0)
-								END				
+								END	,
+			t.ModifiedDate = GETDATE()
 	FROM dbo.TOControl_Setting t WITH(ROWLOCK, UPDLOCK)
 		INNER JOIN @MatchList m ON m.matchid = t.matchid
 	WHERE t.CustID = @CustID AND t.IsGroupHeadLine = @IsGroupHeadLine AND t.ProfileID = @ProfileID
@@ -157,14 +160,27 @@ BEGIN
 					+ 'ErrCode="'+ COALESCE(CAST(@ErrCode as varchar(50)),space(1)) + '" '
 					+ 'ErrMsg="'+ COALESCE(CAST(@ErrMsg as varchar(200)),space(1)) + '" />'
 	
-	EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@Userid = @UserID,
-				@CustID = @CustID,
-				@ActionID = 669,
-				@TrackingValue = @LogData,
-				@TrackingValue2 = @TrackingValue2,
-				@Duration = @duration
-			
+	BEGIN TRY
+		EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@Userid = @UserID,
+					@CustID = @CustID,
+					@ActionID = 669,
+					@TrackingValue = @LogData,
+					@TrackingValue2 = @TrackingValue2,
+					@Duration = @duration
+	END TRY
+	BEGIN CATCH
+		SELECT @Remark = 'ErrMsg=' + LEFT(ERROR_MESSAGE(), 350)
+
+		EXEC bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@Userid = @UserID,
+					@CustID = @CustID,
+					@ActionID = 669,
+					@TrackingValue = @LogData,
+					@TrackingValue2 = @TrackingValue2,
+					@Duration = @duration,
+					@Doing = @Remark
+	END CATCH
 END
 GO
 GRANT EXECUTE ON [dbo].[NAP_TOControl_GlobalSettingUpdate] TO [bodbAdminNet]
