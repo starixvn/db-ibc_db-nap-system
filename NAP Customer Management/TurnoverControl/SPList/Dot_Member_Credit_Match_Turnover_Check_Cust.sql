@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="Dot_Member,API_Vender,wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="svc_tig,API_Vender,wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 (
 	@CustID				INT,
