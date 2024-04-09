@@ -160,19 +160,18 @@ BEGIN
 					INNER JOIN dbo.TOControl_GlobalSetting GS WITH (NOLOCK) ON CA1.CustID = GS.CustID AND GS.IsGroupHeadLine = 1
 			WHERE ca.custid IN (@CustID,@SRecommend,@Recommend,@MRecommend)
 		)
-
-		SELECT @StopFlag = 1
-		FROM t1 GHL
-		CROSS APPLY (
-				SELECT TOP 1 1 AS valid
-				FROM TOControl_Setting tos WITH(NOLOCK)
-				WHERE tos.custid = GHL.CustID 
-					AND tos.matchid = @MatchID
-					AND tos.IsGroupHeadLine = 1
-					AND ABS(tos.HouseTurnover + (@Stake_tmp * (CASE WHEN @ExchangeID = 20 THEN 1 ELSE @actualrate END) * (1 - @TPositionTaking - @ExtraPT))) > tos.MaxTurnOver
-					AND tos.ProfileID = @ProfileID
-		) AS TO_tmp        
-
+		SELECT @StopFlag = ISNULL((SELECT TOP 1 1
+							FROM t1 GHL
+							CROSS APPLY (
+									SELECT TOP 1 1 AS valid
+									FROM TOControl_Setting tos WITH(NOLOCK)
+									WHERE tos.custid = GHL.CustID 
+										AND tos.matchid = @MatchID
+										AND tos.IsGroupHeadLine = 1
+										AND ABS(tos.HouseTurnover + (@Stake_tmp * (CASE WHEN @ExchangeID = 20 THEN 1 ELSE @actualrate END) * (1 - @TPositionTaking - @ExtraPT))) > tos.MaxTurnOver
+										AND tos.ProfileID = @ProfileID
+							) AS TO_tmp
+						),0)
 	END	
 	/*	@StopFlag = 1, invalid, so cancel the place bet 
 		@StopFlag = 0, valid, so it's okay for the place bet
