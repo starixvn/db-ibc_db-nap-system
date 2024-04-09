@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="Dot_Member,API_Vender,bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="svc_tig,API_Vender,wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Dot_Member_Credit_Match_Turnover_Check_Cust]
 (
 	@CustID				INT,
@@ -31,6 +31,7 @@ AS
 		- 20200114@Malcolm : Separate setting and notification into Live/Non-Live and bettypes [Redmine : 125076]
 		- 20200318@Helen : Get profile tuning code [Redmine : 125076]
 		- 20200720@Helen: SMA TO Control - change formula to use max Exposure when forecasting the risk - [Redmine: #136254]
+		- 20240318@Max: SMA TO Control - Enhance the sp Dot_Member_Credit_Match_Turnover_Check_Cust [Redmine: #202395]
 		
 	Parameter's explaination:
 	
@@ -38,7 +39,6 @@ AS
 BEGIN
 	SET NOCOUNT ON
 	
-	DECLARE @GroupHeadlineList TABLE (CustID INT PRIMARY KEY, ID INT IDENTITY (1,1))
 	DECLARE @Start INT, @Stop INT, @CustID_Headline INT, @ExtraPT DECIMAL(9,8), @Stake_tmp MONEY
 	
 	DECLARE @NewMatchTurnover MONEY, @MaxMatchTurnover_Setting MONEY, @adjHouseTurnover MONEY
@@ -153,39 +153,25 @@ BEGIN
 	BEGIN
 		-------------- Process for Headline --------------------------------------
 		-- Get Headline that member belongs to, his headline have TO Global setting
-		
-		INSERT INTO @GroupHeadlineList (CustID)
-		SELECT DISTINCT GS.CustID
-		FROM dbo.custAccount ca WITH (NOLOCK)
-			INNER JOIN dbo.CustGroupHeadline ca1 WITH (NOLOCK) ON ca1.groupID = ca.groupID
-			INNER JOIN dbo.TOControl_GlobalSetting GS WITH (NOLOCK) ON CA1.CustID = GS.CustID AND GS.IsGroupHeadLine = 1
-		WHERE ca.custid IN (@CustID,@SRecommend,@Recommend,@MRecommend)
-		
-		IF EXISTS (SELECT 1 FROM @GroupHeadlineList)
-		BEGIN
-			
-			IF @ExchangeID = 20
-			BEGIN
-				SET @actualrate = 1
-			END
-			
-			SET @adjHouseTurnover = (@Stake_tmp * @actualrate * (1 - @TPositionTaking- @ExtraPT))
-			
-			IF EXISTS (SELECT TOP 1 1
-						FROM @GroupHeadlineList GHL
-							CROSS APPLY (SELECT HouseTurnover,MaxTurnOver
-										 FROM TOControl_Setting tos WITH(NOLOCK)
-										 WHERE tos.custid = GHL.CustID 
-												AND	tos.matchid = @MatchID
-												AND tos.IsGroupHeadLine = 1
-												AND ABS(tos.HouseTurnover + @adjHouseTurnover) > tos.MaxTurnOver
-												AND tos.ProfileID = @ProfileID
-										) AS TO_tmp		
-						)				
-			BEGIN
-				SELECT @StopFlag = 1
-			END						
-		END
+		;WITH t1 AS (
+			SELECT DISTINCT GS.CustID
+			FROM dbo.custAccount ca WITH (NOLOCK)
+					INNER JOIN dbo.CustGroupHeadline ca1 WITH (NOLOCK) ON ca1.groupID = ca.groupID
+					INNER JOIN dbo.TOControl_GlobalSetting GS WITH (NOLOCK) ON CA1.CustID = GS.CustID AND GS.IsGroupHeadLine = 1
+			WHERE ca.custid IN (@CustID,@SRecommend,@Recommend,@MRecommend)
+		)
+		SELECT @StopFlag = ISNULL((SELECT TOP 1 1
+							FROM t1 GHL
+							CROSS APPLY (
+									SELECT TOP 1 1 AS valid
+									FROM TOControl_Setting tos WITH(NOLOCK)
+									WHERE tos.custid = GHL.CustID 
+										AND tos.matchid = @MatchID
+										AND tos.IsGroupHeadLine = 1
+										AND ABS(tos.HouseTurnover + (@Stake_tmp * (CASE WHEN @ExchangeID = 20 THEN 1 ELSE @actualrate END) * (1 - @TPositionTaking - @ExtraPT))) > tos.MaxTurnOver
+										AND tos.ProfileID = @ProfileID
+							) AS TO_tmp
+						),0)
 	END	
 	/*	@StopFlag = 1, invalid, so cancel the place bet 
 		@StopFlag = 0, valid, so it's okay for the place bet
