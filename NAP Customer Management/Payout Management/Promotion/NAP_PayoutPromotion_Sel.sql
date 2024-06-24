@@ -19,6 +19,7 @@ AS
 	Revisions:
         - 20240328@Tacy: NAP CM - Correct Score Promotion [redmine: #202974]
 		- 20240514@Tacy: remove teamname [redmine: #205071]
+		- 20240624@Tacy: Change ExpiredDate condition [redmine: #206974]
 		
 	Param's Explanation:
 		* @TypeID :	1 ~ Correct Score Lucky Draw
@@ -85,7 +86,7 @@ BEGIN
 		AND (@Username='' OR c.username=@Username)
 		AND (@Status='' OR ld.StatusID=CAST(@Status AS TINYINT))
 		AND 1 = CASE WHEN @IsExpired=0 THEN 1
-					 WHEN @IsExpired=1 AND ld.ExpiredDate<=CAST(@crrDateGMT8 AS DATE) THEN 1
+					 WHEN @IsExpired=1 AND ld.ExpiredDate<CAST(@crrDateGMT8 AS DATE) THEN 1
 				ELSE 0 END
 		AND ld.IsTest<=@IsTest
 	ORDER BY ld.CreatedDate DESC
