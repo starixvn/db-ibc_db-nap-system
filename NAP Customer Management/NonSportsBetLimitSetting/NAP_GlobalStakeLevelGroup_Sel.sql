@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Sel] 
 	-- Add the parameters for the stored procedure here
@@ -14,7 +14,8 @@ AS
 
 	Revisions:
 		- 20220705@Tacy: Initalize SP [RedmineID: #194332]
-		
+		- 20240624@Tacy: Implement more function [Redmine: #196256]
+
 	Param's Explanation:
 		@pMutilProductID = 0 : All 
 						<> 0 : ProductID
@@ -72,9 +73,11 @@ BEGIN
 		FROM ProductStakeLevelGroup psl WITH (NOLOCK)
 			INNER JOIN #ExchangeGroup eg WITH (NOLOCK) ON eg.CreditGroupID=psl.CreditGroupID
 			INNER JOIN Exchange ex WITH (NOLOCK) ON ex.CreditGroupID=eg.CreditGroupID
-			CROSS APPLY (SELECT TOP 1 sm.Sporttype, sm.RealProductId AS ProductID
+			CROSS APPLY (SELECT TOP 1 
+							sm.SportTypeRefBetSetting AS SportType
+							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-						 WHERE psl.SportType=sm.SportType AND isLicensee=0 
+						 WHERE psl.SportType=sm.SportTypeRefBetSetting AND isLicensee=0 
 							AND sm.isDeleted=0 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
 		WHERE psl.IsDeleted=0
@@ -97,9 +100,11 @@ BEGIN
 			LEFT JOIN Site sS WITH (NOLOCK) ON sS.siteid=psl.SiteID
 			INNER JOIN #ExchangeGroup eg WITH (NOLOCK) ON eg.LicenseeGroupID=psl.LicenseeGroupID
 			INNER JOIN Exchange ex WITH (NOLOCK) ON ex.LicenseeGroupID=eg.LicenseeGroupID
-			CROSS APPLY (SELECT TOP 1 sm.Sporttype, sm.RealProductId AS ProductID
+			CROSS APPLY (SELECT TOP 1 
+							sm.SportTypeRefBetSetting AS SportType
+							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-						 WHERE psl.SportType=sm.SportType AND isLicensee=1 
+						 WHERE psl.SportType=sm.SportTypeRefBetSetting AND isLicensee=1 
 							AND sm.isDeleted=0 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
 		WHERE psl.IsDeleted=0
