@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_SportBettypeCheck] 
 	@ProductList VARCHAR(200) = '',
 	@SporttypeList VARCHAR(MAX) = '',
@@ -22,6 +22,7 @@ AS
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20220610@Tacy: Alpha/NAP - Remove IsDeleted field in League Table [RedmineID: #171699]
 		- 20220617@Johnson: define temp table to avoid dump db [redmine:#174035]
+		- 20240621@Winfred: Bet Limit Control - Remove validation and change UI for League Group ID [redmine:#206358]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -121,132 +122,6 @@ BEGIN
 		INNER JOIN #Sport s ON l.Sporttype = s.Sporttype
 	WHERE s.ProductID = 1
 	
-	
-	SELECT @ErrorLeagueGroupIDs = ''
-		
-	--> Invalid League Group ID: <ID1, ID2...>
-	SELECT @ErrorLeagueGroupIDs = @ErrorLeagueGroupIDs + ', ' + CAST(lg.LeagueGroupID as VARCHAR(10))
-	FROM #LeagueGroup lg		
-	WHERE NOT EXISTS (SELECT 1 
-						FROM DBPRO.bodb02.dbo.LeagueGroup lg2 WITH(NOLOCK)
-						WHERE lg.LeagueGroupID = lg2.GroupID)		
-
-	IF @ErrorLeagueGroupIDs <> ''
-	BEGIN
-		SELECT @ErrorLeagueGroupIDs = STUFF(@ErrorLeagueGroupIDs,1,2,'')
-		SELECT @ErrorCode = 7,
-			@ErrorMsg = 'Invalid League Group ID: ' + @ErrorLeagueGroupIDs + '.'
-
-		RETURN
-	END
-	
-	IF @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> ''
-	BEGIN
-		SELECT @ErrorSporttypes = ''
-		
-		--> None of the input league group belong to <Sport>.
-		SELECT @ErrorSporttypes = @ErrorSporttypes + ', ' + s.SportName
-		FROM #Sport sp
-			INNER JOIN DBPRO.bodb02.dbo.sports s WITH(NOLOCK) ON sp.Sporttype = s.Sporttype			
-		WHERE  sp.ProductID = 1 
-			AND sp.Sporttype IS NOT NULL
-			AND EXISTS (SELECT 1 
-						FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
-						WHERE l.Sporttype=sp.Sporttype)
-			AND NOT EXISTS (SELECT 1 
-							FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
-							WHERE l.Sporttype=sp.Sporttype
-							AND l.LeagueGroupID IN (SELECT LeagueGroupID FROM #LeagueGroup))		
-
-		IF @ErrorSporttypes <> ''
-		BEGIN
-			SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,2,'')
-			SELECT @ErrorCode = 8,
-				@ErrorMsg = 'None of the input league group belong to ' + @ErrorSporttypes + '.'
-
-			RETURN
-		END
-		
-		--> League group <league group ID> belong to none of the selected sport.
-		SELECT @ErrorLeagueGroupIDs = @ErrorLeagueGroupIDs + ', ' + lg.LeagueGroupID
-		FROM #LeagueGroup lg			
-		WHERE NOT EXISTS (SELECT 1
-						FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
-							INNER JOIN #sport s ON l.sporttype = s.sporttype
-						WHERE l.LeagueGroupID = lg.LeagueGroupID
-						)
-		
-		IF @ErrorLeagueGroupIDs <> ''
-			BEGIN
-				SELECT @ErrorLeagueGroupIDs = STUFF(@ErrorLeagueGroupIDs,1,2,'')
-				SELECT @ErrorCode = 9,
-					@ErrorMsg = 'League Group '+ @ErrorLeagueGroupIDs + ' belong to none of the selected sport.' 
-
-				RETURN
-			END
-			
-	END
-		
-	IF ISNULL(@LeagueList,'') <> ''
-	BEGIN
-		--> None of the input league belong to <Sport>.
-		SELECT @ErrorSporttypes = @ErrorSporttypes + ', ' + MAX(s.SportName)
-		FROM #Sport sp
-			INNER JOIN DBPRO.bodb02.dbo.sports s WITH(NOLOCK) ON sp.Sporttype = s.Sporttype
-			LEFT JOIN #SportLeague l ON sp.Sporttype = l.Sporttype
-		WHERE  sp.ProductID = 1 
-			AND sp.Sporttype IS NOT NULL
-			AND l.Sporttype IS NULL
-		GROUP BY sp.Sporttype
-
-		IF @ErrorSporttypes <> ''
-		BEGIN
-			SELECT @ErrorSporttypes = STUFF(@ErrorSporttypes,1,2,'')
-			SELECT @ErrorCode = 4,
-				@ErrorMsg = 'None of the input league belong to ' + @ErrorSporttypes + '.'
-
-			RETURN
-		END
-		
-		--> League <league ID> belong to none of the selected sport.
-		SELECT @ErrorLeagueIDs = ''
-		
-		SELECT @ErrorLeagueIDs = @ErrorLeagueIDs + ', ' + le.LeagueID
-		FROM #League le
-			LEFT JOIN #SportLeague l ON le.LeagueID = l.LeagueID
-		WHERE l.LeagueID IS NULL
-
-		IF @ErrorLeagueIDs <> ''
-		BEGIN
-			SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,2,'')
-			SELECT @ErrorCode = 5,
-				@ErrorMsg = 'League '+ @ErrorLeagueIDs + ' belong to none of the selected sport.' 
-
-			RETURN
-		END
-		
-		--League <league ID> belong to none of the selected league group.
-		IF @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> ''
-		BEGIN
-			SELECT @ErrorLeagueIDs = ''
-			
-			SELECT @ErrorLeagueIDs = @ErrorLeagueIDs + ', ' + le.LeagueID
-			FROM #League le
-				INNER JOIN #SportLeague l ON le.LeagueID = l.LeagueID
-				LEFT JOIN #LeagueGroup lg ON l.LeagueGroupID = lg.LeagueGroupID
-			WHERE lg.LeagueGroupID IS NULL
-			
-			IF @ErrorLeagueIDs <> ''
-			BEGIN
-				SELECT @ErrorLeagueIDs = STUFF(@ErrorLeagueIDs,1,2,'')
-				SELECT @ErrorCode = 11,
-					@ErrorMsg = 'League '+ @ErrorLeagueIDs + ' belong to none of the selected league group.' 
-
-				RETURN
-			END
-		END
-	END
-		
 	INSERT INTO #ValidData(ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
 	SELECT DISTINCT 
 		CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
@@ -270,7 +145,7 @@ BEGIN
 		LEFT JOIN #LeagueGroup lg ON ISNULL(sl.LeagueGroupID,lg.LeagueGroupID) = lg.LeagueGroupID
 	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1
 	UNION
-	select DISTINCT
+	SELECT DISTINCT
 	 CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
 		CASE WHEN @SporttypeList = '0' THEN 0 ELSE s.sporttype END AS sporttype,
 		CASE WHEN @BettypeList = '0' THEN 0 ELSE bt.bettype END AS bettype,
