@@ -46,8 +46,8 @@ BEGIN
 		MinBet			MONEY,
 		MaxBet			MONEY,
 		CurrencyGroupID TINYINT,
-		Currency		VARCHAR(50),
-		[Site]			VARCHAR(50) DEFAULT ('All Sites'),	
+		ExchangeID		INT,
+		SiteID			INT DEFAULT (0),
 		Remark			VARCHAR(1000)
 	)
 
@@ -62,9 +62,9 @@ BEGIN
 
 	IF @IsCredit=1
 	BEGIN
-		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, Currency, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
+		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, ExchangeID, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
 		SELECT DISTINCT
-			psl.SportType, s.SportName, ex.CreditGroupID, ex.currency
+			psl.SportType, s.SportName, ex.CreditGroupID, ex.ExchangeId
 			, psl.GameGroupID
 			, CASE WHEN psl.GameGroupID=1 THEN 'Slot Game' 
 				   WHEN psl.GameGroupID=2 THEN 'Others'
@@ -77,20 +77,17 @@ BEGIN
 							sm.SportTypeRefBetSetting AS SportType
 							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-						 WHERE psl.SportType=sm.SportTypeRefBetSetting AND isLicensee=0 
-							AND sm.isDeleted=0 AND isActive=1) sp
+						 WHERE psl.SportType=sm.SportTypeRefBetSetting 
+							AND isLicensee=0 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
-		WHERE psl.IsDeleted=0
-		AND (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
+		WHERE (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, Currency, Site, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
+		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, ExchangeID, SiteID, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
 		SELECT DISTINCT
-			psl.SportType, s.SportName, ex.LicenseeGroupID, ex.currency
-			,CASE WHEN psl.SiteID=0 THEN 'All Sites' 
-				  WHEN ss.siteid IS NOT NULL THEN ss.site
-			END AS Site 
+			psl.SportType, s.SportName, ex.LicenseeGroupID, ex.ExchangeId
+			, psl.SiteID
 			, psl.GameGroupID
 			, CASE WHEN psl.GameGroupID=1 THEN 'Slot Game' 
 				   WHEN psl.GameGroupID=2 THEN 'Others'
@@ -104,21 +101,21 @@ BEGIN
 							sm.SportTypeRefBetSetting AS SportType
 							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-						 WHERE psl.SportType=sm.SportTypeRefBetSetting AND isLicensee=1 
-							AND sm.isDeleted=0 AND isActive=1) sp
+						 WHERE psl.SportType=sm.SportTypeRefBetSetting 
+							AND isLicensee=1 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
-		WHERE psl.IsDeleted=0
-		AND (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
+		WHERE (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
 		AND (@pMutilSite = '' OR PSL.SiteID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilSite, ',')))
 	END
 
 	SELECT Sporttype, Sportname
-		, CurrencyGroupID, Currency
-		, Site
+		, CurrencyGroupID, ExchangeID
+		, SiteID
+		, GameGroupID
 		, GameGroup
 		, MinBet, MaxBet, Remark
 	FROM #GlobalStakeLevelGroup
-	ORDER BY Sportname, CurrencyGroupID, Site , GameGroup DESC
+	ORDER BY Sportname, CurrencyGroupID, SiteID, GameGroup DESC
 
 	DROP TABLE #GlobalStakeLevelGroup, #Sports, #ExchangeGroup
 END

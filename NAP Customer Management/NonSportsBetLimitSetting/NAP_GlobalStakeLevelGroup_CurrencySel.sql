@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers=", Currency" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_CurrencySel] 
 	-- Add the parameters for the stored procedure here
 	 @IsCredit BIT=1 -- 1 : Credit, 0 :Deposit
@@ -10,6 +10,7 @@ AS
 
 	Revisions:
 		- 20230914@Tacy: Create SP [Redmine: #194332]
+		- 20240624@Tacy: Implement more function [Redmine: #196256]
 		
 	Param's Explanation:
 */
@@ -33,8 +34,7 @@ BEGIN
 		FROM #Exchange e
 		CROSS APPLY (SELECT TOP 1 1 AS VAL 
 					 FROM ProductStakeLevelGroup P WITH (NOLOCK) 
-					 WHERE e.CreditGroupID=p.CreditGroupID
-						AND p.isDeleted=0) p
+					 WHERE e.CreditGroupID=p.CreditGroupID) p
 		ORDER BY e.Currency
 	END
 	ELSE 
@@ -43,8 +43,7 @@ BEGIN
 		FROM #Exchange e
 		CROSS APPLY (SELECT TOP 1 1 AS VAL 
 					 FROM Dep_ProductStakeLevelGroup P WITH (NOLOCK) 
-					 WHERE e.LicenseeGroupID=p.LicenseeGroupID
-						AND p.isDeleted=0) p
+					 WHERE e.LicenseeGroupID=p.LicenseeGroupID) p
 		ORDER BY e.Currency
 	END
 END
