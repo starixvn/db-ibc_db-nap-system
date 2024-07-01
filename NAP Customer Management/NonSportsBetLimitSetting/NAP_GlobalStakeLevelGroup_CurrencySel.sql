@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers=", Currency" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_CurrencySel] 
 	-- Add the parameters for the stored procedure here
 	 @IsCredit BIT=1 -- 1 : Credit, 0 :Deposit
