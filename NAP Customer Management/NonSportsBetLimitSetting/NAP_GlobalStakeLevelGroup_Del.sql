@@ -75,11 +75,11 @@ BEGIN
 
 	--check: not exists setting
 	IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl t
-				INNER JOIN ProductStakeLevelGroup s WITH (NOLOCK)
-							 ON t.SportType=s.SportType
-							 AND t.CurrencyGroupID=s.CreditGroupID
-							 AND t.GameGroupID=s.GameGroupID
-				WHERE IsCredit=1)
+				LEFT JOIN ProductStakeLevelGroup s WITH (NOLOCK)
+							ON t.SportType=s.SportType
+							AND t.CurrencyGroupID=s.CreditGroupID
+							AND t.GameGroupID=s.GameGroupID
+				WHERE IsCredit=1 AND s.Sporttype IS NULL)
 	BEGIN
 		SELECT TOP 1 
 				@ErrCode=100
@@ -88,22 +88,22 @@ BEGIN
 						+ ' - Game Group ID ' + CAST (t.GameGroupID AS varchar) 
 						+ ' is not available.'
 		FROM #BetLimitTbl t
-		INNER JOIN ProductStakeLevelGroup s WITH (NOLOCK)
+		LEFT JOIN ProductStakeLevelGroup s WITH (NOLOCK)
 							 ON t.SportType=s.SportType
 							 AND t.CurrencyGroupID=s.CreditGroupID
 							 AND t.GameGroupID=s.GameGroupID
-		WHERE IsCredit=1
+		WHERE IsCredit=1 AND s.Sporttype IS NULL
 
 		RETURN
 	END
 
 	IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl t
-				INNER JOIN Dep_ProductStakeLevelGroup s WITH (NOLOCK)
-							 ON t.SportType=s.SportType
-							 AND t.CurrencyGroupID=s.LicenseeGroupID
-							 AND t.GameGroupID=s.GameGroupID 
-							 AND t.SiteID=s.SiteID
-				WHERE IsCredit=0)
+				LEFT JOIN Dep_ProductStakeLevelGroup s WITH (NOLOCK)
+							ON t.SportType=s.SportType
+							AND t.CurrencyGroupID=s.LicenseeGroupID
+							AND t.GameGroupID=s.GameGroupID 
+							AND t.SiteID=s.SiteID
+				WHERE IsCredit=0 AND s.Sporttype IS NULL)
 	BEGIN
 		SELECT TOP 1 
 				@ErrCode=101
@@ -113,12 +113,12 @@ BEGIN
 						+ ' - Site ID ' + CAST (t.SiteID AS varchar) 
 						+ ' is not available.'
 		FROM #BetLimitTbl t
-		INNER JOIN Dep_ProductStakeLevelGroup s WITH (NOLOCK)
+		LEFT JOIN Dep_ProductStakeLevelGroup s WITH (NOLOCK)
 							 ON t.SportType=s.SportType
 							 AND t.CurrencyGroupID=s.LicenseeGroupID
 							 AND t.GameGroupID=s.GameGroupID 
 							 AND t.SiteID=s.SiteID
-		WHERE IsCredit=0
+		WHERE IsCredit=0 AND s.Sporttype IS NULL
 
 		RETURN
 	END

@@ -255,7 +255,7 @@ BEGIN
 	SELECT TOP(1)
 			@ErrCode=114 
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
-			,@ValueError=': The Sport Type ' + CAST (t.SportType AS varchar) + ' does not exist.'				
+			,@ValueError=': The Sport Type ' + CAST (t.SportType AS VARCHAR(50)) + ' does not exist.'				
 	FROM #NewInputDataTbl t
 	LEFT JOIN #Sports s ON s.SportType=t.SportType 
 	WHERE s.SportType IS NULL
@@ -296,7 +296,7 @@ BEGIN
 			,@ValueError=CASE WHEN t.IsCredit=1 AND ce.CreditGroupID IS NULL   THEN ': Credit Group ID ' 
 							  WHEN t.IsCredit=0 AND de.LicenseeGroupID IS NULL THEN ': Licensee Group ID ' 
 						  END
-						+ CAST (t.CurrencyGroupID AS varchar) 
+						+ CAST (t.CurrencyGroupID AS VARCHAR(50)) 
 						+ ' does not exist.'				
 	FROM #NewInputDataTbl t
 	OUTER APPLY (SELECT ce.CreditGroupID FROM Exchange ce WITH (NOLOCK)
@@ -321,7 +321,7 @@ BEGIN
 			@ErrCode=116
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
 			,@ValueError=': Game Group ID ' 
-						+ CAST (t.GameGroupID AS varchar) 
+						+ CAST (t.GameGroupID AS VARCHAR(50)) 
 						+ ' does not exist.'				
 	FROM #NewInputDataTbl t 
 	LEFT JOIN cte_GameGroup g ON t.GameGroupID=g.GameGroupID
@@ -335,7 +335,7 @@ BEGIN
 			@ErrCode=117
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
 			,@ValueError=': Site ID ' 
-						+ CAST (t.SiteID AS varchar) 
+						+ CAST (t.SiteID AS VARCHAR(50)) 
 						+ ' does not exist.'				
 	FROM #NewInputDataTbl t 
 	LEFT JOIN Site s WITH (NOLOCK) ON s.siteid=t.SiteID
@@ -401,9 +401,9 @@ BEGIN
 	SELECT TOP(1) 
 			@ErrCode=121
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
-			,@ValueError=': Sport Type ' + CAST (t.SportType AS varchar)
-						+ ' does not have any existing bet limit with Current Min Bet: ' + CAST (t.CurMinBet AS varchar)
-						+ ', Current Max Bet: ' + CAST (t.CurMaxBet AS varchar)
+			,@ValueError=': Sport Type ' + CAST (t.SportType AS VARCHAR(50))
+						+ ' does not have any existing bet limit with Current Min Bet: ' + CAST (t.CurMinBet AS VARCHAR(50))
+						+ ', Current Max Bet: ' + CAST (t.CurMaxBet AS VARCHAR(50))
 	FROM #NewInputDataTbl t 
 	WHERE t.CurMinBet IS NOT NULL AND t.CurMaxBet IS NOT NULL
 		AND (
