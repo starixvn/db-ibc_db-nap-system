@@ -5,8 +5,8 @@ ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Check]
 	,@SettingStatus TINYINT = 0
 	,@UserID	INT
 	,@IP		VARCHAR(50)=''
-	--,@NotiCode	INT=0			OUTPUT
-	--,@NotiMsg	NVARCHAR(4000)=''	OUTPUT
+	,@NotiCode	INT=0				OUTPUT
+	,@NotiMsg	NVARCHAR(4000)=''	OUTPUT
 	,@ErrCode	INT = 0				OUTPUT
 	,@ErrMsg	NVARCHAR(4000)=''	OUTPUT
 AS
@@ -19,34 +19,34 @@ AS
 		- 20230918@Tacy: Initalize SP [RedmineID: #192624]
 		
 	Param's Explanation:
-		* @InputData = <ROOT>
-						<Setting 
+		* @InputData='<ROOT>
+						<BetLimit 
 							SportType="248" 
-							CreditGroupID = "RM,HKK"
+							CreditGroupID = "1"
 							LicenseeGroupID = ""
-							Site = ""
+							SiteID = "0"
 							GameGroupID="1"
-							CurMinBet="0.01" 
-							CurMaxBet="400" 
+							CurMinBet="0.1" 
+							CurMaxBet="10000" 
 							CurRemark="Buybonus Feature x50"
-							NewMinBet="0.01" 
-							NewMaxBet="400" 
+							NewMinBet="0.1" 
+							NewMaxBet="10001" 
 							NewRemark=""
 						/>
-						<Setting 
+						<BetLimit 
 							SportType="248" 
-							CreditGroupID = "RM,HKK"
+							CreditGroupID = "1"
 							LicenseeGroupID = ""
-							Site = ""
+							SiteID = "0"
 							GameGroupID="2"
-							CurMinBet="0.01" 
-							CurMaxBet="1000" 
+							CurMinBet="0.1" 
+							CurMaxBet="2500" 
 							CurRemark=""
-							NewMinBet="0.01" 
-							NewMaxBet="1000" 
+							NewMinBet="0.1" 
+							NewMaxBet="2501" 
 							NewRemark="Buybonus Feature x50"
 						/>
-					</ROOT>
+					</ROOT>'
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -83,17 +83,17 @@ BEGIN
 			, CurMaxBet			MONEY
 			, CurRemark			VARCHAR(1000)
 			, IsCredit			BIT DEFAULT(0)
-			, ProductID			TINYINT
+			, SportTypeRef		SMALLINT
 	)
 
 	CREATE TABLE #Sports(SportType SMALLINT PRIMARY KEY, SportName NVARCHAR(50))
 	CREATE TABLE #SettingDuplicate(SettingRows VARCHAR(50))
-	CREATE TABLE #RowDuplicate(RowIDF INT, RowIDT INT)
+	CREATE TABLE #RowDuplicate(SettingRows VARCHAR(50))
 
 	IF @InputData IS NULL OR @InputData=''
 		RETURN
 	
-	SELECT @ErrCode=0, @ErrMsg=''--, @NotiCode=0, @NotiMsg=''
+	SELECT @ErrCode=0, @ErrMsg='', @NotiCode=0, @NotiMsg=''
 	
 	--Parse XML data
 	DECLARE @iDoc INT
@@ -175,29 +175,21 @@ BEGIN
 	INSERT INTO #Sports	(SportType, SportName)	
 	EXEC Acc_SporttypeSel @Mode=1
 
-	CREATE TABLE #SportsNonOffered(
+	CREATE TABLE #SportsNonSupported(
 		  SportType		SMALLINT
-		, BetType		SMALLINT
-		, ProductID		TINYINT
-		, RealProductID TINYINT
 		, IsCredit		BIT DEFAULT(0)
 	)
 
 	--Sports have setting by customer
-	--INSERT INTO #SportsNonOffered(SportType, BetType, ProductID, RealProductID, IsCredit)
-	--SELECT DISTINCT f.SportType, f.BetType, ProductID, RealProductID, 1 AS IsCredit
-	--FROM dbo.f_CustSetting_ProductSettingDetailSel(@SettingStatus) f
-	--INNER JOIN ProductSettingType st WITH (NOLOCK) ON f.SettingType=st.SettingType
-	--WHERE st.SettingName = 'Bet Setting'
-	--	OR st.SettingName = 'Stake Level'
-	--UNION ALL
-	--SELECT DISTINCT f.SportType, f.BetType, ProductID, ProductID, 0 AS IsCredit
-	--FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect_UAT1(NULL, NULL,@SettingStatus) f
-	--INNER JOIN Dep_ProductSettingType st WITH (NOLOCK) ON f.SettingType=st.SettingType
-	--WHERE st.SettingName='Bet Setting'
-	-- OR st.SettingName='Stake Level'
+	INSERT INTO #SportsNonSupported(SportType, IsCredit)
+	SELECT DISTINCT f.SportType, 1 AS IsCredit
+	FROM dbo.f_CustSetting_ProductSettingDetailSel(@SettingStatus) f
+	WHERE f.SettingType IN (2, 7, 9, 16, 23, 26) 
+	UNION ALL
+	SELECT DISTINCT f.SportType, 0 AS IsCredit
+	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(NULL, NULL) f--, @SettingStatus
+	WHERE f.SettingType IN (2, 7, 8, 10, 12)
 
-	
 	--#NewInputDataTbl
 	INSERT INTO #NewInputDataTbl(RowID, SportType, CurrencyGroupID,
 								 GameGroupID, SiteID,
@@ -218,6 +210,15 @@ BEGIN
 	FROM @NewGlobalTbl nsl
 	WHERE ISNULL(nsl.LicenseeGroupID,'')<>''
 
+	--Update: SporttypeRef
+	UPDATE t
+	SET t.SportTypeRef=sm.SportTypeRefBetSetting
+	FROM #NewInputDataTbl t
+	CROSS APPLY (SELECT TOP 1 sm.SportTypeRefBetSetting
+				 FROM f_CustSetting_SportBetTypeSettingMatrix (@SettingStatus) sm 
+				 WHERE t.SportType=sm.SportType
+				 AND t.IsCredit=sm.isLicensee
+				 AND sm.isActive=1) sm
 	--------------------------------------------------------------------------------------------------------------------------------------
 	SELECT TOP (1)
 			@ErrCode=CASE 
@@ -235,14 +236,14 @@ BEGIN
 							WHEN NewMaxBet=0			THEN ': The Max Bet must be different from 0.'
 							WHEN NewMinBet > NewMaxBet	THEN ': The New Min Bet must be less than or equal to the Current Max Bet.'
 							WHEN CurMinBet > CurMaxBet	THEN ': The Current Min Bet must be less than or equal to the Current Max Bet.'
-							WHEN CurMinBet IS NULL AND CurMaxBet IS NOT NULL	THEN ': You input missing data with the product''s format. Please input data on Current Min Bet.'
-							WHEN CurMinBet IS NOT NULL AND CurMaxBet IS NULL	THEN ': You input missing data with the product''s format. Please input data on Current Max Bet.'
+							WHEN CurMinBet IS NULL AND (CurMaxBet IS NOT NULL OR CurRemark IS NOT NULL)	THEN ': You input missing data with the product''s format. Please input data on Current Min Bet.'
+							WHEN CurMaxBet IS NULL AND (CurMinBet IS NOT NULL OR CurRemark IS NOT NULL)	THEN ': You input missing data with the product''s format. Please input data on Current Max Bet.'
 							ELSE '' 
 							END 						  
 	FROM #NewInputDataTbl t
 	WHERE NewMinBet=0 OR NewMaxBet=0
-		OR (CurMinBet IS NULL AND CurMaxBet IS NOT NULL)
-		OR (CurMinBet IS NOT NULL AND CurMaxBet IS NULL)
+		OR (CurMinBet IS NULL AND (CurMaxBet IS NOT NULL OR CurRemark IS NOT NULL))
+		OR (CurMaxBet IS NULL AND (CurMinBet IS NOT NULL OR CurRemark IS NOT NULL))
 		OR NewMinBet > NewMaxBet 
 		OR CurMinBet > CurMaxBet
 		
@@ -261,19 +262,32 @@ BEGIN
 
 	IF @ErrCode=114			
 		GOTO SetErr
+		
+	--Sports not support
+	IF EXISTS (SELECT TOP 1 1 FROM #NewInputDataTbl t
+				INNER JOIN #Sports s ON s.SportType=t.SportType
+				LEFT JOIN #SportsNonSupported ref ON ref.SportType=t.SportTypeRef
+												AND ref.IsCredit=t.IsCredit
+				LEFT JOIN #SportsNonSupported sn ON sn.SportType=t.SportType
+												AND sn.IsCredit=t.IsCredit
+				WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL)		
+	BEGIN
+		SELECT @NotiCode=119
 
-	--Sports not offered
-	SELECT TOP(1) 
-			@ErrCode=119
-			,@RowError=CAST(t.RowID AS VARCHAR(5))
-			,@ValueError=': Bet Limit of ' + s.SportName + ' is not allowed to be imported.'
-	FROM #NewInputDataTbl t
-	INNER JOIN #Sports s ON s.SportType=t.SportType
-	INNER JOIN #SportsNonOffered non ON non.SportType=t.SportType
-									AND non.IsCredit=t.IsCredit
+		SELECT @ValueError=STUFF((SELECT DISTINCT ', ' + s.SportName 
+								  FROM #NewInputDataTbl t
+									INNER JOIN #Sports s ON s.SportType=t.SportType
+									LEFT JOIN #SportsNonSupported ref ON ref.SportType=t.SportTypeRef
+																	AND ref.IsCredit=t.IsCredit
+									LEFT JOIN #SportsNonSupported sn ON sn.SportType=t.SportType
+																	AND sn.IsCredit=t.IsCredit
+								  WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL
+								  FOR XML PATH('')), 1, 1, '')
 
-	IF @ErrCode=119			
-		GOTO SetErr
+		SELECT @NotiMsg = 'This function does not support adding global bet limit settings for' + @ValueError + '.'
+
+		RETURN
+	END	
 
 	--CurrencyGroupID
 	SELECT TOP(1) 
@@ -343,6 +357,17 @@ BEGIN
 	IF @ErrCode=118			
 		GOTO SetErr
 
+	--The same: new - current value
+	SELECT TOP(1) 
+			@ErrCode=122
+			,@RowError=CAST(t.RowID AS VARCHAR(5))
+			,@ValueError=': The New Min Bet, New Max Bet are the same as The Current Min Bet, the Current Max Bet. Please input another value for the New values again.'
+	FROM #NewInputDataTbl t 
+	WHERE t.CurMinBet=t.NewMinBet AND t.CurMaxBet=t.NewMaxBet
+
+	IF @ErrCode=122			
+		GOTO SetErr
+
 	--Already setting
 	SELECT TOP(1) 
 			@ErrCode=120
@@ -405,38 +430,48 @@ BEGIN
 	IF @ErrCode=121			
 		GOTO SetErr
 
-	--The same: new - current value
-	SELECT TOP(1) 
-			@ErrCode=122
-			,@RowError=CAST(t.RowID AS VARCHAR(5))
-			,@ValueError=': The New Min Bet, New Max Bet are the same as The Current Min Bet, the Current Max Bet. Please input another value for the New values again.'
-	FROM #NewInputDataTbl t 
-	WHERE t.CurMinBet=t.NewMinBet AND t.CurMaxBet=t.NewMaxBet
-
-	IF @ErrCode=122			
-		GOTO SetErr
-
 	--RowDuplicate
-	INSERT INTO #RowDuplicate(RowIDF, RowIDT)
-	SELECT DISTINCT t.RowID , ndt.RowID
-	FROM #NewInputDataTbl t
-	INNER JOIN #NewInputDataTbl ndt 
-			ON t.SportType = ndt.SportType 
-			AND t.GameGroupID = ndt.GameGroupID 
-			AND t.CurrencyGroupID = ndt.CurrencyGroupID 
-			AND (t.IsCredit = ndt.IsCredit AND (t.IsCredit=1 OR (t.IsCredit=0 AND t.SiteID=ndt.SiteID)))
-			AND ISNULL(t.CurMinBet,0) = ISNULL(ndt.CurMinBet,0) AND ISNULL(t.CurMaxBet,0)=ISNULL(ndt.CurMaxBet,0) 
-			AND t.NewMaxBet = ndt.NewMaxBet AND t.NewMinBet = ndt.NewMinBet  
-	WHERE t.RowID < ndt.RowID
+	INSERT INTO #RowDuplicate (SettingRows)
+	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
+						 FROM #NewInputDataTbl b
+						 WHERE a.SportType=b.SportType
+						 AND a.CurrencyGroupID=b.CurrencyGroupID
+						 AND a.GameGroupID=b.GameGroupID 
+						 AND a.IsCredit = b.IsCredit 
+						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
+						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
+						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
+	FROM #NewInputDataTbl a
+	WHERE a.IsCredit=1
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsCredit
+			, CurMinBet, CurMaxBet
+			, NewMinBet, NewMaxBet
+	HAVING COUNT(1)>1
+	UNION
+	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
+						 FROM #NewInputDataTbl b
+						 WHERE a.SportType=b.SportType
+						 AND a.CurrencyGroupID=b.CurrencyGroupID
+						 AND a.GameGroupID=b.GameGroupID 
+						 AND a.SiteID = b.SiteID 
+						 AND a.IsCredit = b.IsCredit 
+						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
+						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
+						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
+	FROM #NewInputDataTbl a
+	WHERE a.IsCredit=0
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsCredit
+			, CurMinBet, CurMaxBet
+			, NewMinBet, NewMaxBet
+	HAVING COUNT(1)>1
 	
 	IF EXISTS (SELECT TOP 1 1 FROM #RowDuplicate)			
 	BEGIN
 		SET @ErrCode=123
-		
-		SELECT @ValueError=STUFF((SELECT ', Row ' + CAST(RowIDF AS NVARCHAR(50)) + ' - Row ' + CAST(RowIDT AS NVARCHAR(50)) 
-								FROM #RowDuplicate tmp
-								ORDER BY RowIDF
+		SELECT @ValueError=STUFF((SELECT DISTINCT ', ' + SettingRows 
+								FROM #RowDuplicate t
 								FOR XML PATH('')), 1, 1, '') + ': These rows have duplicate data' 
+
 		GOTO SetErr
 	END	
 
