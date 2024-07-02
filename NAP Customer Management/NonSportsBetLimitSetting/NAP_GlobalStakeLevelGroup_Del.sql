@@ -1,5 +1,5 @@
 /*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_GlobalStakeGroup_Del] 
+ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Del] 
 	-- Add the parameters for the stored procedure here
 	 @InputData	VARCHAR(MAX)	= ''
 	,@IsCredit	BIT				= 0

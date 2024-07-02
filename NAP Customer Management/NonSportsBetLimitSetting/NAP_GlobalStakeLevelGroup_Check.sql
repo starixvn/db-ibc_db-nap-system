@@ -1,5 +1,5 @@
 /*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_GlobalStakeGroup_Check] 
+ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Check] 
 	-- Add the parameters for the stored procedure here
 	 @InputData	VARCHAR(MAX)=''
 	,@SettingStatus TINYINT = 0
