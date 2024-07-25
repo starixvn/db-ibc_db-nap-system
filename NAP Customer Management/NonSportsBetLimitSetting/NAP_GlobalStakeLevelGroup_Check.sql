@@ -340,7 +340,7 @@ BEGIN
 	FROM #NewInputDataTbl t 
 	LEFT JOIN Site s WITH (NOLOCK) ON s.siteid=t.SiteID
 	WHERE t.SiteID<>0 AND t.IsCredit=0
-		AND s.siteid IS NULL
+		AND s.isActive=1 AND s.siteid IS NULL
 
 	IF @ErrCode=117			
 		GOTO SetErr
