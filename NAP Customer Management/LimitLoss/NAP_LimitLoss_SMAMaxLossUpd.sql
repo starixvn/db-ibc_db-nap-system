@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBAGE-bodb_Age" executers="wsv_nap" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LimitLoss_SMAMaxLossUpd]
     @CustId		INT,
     @MaxLoss	MONEY,
@@ -21,6 +21,7 @@ AS
 		- 20170915@Elodie: Support Group Headline Setting [Redmine: #82892]
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20180925@Helen: Write log on dbcust if dblog failed + DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 			 
 	Parameter's explaination: 
 		- Mode =	0: SMA setting
@@ -43,14 +44,6 @@ BEGIN
 			@MaxLevel			TINYINT
     SET		 @startRun = GETDATE()
 
-    --Check permission 
-    IF @System = 0
-	BEGIN
-		EXEC DBPOL.NAP_UserControl.dbo.NAP_User_CheckPermission @UserId=@UserID,@SiteKey='CustomerManagement',@FunctionKey='LossMonitor',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
-		IF @ErrCode <> 0
-			RETURN
-	END
-	    
     IF @MaxLoss >= 0
     BEGIN
 	   SELECT @ErrCode = 101, @ErrMsg = 'Max Loss should be negative!'
