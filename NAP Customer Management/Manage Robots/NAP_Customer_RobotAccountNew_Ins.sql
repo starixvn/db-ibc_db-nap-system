@@ -23,6 +23,7 @@ AS
 			- 20200113@Johnson: add default for robotdate [redmine:#126998]
 			- 20200205@Johnson: call sp wrapper from DBCUST to write log [redmine:#127911]
 			- 20211101@Johnson: Set default counter = 11 [redmine:#163803]
+			- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 			- 20241216@Winfred: Credit - Direct Member for Super/Master [RedmineID: #214585]
 		Parameter's Explanation:
 			- ErrCode = 0: success
@@ -36,11 +37,6 @@ BEGIN
 			@endRun		DATETIME,
 			@duration	INT
 	SET	@startRun = GETDATE()
-	
-		--Check permission
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageRobots2',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
-	IF @ErrCode <> 0
-		RETURN
 	
 	DECLARE @tmpUser TABLE (custid INT,roleid TINYINT, site VARCHAR(10),srecommend INT, mrecommend INT, recommend INT, username varchar(50), remark NVARCHAR(500), isExisting BIT DEFAULT(0), islog BIT DEFAULT(0))
 	DECLARE @tmpCust TABLE (custid INT, remark NVARCHAR(500))

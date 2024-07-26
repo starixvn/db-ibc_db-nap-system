@@ -17,6 +17,7 @@ AS
 			- 20190913@Johnson: Initial sp [redmine:#119714]
 			- 20191125@Johnson: add country,region [redmine:#122642]
 			- 20200205@Johnson: call sp wrapper from DBCUST to write log [redmine:#127911]
+			- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 		Parameter's Explanation:			
 */ 
 BEGIN
@@ -24,11 +25,6 @@ BEGIN
 			@endRun		DATETIME,
 			@duration	INT
 	SET	@startRun = GETDATE()
-	
-		--Check permission
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageRobots2',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
-	IF @ErrCode <> 0
-		RETURN
 	
 	IF NOT EXISTS (SELECT top (1) 1 FROM RobotUsers WITH(NOLOCK) WHERE custid = @custid)
 	BEGIN
