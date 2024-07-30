@@ -1,8 +1,7 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustCheck] 
 	@Username VARCHAR(30) = NULL,
 	@BetLimitTypeID INT = NULL,
-	@userid INT = 0,
 	@ErrorCode INT = 0 OUTPUT,
 	@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@CustID	INT = NULL OUTPUT,
@@ -17,6 +16,7 @@ AS
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -36,9 +36,7 @@ AS
 
 	*/
 BEGIN
-	DECLARE @IsLicensee BIT
-
-	SET @ErrorCode = 0
+	SET NOCOUNT ON;
 
 	SELECT @CustID = CustID 
 	FROM  CustInfo WITH(NOLOCK)
@@ -53,36 +51,10 @@ BEGIN
 		RETURN
 	END
 
-	SELECT @site = s.Site, 
-		@IsLicensee = st.isLicensee
+	SELECT @site = c.Site
 	FROM Customer c WITH(NOLOCK) 
-		INNER JOIN Customer s WITH(NOLOCK) ON c.srecommend = s.custid
-		INNER JOIN Site st WITH(NOLOCK) On st.site = s.site
 	WHERE c.custid = @CustID
-
-	DECLARE @FunctionKey NVARCHAR(50)
-
-	SELECT @FunctionKey = CASE  WHEN @site = 'CN88' THEN 'BLC_CN88Site'
-								WHEN @IsLicensee = 1 THEN 'BLC_LicenseeSite'
-								ELSE 'BLC_Credit' 
-							END
-
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey=@FunctionKey,
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT,
-			@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-	BEGIN
-		SELECT @ErrorCode = 1
-			  ,@ErrorMsg = 'Invalid username.'
-
-		RETURN
-	END
-
+	
 	IF EXISTS(  SELECT TOP 1 1 
 				FROM BetLimitControlCustSetting WITH(NOLOCK)
 				WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID )
@@ -100,5 +72,3 @@ BEGIN
 	END
 END
 GO
-
-

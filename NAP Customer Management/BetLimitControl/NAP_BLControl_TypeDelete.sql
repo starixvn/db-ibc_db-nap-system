@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeDelete] 
 	@BetLimitTypeID INT,
 	@ErrorCode INT = 0 OUTPUT,
@@ -16,6 +16,7 @@ AS
 		- 20200525@Eden: Create New SP  [RedmineID: #132736]
 		- 20200818@Eden: Auto Update Bet Limit Control [RedmineID: #139701]
 		- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
+		- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -35,16 +36,6 @@ BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31752
 
 	SET @StartRun = GETDATE()
-
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
-		@UserId=@userid,
-		@SiteKey='CustomerManagement',
-		@FunctionKey='BetLimitTypeControl',
-		@ErrCode=@ErrorCode OUTPUT,
-		@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-		RETURN
 
 	IF NOT EXISTS( SELECT TOP 1 1 FROM BetLimitControlType t WITH(NOLOCK) WHERE t.BetLimitTypeID = @BetLimitTypeID )
 	BEGIN

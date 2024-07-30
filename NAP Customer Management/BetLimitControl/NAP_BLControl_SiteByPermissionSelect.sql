@@ -1,6 +1,8 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_SiteByPermissionSelect] 
-	@UserID INT = 0
+	@HasCN88_Permission BIT = 0,
+	@HasCredit_Permission BIT = 0,
+	@HasLicensee_Permission BIT = 0
 AS
 /*
 	Created: 20200525@Eden
@@ -10,6 +12,7 @@ AS
 
 	Revisions:  
 	- 20200602@Eden: Create New SP  [RedmineID: #132736]
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
 
@@ -18,41 +21,7 @@ AS
 
 	*/
 BEGIN
-
-	DECLARE @HasCN88_Permission BIT = 0,
-		@HasCredit_Permission BIT = 0,
-		@HasLicensee_Permission BIT = 0
-
-	DECLARE @ErrorCode INT = 0 
-
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_CN88Site',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
-
-	IF @ErrorCode = 0 SET @HasCN88_Permission = 1
-
-	SET @ErrorCode = 0
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_Credit',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
-
-	IF @ErrorCode = 0 SET @HasCredit_Permission = 1
-
-	SET @ErrorCode = 0
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_LicenseeSite',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
-
-	IF @ErrorCode = 0 SET @HasLicensee_Permission = 1
+	SET NOCOUNT ON;
 
 	SELECT SiteID,Site
 	FROM dbo.[Site] WITH(NOLOCK)

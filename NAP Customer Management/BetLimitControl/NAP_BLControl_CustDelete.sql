@@ -1,11 +1,14 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustDelete] 
 	@CustID INT = NULL,
 	@BetLimitTypeID INT = NULL,
 	@ErrorCode INT = 0 OUTPUT,
 	@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
-	@IP	VARCHAR(15) = ''
+	@IP	VARCHAR(15) = '',
+	@HasCN88_Permission BIT = 0,
+	@HasCredit_Permission BIT = 0,
+	@HasLicensee_Permission BIT = 0
 AS
 /*
 	Created: 20200525@Eden
@@ -16,6 +19,7 @@ AS
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -34,43 +38,27 @@ AS
 	*/
 BEGIN
 	DECLARE @StartRun DATETIME, @EndRun DATETIME, @Duration INT, @ActionID INT = 31755
-	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50),@IsLicensee BIT
+	DECLARE @site  NVARCHAR(50), @BetLimitType VARCHAR(50)
 
 	SET @StartRun = GETDATE()
 
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
-		@UserId=@userid,
-		@SiteKey='CustomerManagement',
-		@FunctionKey='BetLimitControl',
-		@ErrCode=@ErrorCode OUTPUT,
-		@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-		RETURN
-
-	SELECT @site = s.Site,@IsLicensee = st.isLicensee
+	SELECT @site = c.Site
 	FROM Customer c WITH(NOLOCK) 
-		INNER JOIN Customer s WITH(NOLOCK) ON c.srecommend = s.custid
-		INNER JOIN Site st WITH(NOLOCK) On st.site = s.site
+		INNER JOIN Site s WITH(NOLOCK) On s.site = c.site
 	WHERE c.custid = @CustID
+	AND ((c.site='CN88' AND @HasCN88_Permission=1)
+		OR (s.isLicensee=0 AND @HasCredit_Permission=1)
+		OR (s.isLicensee=1 AND @HasLicensee_Permission=1)
+		)
 
-	DECLARE @FunctionKey NVARCHAR(50)
+	IF @site IS NULL
+	BEGIN
+		SELECT
+			@ErrorCode = 500,
+			@ErrorMsg = N'You are not authorized on this function.'
 
-	SELECT @FunctionKey = CASE  WHEN @site = 'CN88' THEN 'BLC_CN88Site'
-								WHEN @IsLicensee = 1 THEN 'BLC_LicenseeSite'
-								ELSE 'BLC_Credit' 
-							END
-
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey=@FunctionKey,
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT,
-			@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-		RETURN
+			RETURN
+	END
 
 	DECLARE @OldMaxBet MONEY ,
 		@OldMaxPerMatch MONEY,

@@ -1,10 +1,7 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_DefaultSetting_Sel] 
 	@BetLimitTypeID INT = 0,
-	@Username VARCHAR(30) = NULL,
-	@UserId INT = 0,
-	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(MAX) = '' OUTPUT
+	@Username VARCHAR(30) = NULL
 AS
 /*
 	Created: 20200818@Eden
@@ -14,25 +11,16 @@ AS
 
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
 	Examples: EXEC [NAP_BLControl_DefaultSetting_Sel]
 		@BetLimitTypeID = 0,
-		@Username = '',
-		@UserId = 8
+		@Username = ''
 
 	*/
 BEGIN
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
-		@UserId=@userid,
-		@SiteKey='CustomerManagement',
-		@FunctionKey='DefaultBetLimitforNewMember',
-		@Policy=1,
-		@ErrCode=@ErrorCode OUTPUT,
-		@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-		RETURN
+	SET NOCOUNT ON;
 
 	SELECT  t.BetLimitType,
 			c.username,

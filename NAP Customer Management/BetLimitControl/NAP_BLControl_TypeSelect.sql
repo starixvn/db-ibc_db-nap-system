@@ -1,13 +1,10 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect] 
 	@BetLimitTypeID INT = 0,
 	@ProductID TINYINT = NULL,
 	@Sporttype SMALLINT = NULL,
 	@Bettype SMALLINT = NULL,
-	@LiveIndicator	TINYINT = NULL,
-	@UserId INT = 0,
-	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(MAX) = '' OUTPUT
+	@LiveIndicator	TINYINT = NULL
 AS
 /*
 	Created: 20200525@Eden
@@ -19,6 +16,8 @@ AS
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
 	- 20220617@Johnson: define temp table to avoid dump db [redmine:#174035]
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
+
 	Parameter explanation:
 	-@LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 
@@ -27,22 +26,10 @@ AS
 		@ProductID = 0,
 		@Sporttype = 0,
 		@Bettype = 0,
-		@LiveIndicator = 3,
-		@UserId = 8
+		@LiveIndicator = 3
 
 	*/
 BEGIN
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
-		@UserId=@userid,
-		@SiteKey='CustomerManagement',
-		@FunctionKey='BetLimitTypeControl',
-		@Policy=1,
-		@ErrCode=@ErrorCode OUTPUT,
-		@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-		RETURN
-
 	CREATE TABLE #BTC_SportBettypeReference(
 		ProductID TINYINT, 
 		Sporttype SMALLINT, 

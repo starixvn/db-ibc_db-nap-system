@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert] 
 	@Usernames VARCHAR(MAX) = NULL,
 	@BetLimitTypeID INT = NULL,
@@ -8,7 +8,10 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert]
 	--@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = '',
-	@Mode TINYINT = 1  
+	@Mode TINYINT = 1  ,
+	@HasCN88_Permission		BIT = 0,
+	@HasCredit_Permission	BIT = 0,
+	@HasLicensee_Permission BIT = 0
 AS
 /*
 	Created: 20200525@Eden
@@ -21,6 +24,7 @@ AS
 	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 	- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
 	- @ErrorCode: 
@@ -46,21 +50,6 @@ BEGIN
 	DECLARE @ErrorCode INT = 0 , @ErrorMsg VARCHAR(200) = ''
 
 	DECLARE @ErrorTbl TABLE (Username VARCHAR(30),ErrorCode INT , ErrorMsg VARCHAR(200))
-
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission 
-		@UserId=@userid,
-		@SiteKey='CustomerManagement',
-		@FunctionKey='BetLimitControl',
-		@ErrCode=@ErrorCode OUTPUT,
-		@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-	BEGIN
-		INSERT INTO @ErrorTbl(Username, ErrorCode, ErrorMsg)
-		SELECT '', @ErrorCode, @ErrorMsg
-
-		GOTO EndStep;
-	END
 
 	DECLARE @CustTbl TABLE ( UserName VARCHAR(30), Currency INT, IsFinished BIT DEFAULT 0)
 
@@ -106,12 +95,26 @@ BEGIN
 
 		EXEC NAP_BLControl_CustCheck 
 			@Username = @Username,
-			@userid = @userid,
 			@BetLimitTypeID = @BetLimitTypeID,
 			@ErrorCode = @ErrorCode OUTPUT,
 			@ErrorMsg = @ErrorMsg OUTPUT,
 			@CustID = @CustID OUTPUT,
 			@Site = @site OUTPUT
+
+		IF @ErrorCode=0
+		AND 
+			NOT EXISTS (SELECT 1
+						FROM Site s WITH(NOLOCK)
+						WHERE s.site = @site
+						AND ((s.site='CN88' AND @HasCN88_Permission=1)
+							OR (s.isLicensee=0 AND @HasCredit_Permission=1)
+							OR (s.isLicensee=1 AND @HasLicensee_Permission=1)
+							)
+						)
+		BEGIN
+				SELECT @ErrorCode = 1
+					, @ErrorMsg = 'Invalid username.'
+		END
 
 		INSERT INTO @ErrorTbl(Username, ErrorCode, ErrorMsg)
 		SELECT @Username, @ErrorCode, @ErrorMsg

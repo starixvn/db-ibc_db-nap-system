@@ -1,16 +1,16 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustSelect] 
 	@LevelID TINYINT = NULL,
 	@Currency INT = NULL,
 	@SiteID INT = NULL,
 	@BetLimitTypeID INT = NULL,
 	@Username VARCHAR(30) = NULL,
-	@UserId INT = 0,
 	@PageSize INT = 50,
 	@PageIndex	INT = 1,
 	@TotalItems	INT = 0 OUTPUT,
-	@ErrorCode INT = 0 OUTPUT,
-	@ErrorMsg VARCHAR(200) = '' OUTPUT
+	@HasCN88_Permission BIT = 0,
+	@HasCredit_Permission BIT = 0,
+	@HasLicensee_Permission BIT = 0
 AS
 /*
 	Created: 20200528@Eden
@@ -21,6 +21,7 @@ AS
 	Revisions:  
 	- 20200528@Eden: Create New SP  [RedmineID: #132736]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
+	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
 		- @LevelID : 1- Member, 2 - Agent, 3-Masrer, 4 - Super, 0 - all
@@ -35,57 +36,14 @@ AS
 		@BetLimitTypeID = 0,
 		@PageSize	= 50,
 		@PageIndex	= 1,
-		@TotalItems = @TotalItems OUTPUT,
-		@UserId = 8
+		@TotalItems = @TotalItems OUTPUT
 
 		SELECT @TotalItems
 
 	*/
 BEGIN
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-		@UserId=@userid,
-		@SiteKey='CustomerManagement',
-		@FunctionKey='BetLimitControl',
-		@Policy=1,
-		@ErrCode=@ErrorCode OUTPUT,
-		@ErrMsg=@ErrorMsg OUTPUT
-
-	IF @ErrorCode <> 0
-		RETURN
-
-	DECLARE @HasCN88_Permission BIT = 0,
-		@HasCredit_Permission BIT = 0,
-		@HasLicensee_Permission BIT = 0
-
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_CN88Site',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
-
-	IF @ErrorCode = 0 SET @HasCN88_Permission = 1
-
-	SET @ErrorCode = 0
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_Credit',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
-
-	IF @ErrorCode = 0 SET @HasCredit_Permission = 1
-
-	SET @ErrorCode = 0
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_LicenseeSite',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
-
-	IF @ErrorCode = 0 SET @HasLicensee_Permission = 1
-
+	SET NOCOUNT ON;
+	
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
