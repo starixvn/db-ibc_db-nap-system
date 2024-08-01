@@ -1,4 +1,4 @@
-﻿ /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+﻿ /*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" isFunction="0" isNested="0"></info>*/
  ALTER PROCEDURE [dbo].[NAP_CustomerUpdSmartPunter]
 	@custid		INT,
 	@remark	NVARCHAR(200) = '',
@@ -16,7 +16,7 @@
 	Revisions:
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-			
+		- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 	Parameter's Explanation:
  */
  BEGIN
@@ -25,11 +25,6 @@
 			@endRun		DATETIME,
 			@duration	INT
 	SET	@startRun = GETDATE()
-	
-	--Check permission
-	EXEC NAP_UserControl.dbo.NAP_User_CheckPermission @UserId=@userid,@SiteKey='CustomerManagement',@FunctionKey='ManageSmartPunters',@ErrCode=@ErrCode OUTPUT,@ErrMsg=@ErrMsg OUTPUT
-	IF @ErrCode <> 0
-		RETURN
 	
 	IF NOT EXISTS (SELECT 1 FROM SmartPunterList WITH(NOLOCK) WHERE CustID = @CustID)
 	BEGIN		
