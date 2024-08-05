@@ -138,12 +138,24 @@ BEGIN
 		CASE WHEN @SporttypeList = '0' THEN 0 ELSE s.sporttype END AS sporttype,
 		CASE WHEN @BettypeList = '0' THEN 0 ELSE bt.bettype END AS bettype,
 		CASE WHEN @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> '' THEN ISNULL(lg.LeagueGroupID,-1) ELSE -1 END AS LeagueGroupID,
-		ISNULL(sl.LeagueID,0)  AS LeagueID
+		sl.LeagueID  AS LeagueID
 	FROM #Sport s 
 		INNER JOIN #Bettype bt ON s.Sporttype = bt.Sporttype
 		LEFT JOIN #SportLeague sl ON s.Sporttype = sl.Sporttype
 		LEFT JOIN #LeagueGroup lg ON ISNULL(sl.LeagueGroupID,lg.LeagueGroupID) = lg.LeagueGroupID
-	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1
+	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1 AND SL.LeagueID IS NOT NULL
+	UNION
+	SELECT DISTINCT 
+		CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
+		CASE WHEN @SporttypeList = '0' THEN 0 ELSE s.sporttype END AS sporttype,
+		CASE WHEN @BettypeList = '0' THEN 0 ELSE bt.bettype END AS bettype,
+		CASE WHEN @IsExcludedLeagueGroup = 0 AND @LeagueGroupList <> '' THEN ISNULL(lg.LeagueGroupID,-1) ELSE -1 END AS LeagueGroupID,
+		0 AS LeagueID
+	FROM #Sport s 
+		INNER JOIN #Bettype bt ON s.Sporttype = bt.Sporttype
+		LEFT JOIN #SportLeague sl ON s.Sporttype = sl.Sporttype
+		LEFT JOIN #LeagueGroup lg ON ISNULL(sl.LeagueGroupID,lg.LeagueGroupID) = lg.LeagueGroupID
+	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1 AND @LeagueList = ''
 	UNION
 	SELECT DISTINCT
 	 CASE WHEN @ProductList = '0' THEN 0 ELSE s.ProductID END AS ProductID,
@@ -160,6 +172,7 @@ BEGIN
 	WHERE bt.Bettype IS NOT NULL AND s.ProductID = 1
 		AND @IsExcludedLeagueGroup = 0 
 		AND @LeagueGroupList <> ''
+		AND @LeagueList = ''
 	
 	IF @ProductList = '0' AND @SporttypeList = '0' AND @BettypeList = '0' AND ISNULL(@LeagueList,'') <> ''
 		DELETE 
