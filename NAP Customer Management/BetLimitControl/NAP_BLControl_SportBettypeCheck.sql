@@ -116,10 +116,13 @@ BEGIN
 	WHERE value <> ''
 
 	INSERT INTO #SportLeague(Sporttype,LeagueID,LeagueGroupID)
-	SELECT l.Sporttype,l.LeagueID, l.LeagueGroupID	
-	FROM DBPRO.bodb02.dbo.League l WITH(NOLOCK)
-		INNER JOIN #League le ON l.LeagueID = le.LeagueID
-		INNER JOIN #Sport s ON l.Sporttype = s.Sporttype
+	SELECT ISNULL(l.Sporttype, S.Sporttype) ,ISNULL(l.LeagueID, le.LeagueID), l.LeagueGroupID	
+	FROM #League le  
+		CROSS APPLY #Sport s 
+		OUTER APPLY ( SELECT Sporttype, LeagueID, LeagueGroupID
+					  FROM DBPRO.bodb02.dbo.League WITH(NOLOCK)
+					  WHERE LeagueID = le.LeagueID AND Sporttype = s.Sporttype
+					   ) l
 	WHERE s.ProductID = 1
 	
 	INSERT INTO #ValidData(ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
