@@ -79,6 +79,7 @@ BEGIN
 							ON t.SportType=s.SportType
 							AND t.CurrencyGroupID=s.CreditGroupID
 							AND t.GameGroupID=s.GameGroupID
+							AND s.isDeleted=0
 				WHERE IsCredit=1 AND s.Sporttype IS NULL)
 	BEGIN
 		SELECT TOP 1 
@@ -92,7 +93,8 @@ BEGIN
 							 ON t.SportType=s.SportType
 							 AND t.CurrencyGroupID=s.CreditGroupID
 							 AND t.GameGroupID=s.GameGroupID
-		WHERE IsCredit=1 AND s.Sporttype IS NULL
+							 AND s.isDeleted=0
+		WHERE IsCredit=1 AND s.Sporttype IS NULL 
 
 		RETURN
 	END
@@ -103,6 +105,7 @@ BEGIN
 							AND t.CurrencyGroupID=s.LicenseeGroupID
 							AND t.GameGroupID=s.GameGroupID 
 							AND t.SiteID=s.SiteID
+							AND s.isDeleted=0
 				WHERE IsCredit=0 AND s.Sporttype IS NULL)
 	BEGIN
 		SELECT TOP 1 
@@ -118,7 +121,8 @@ BEGIN
 							 AND t.CurrencyGroupID=s.LicenseeGroupID
 							 AND t.GameGroupID=s.GameGroupID 
 							 AND t.SiteID=s.SiteID
-		WHERE IsCredit=0 AND s.Sporttype IS NULL
+							 AND s.isDeleted=0
+		WHERE IsCredit=0 AND s.Sporttype IS NULL 
 
 		RETURN
 	END
@@ -128,30 +132,30 @@ BEGIN
 		--CREDIT
 		IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl WHERE IsCredit=1)
 		BEGIN
-			DELETE s
-			OUTPUT deleted.Sporttype, deleted.CreditGroupID, deleted.GameGroupID
-				INTO ProductStakeLevelGroup_Del_Inhouse (Sporttype, CreditGroupID, GameGroupID)
-			FROM ProductStakeLevelGroup s  WITH (ROWLOCK)
+			UPDATE s
+			SET s.isDeleted=1
+				,s.RepUpdateTime=dbo.f_GetDateTime2()
+			FROM ProductStakeLevelGroup s WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN #BetLimitTbl t 
 					ON t.SportType=s.SportType
 					AND t.CurrencyGroupID=s.CreditGroupID
 					AND t.GameGroupID=s.GameGroupID
-			WHERE IsCredit=1
+			WHERE IsCredit=1 AND s.isDeleted=0
 		END
 
 		--DEPOSIT
 		IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl WHERE IsCredit=0)
 		BEGIN
-			DELETE s
-			OUTPUT deleted.Sporttype, deleted.LicenseeGroupID, deleted.GameGroupID, deleted.SiteID
-				INTO Dep_ProductStakeLevelGroup_Del_Inhouse (Sporttype, LicenseeGroupID, GameGroupID, SiteID)
+			UPDATE s
+			SET s.isDeleted=1
+				,s.RepUpdateTime=dbo.f_GetDateTime2()
 			FROM Dep_ProductStakeLevelGroup s  WITH (ROWLOCK)
 			INNER JOIN #BetLimitTbl t 
 					ON t.SportType=s.SportType
 					AND t.CurrencyGroupID=s.LicenseeGroupID
 					AND t.GameGroupID=s.GameGroupID
 					AND t.SiteID=s.SiteID
-			WHERE IsCredit=0
+			WHERE IsCredit=0 AND s.isDeleted=0
 		END
 	END TRY
 	BEGIN CATCH

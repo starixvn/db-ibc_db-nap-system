@@ -175,6 +175,9 @@ BEGIN
 	INSERT INTO #Sports	(SportType, SportName)	
 	EXEC Acc_SporttypeSel @Mode=1
 
+	DELETE FROM #Sports
+	WHERE SportType BETWEEN 9913 AND 9915 --dummysport for PT setting
+
 	CREATE TABLE #SportsNonSupported(
 		  SportType		SMALLINT
 		, IsCredit		BIT DEFAULT(0)
@@ -184,10 +187,10 @@ BEGIN
 	INSERT INTO #SportsNonSupported(SportType, IsCredit)
 	SELECT DISTINCT f.SportType, 1 AS IsCredit
 	FROM dbo.f_CustSetting_ProductSettingDetailSel(@SettingStatus) f
-	WHERE f.SettingType IN (2, 7, 9, 16, 23, 26) 
+	WHERE f.SettingType IN (2, 7, 16, 17, 23, 26) 
 	UNION ALL
 	SELECT DISTINCT f.SportType, 0 AS IsCredit
-	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(NULL, NULL) f--, @SettingStatus
+	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(NULL, NULL, @SettingStatus) f
 	WHERE f.SettingType IN (2, 7, 8, 10, 12)
 
 	--#NewInputDataTbl
@@ -218,7 +221,7 @@ BEGIN
 				 FROM f_CustSetting_SportBetTypeSettingMatrix (@SettingStatus) sm 
 				 WHERE t.SportType=sm.SportType
 				 AND t.IsCredit=sm.isLicensee
-				 AND sm.isActive=1) sm
+				 AND sm.isActive=1 AND sm.isDeleted=0) sm
 	--------------------------------------------------------------------------------------------------------------------------------------
 	SELECT TOP (1)
 			@ErrCode=CASE 
@@ -258,7 +261,7 @@ BEGIN
 			,@ValueError=': The Sport Type ' + CAST (t.SportType AS VARCHAR(50)) + ' does not exist.'				
 	FROM #NewInputDataTbl t
 	LEFT JOIN #Sports s ON s.SportType=t.SportType 
-	WHERE s.SportType IS NULL
+	WHERE s.SportType IS NULL 
 
 	IF @ErrCode=114			
 		GOTO SetErr
@@ -380,6 +383,7 @@ BEGIN
 						 WHERE t.SportType=psl.Sporttype
 						 AND t.GameGroupID=psl.GameGroupID
 						 AND t.CurrencyGroupID=psl.CreditGroupID
+						 AND psl.isDeleted=0
 						) 
 					AND IsCredit=1
 				)
@@ -389,6 +393,7 @@ BEGIN
 						 AND t.GameGroupID=psl.GameGroupID
 						 AND t.CurrencyGroupID=psl.LicenseeGroupID
 						 AND t.SiteID=psl.SiteID
+						 AND psl.isDeleted=0
 						) 
 					AND IsCredit=0
 				)
@@ -413,6 +418,7 @@ BEGIN
 						AND t.CurrencyGroupID=psl.CreditGroupID
 						AND t.CurMinBet=psl.MinBet
 						AND t.CurMaxBet=psl.MaxBet
+						AND psl.isDeleted=0
 						) 
 					AND IsCredit=1)
 			OR
@@ -423,6 +429,7 @@ BEGIN
 						AND t.SiteID=psl.SiteID
 						AND t.CurMinBet=psl.MinBet
 						AND t.CurMaxBet=psl.MaxBet
+						AND psl.isDeleted=0
 						) 
 					AND IsCredit=0)
 			)
@@ -529,19 +536,21 @@ BEGIN
 	(	SELECT RowID 
 		FROM #NewInputDataTbl a
 		WHERE a.IsCredit=1 
-			AND (EXISTS (SELECT TOP 1 1 FROM ProductStakeLevelGroup slg WITH(NOLOCK) 
-						 WHERE slg.Sporttype=a.SportType AND slg.GameGroupID=a.GameGroupID
-							AND slg.CreditGroupID=a.CurrencyGroupID
-							AND (a.NewMinBet=slg.MinBet AND a.NewMaxBet=slg.MaxBet)))
+			AND (EXISTS (SELECT TOP 1 1 FROM ProductStakeLevelGroup psl WITH(NOLOCK) 
+						 WHERE psl.Sporttype=a.SportType AND psl.GameGroupID=a.GameGroupID
+							AND psl.CreditGroupID=a.CurrencyGroupID
+							AND psl.isDeleted=0
+							AND (a.NewMinBet=psl.MinBet AND a.NewMaxBet=psl.MaxBet)))
 		UNION ALL
 		SELECT RowID 
 		FROM #NewInputDataTbl a
 		WHERE a.IsCredit=0 
-			AND (EXISTS (SELECT TOP 1 1 FROM Dep_ProductStakeLevelGroup slg WITH(NOLOCK) 
-						 WHERE slg.Sporttype=a.SportType AND slg.GameGroupID=a.GameGroupID
-							AND slg.LicenseeGroupID=a.CurrencyGroupID 
-							AND slg.SiteID=a.SiteID
-							AND (a.NewMinBet=slg.MinBet AND a.NewMaxBet=slg.MaxBet)))
+			AND (EXISTS (SELECT TOP 1 1 FROM Dep_ProductStakeLevelGroup psl WITH(NOLOCK) 
+						 WHERE psl.Sporttype=a.SportType AND psl.GameGroupID=a.GameGroupID
+							AND psl.LicenseeGroupID=a.CurrencyGroupID 
+							AND psl.SiteID=a.SiteID
+							AND psl.isDeleted=0
+							AND (a.NewMinBet=psl.MinBet AND a.NewMaxBet=psl.MaxBet)))
 	) KQ
 	
 	IF @ErrCode=125			

@@ -149,11 +149,13 @@ BEGIN
 		--CREDIT
 		IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl WHERE IsCredit=1)
 		BEGIN
+			--Update setting
 			UPDATE s
 			SET s.MinBet=t.NewMinBet
 				,s.MaxBet=t.NewMaxBet
 				,s.Remark=t.NewRemark
-				,s.[RepUpdateTime]=sysdatetime()
+				,s.[RepUpdateTime]=dbo.f_GetDateTime2()
+				,s.isDeleted=0	--case: isDeleted=1, user insert new setting.
 			FROM ProductStakeLevelGroup s WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN #BetLimitTbl t 
 				ON t.SportType=s.SportType
@@ -170,8 +172,8 @@ BEGIN
 			WHERE t.IsCredit=1
 
 			--Insert new settings:
-			INSERT INTO ProductStakeLevelGroup (Sporttype, GameGroupID, CreditGroupID, MinBet, MaxBet, Remark)
-			SELECT t.Sporttype, t.GameGroupID, t.CurrencyGroupID, t.NewMinBet, t.NewMaxBet, t.NewRemark
+			INSERT INTO ProductStakeLevelGroup (Sporttype, GameGroupID, CreditGroupID, MinBet, MaxBet, Remark, RepUpdateTime)
+			SELECT t.Sporttype, t.GameGroupID, t.CurrencyGroupID, t.NewMinBet, t.NewMaxBet, t.NewRemark, dbo.f_GetDateTime2()
 			FROM #BetLimitTbl t
 			WHERE t.IsCredit=1
 		END
@@ -183,7 +185,8 @@ BEGIN
 			SET s.MinBet=t.NewMinBet
 				,s.MaxBet=t.NewMaxBet
 				,s.Remark=t.NewRemark
-				,s.[RepUpdateTime]=sysdatetime()
+				,s.[RepUpdateTime]=dbo.f_GetDateTime2()
+				,s.isDeleted=0	--case: isDeleted=1, user insert new setting.
 			FROM Dep_ProductStakeLevelGroup s  WITH (ROWLOCK,UPDLOCK)
 			INNER JOIN #BetLimitTbl t 
 					ON t.SportType=s.SportType
@@ -202,8 +205,8 @@ BEGIN
 			WHERE t.IsCredit=0
 
 			--Insert new settings:
-			INSERT INTO Dep_ProductStakeLevelGroup (Sporttype, GameGroupID, LicenseeGroupID, SiteID, MinBet, MaxBet, Remark)
-			SELECT t.Sporttype, t.GameGroupID, t.CurrencyGroupID, t.SiteID, t.NewMinBet, t.NewMaxBet, t.NewRemark
+			INSERT INTO Dep_ProductStakeLevelGroup (Sporttype, GameGroupID, LicenseeGroupID, SiteID, MinBet, MaxBet, Remark, RepUpdateTime)
+			SELECT t.Sporttype, t.GameGroupID, t.CurrencyGroupID, t.SiteID, t.NewMinBet, t.NewMaxBet, t.NewRemark, dbo.f_GetDateTime2()
 			FROM #BetLimitTbl t 
 			WHERE t.IsCredit=0
 		END

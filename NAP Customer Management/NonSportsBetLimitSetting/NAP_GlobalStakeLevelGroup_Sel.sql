@@ -78,9 +78,10 @@ BEGIN
 							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
 						 WHERE psl.SportType=sm.SportTypeRefBetSetting 
-							AND isLicensee=0 AND isActive=1) sp
+							AND sm.isDeleted=0 AND isLicensee=0 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
-		WHERE (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
+		WHERE psl.IsDeleted=0
+		AND (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
 	END
 	ELSE
 	BEGIN
@@ -102,9 +103,10 @@ BEGIN
 							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
 						 WHERE psl.SportType=sm.SportTypeRefBetSetting 
-							AND isLicensee=1 AND isActive=1) sp
+							AND sm.isDeleted=0 AND isLicensee=1 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
-		WHERE (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
+		WHERE psl.IsDeleted=0
+		AND (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
 		AND (@pMutilSite = '' OR PSL.SiteID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilSite, ',')))
 	END
 
