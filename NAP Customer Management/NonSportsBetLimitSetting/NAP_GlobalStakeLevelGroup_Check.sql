@@ -82,7 +82,7 @@ BEGIN
 			, CurMinBet			MONEY
 			, CurMaxBet			MONEY
 			, CurRemark			VARCHAR(1000)
-			, IsCredit			BIT DEFAULT(0)
+			, IsDeposit			BIT DEFAULT(0)
 			, SportTypeRef		SMALLINT
 	)
 
@@ -180,16 +180,16 @@ BEGIN
 
 	CREATE TABLE #SportsNonSupported(
 		  SportType		SMALLINT
-		, IsCredit		BIT DEFAULT(0)
+		, IsDeposit		BIT
 	)
 
 	--Sports have setting by customer
-	INSERT INTO #SportsNonSupported(SportType, IsCredit)
-	SELECT DISTINCT f.SportType, 1 AS IsCredit
+	INSERT INTO #SportsNonSupported(SportType, IsDeposit)
+	SELECT DISTINCT f.SportType, 0 AS IsDeposit
 	FROM dbo.f_CustSetting_ProductSettingDetailSel(@SettingStatus) f
 	WHERE f.SettingType IN (2, 7, 16, 17, 23, 26) 
 	UNION ALL
-	SELECT DISTINCT f.SportType, 0 AS IsCredit
+	SELECT DISTINCT f.SportType, 1 AS IsDeposit
 	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(NULL, NULL, @SettingStatus) f
 	WHERE f.SettingType IN (2, 7, 8, 10, 12)
 
@@ -198,18 +198,18 @@ BEGIN
 								 GameGroupID, SiteID,
 								 NewMinBet, NewMaxBet, NewRemark,
 								 CurMinBet, CurMaxBet, CurRemark,
-								 IsCredit)
+								 IsDeposit)
 	SELECT	RowID, SportType, CreditGroupID,
 			GameGroupID, SiteID,
 			NewMinBet, NewMaxBet, NewRemark,
-			CurMinBet, CurMaxBet, CurRemark, 1 AS IsCredit
+			CurMinBet, CurMaxBet, CurRemark, 0 AS IsDeposit
 	FROM @NewGlobalTbl nsl
 	WHERE ISNULL(nsl.CreditGroupID,'')<>''
 	UNION ALL
 	SELECT	RowID, SportType, LicenseeGroupID,
 			GameGroupID, SiteID,
 			NewMinBet, NewMaxBet, NewRemark,
-			CurMinBet, CurMaxBet, CurRemark, 0 AS IsCredit
+			CurMinBet, CurMaxBet, CurRemark, 1 AS IsDeposit
 	FROM @NewGlobalTbl nsl
 	WHERE ISNULL(nsl.LicenseeGroupID,'')<>''
 
@@ -220,7 +220,7 @@ BEGIN
 	CROSS APPLY (SELECT TOP 1 sm.SportTypeRefBetSetting
 				 FROM f_CustSetting_SportBetTypeSettingMatrix (@SettingStatus) sm 
 				 WHERE t.SportType=sm.SportType
-				 AND t.IsCredit=sm.isLicensee
+				 AND t.IsDeposit=sm.isLicensee
 				 AND sm.isActive=1 AND sm.isDeleted=0) sm
 	--------------------------------------------------------------------------------------------------------------------------------------
 	SELECT TOP (1)
@@ -270,9 +270,9 @@ BEGIN
 	IF EXISTS (SELECT TOP 1 1 FROM #NewInputDataTbl t
 				INNER JOIN #Sports s ON s.SportType=t.SportType
 				LEFT JOIN #SportsNonSupported ref ON ref.SportType=t.SportTypeRef
-												AND ref.IsCredit=t.IsCredit
+												AND ref.IsDeposit=t.IsDeposit
 				LEFT JOIN #SportsNonSupported sn ON sn.SportType=t.SportType
-												AND sn.IsCredit=t.IsCredit
+												AND sn.IsDeposit=t.IsDeposit
 				WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL)		
 	BEGIN
 		SELECT @NotiCode=119
@@ -281,9 +281,9 @@ BEGIN
 								  FROM #NewInputDataTbl t
 									INNER JOIN #Sports s ON s.SportType=t.SportType
 									LEFT JOIN #SportsNonSupported ref ON ref.SportType=t.SportTypeRef
-																	AND ref.IsCredit=t.IsCredit
+																	AND ref.IsDeposit=t.IsDeposit
 									LEFT JOIN #SportsNonSupported sn ON sn.SportType=t.SportType
-																	AND sn.IsCredit=t.IsCredit
+																	AND sn.IsDeposit=t.IsDeposit
 								  WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL
 								  FOR XML PATH('')), 1, 1, '')
 
@@ -296,20 +296,20 @@ BEGIN
 	SELECT TOP(1) 
 			@ErrCode=115
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
-			,@ValueError=CASE WHEN t.IsCredit=1 AND ce.CreditGroupID IS NULL   THEN ': Credit Group ID ' 
-							  WHEN t.IsCredit=0 AND de.LicenseeGroupID IS NULL THEN ': Licensee Group ID ' 
+			,@ValueError=CASE WHEN t.IsDeposit=0 AND ce.CreditGroupID IS NULL   THEN ': Credit Group ID ' 
+							  WHEN t.IsDeposit=1 AND de.LicenseeGroupID IS NULL THEN ': Licensee Group ID ' 
 						  END
 						+ CAST (t.CurrencyGroupID AS VARCHAR(50)) 
 						+ ' does not exist.'				
 	FROM #NewInputDataTbl t
 	OUTER APPLY (SELECT ce.CreditGroupID FROM Exchange ce WITH (NOLOCK)
 				 WHERE ce.CreditGroupID=t.CurrencyGroupID
-				 AND t.IsCredit=1) ce
+				 AND t.IsDeposit=0) ce
 	OUTER APPLY (SELECT de.LicenseeGroupID FROM Exchange de WITH (NOLOCK)
 				 WHERE de.LicenseeGroupID=t.CurrencyGroupID
-				 AND t.IsCredit=0) de
-	WHERE (t.IsCredit=1 AND ce.CreditGroupID IS NULL)
-		OR (t.IsCredit=0 AND de.LicenseeGroupID IS NULL)
+				 AND t.IsDeposit=1) de
+	WHERE (t.IsDeposit=0 AND ce.CreditGroupID IS NULL)
+		OR (t.IsDeposit=1 AND de.LicenseeGroupID IS NULL)
 
 	IF @ErrCode=115			
 		GOTO SetErr
@@ -342,7 +342,7 @@ BEGIN
 						+ ' does not exist.'				
 	FROM #NewInputDataTbl t 
 	LEFT JOIN Site s WITH (NOLOCK) ON s.siteid=t.SiteID
-	WHERE t.SiteID<>0 AND t.IsCredit=0
+	WHERE t.SiteID<>0 AND t.IsDeposit=1
 		AND s.isActive=1 AND s.siteid IS NULL
 
 	IF @ErrCode=117			
@@ -354,7 +354,7 @@ BEGIN
 			,@ValueError=': Can not import Global Deposit Settings for specific Credit site.'
 	FROM #NewInputDataTbl t 
 	INNER JOIN Site s WITH (NOLOCK) ON s.siteid=t.SiteID
-	WHERE t.SiteID<>0 AND t.IsCredit=0		--Deposit setting lines
+	WHERE t.SiteID<>0 AND t.IsDeposit=1		--Deposit setting lines
 		AND s.siteid IS NOT NULL AND s.isDeposit=0	--credit site
 
 	IF @ErrCode=118			
@@ -385,7 +385,7 @@ BEGIN
 						 AND t.CurrencyGroupID=psl.CreditGroupID
 						 AND psl.isDeleted=0
 						) 
-					AND IsCredit=1
+					AND IsDeposit=0
 				)
 			OR
 				(EXISTS (SELECT TOP 1 1 FROM Dep_ProductStakeLevelGroup psl WITH (NOLOCK)
@@ -395,7 +395,7 @@ BEGIN
 						 AND t.SiteID=psl.SiteID
 						 AND psl.isDeleted=0
 						) 
-					AND IsCredit=0
+					AND IsDeposit=1
 				)
 			)
 
@@ -420,7 +420,7 @@ BEGIN
 						AND t.CurMaxBet=psl.MaxBet
 						AND psl.isDeleted=0
 						) 
-					AND IsCredit=1)
+					AND IsDeposit=0)
 			OR
 			(NOT EXISTS (SELECT TOP 1 1 FROM Dep_ProductStakeLevelGroup psl WITH (NOLOCK)
 						WHERE t.SportType=psl.Sporttype
@@ -431,7 +431,7 @@ BEGIN
 						AND t.CurMaxBet=psl.MaxBet
 						AND psl.isDeleted=0
 						) 
-					AND IsCredit=0)
+					AND IsDeposit=1)
 			)
 
 	IF @ErrCode=121			
@@ -444,13 +444,13 @@ BEGIN
 						 WHERE a.SportType=b.SportType
 						 AND a.CurrencyGroupID=b.CurrencyGroupID
 						 AND a.GameGroupID=b.GameGroupID 
-						 AND a.IsCredit = b.IsCredit 
+						 AND a.IsDeposit = b.IsDeposit 
 						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
 						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
 						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
 	FROM #NewInputDataTbl a
-	WHERE a.IsCredit=1
-	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsCredit
+	WHERE a.IsDeposit=0
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsDeposit
 			, CurMinBet, CurMaxBet
 			, NewMinBet, NewMaxBet
 	HAVING COUNT(1)>1
@@ -461,13 +461,13 @@ BEGIN
 						 AND a.CurrencyGroupID=b.CurrencyGroupID
 						 AND a.GameGroupID=b.GameGroupID 
 						 AND a.SiteID = b.SiteID 
-						 AND a.IsCredit = b.IsCredit 
+						 AND a.IsDeposit = b.IsDeposit 
 						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
 						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
 						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
 	FROM #NewInputDataTbl a
-	WHERE a.IsCredit=0
-	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsCredit
+	WHERE a.IsDeposit=1
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsDeposit
 			, CurMinBet, CurMaxBet
 			, NewMinBet, NewMaxBet
 	HAVING COUNT(1)>1
@@ -488,7 +488,7 @@ BEGIN
 		SELECT DISTINCT
 			RowID, SportType
 			, CurrencyGroupID, GameGroupID
-			, SiteID, IsCredit
+			, SiteID, IsDeposit
 		FROM #NewInputDataTbl t 
 	)
 	INSERT INTO #SettingDuplicate (SettingRows)
@@ -497,11 +497,11 @@ BEGIN
 						 WHERE a.SportType=b.SportType
 						 AND a.CurrencyGroupID=b.CurrencyGroupID
 						 AND a.GameGroupID=b.GameGroupID 
-						 AND a.IsCredit = b.IsCredit 
+						 AND a.IsDeposit = b.IsDeposit 
 						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
 	FROM #NewInputDataTbl a
-	WHERE a.IsCredit=1
-	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsCredit
+	WHERE a.IsDeposit=0
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsDeposit
 	HAVING COUNT(1)>1
 	UNION
 	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
@@ -510,11 +510,11 @@ BEGIN
 						 AND a.CurrencyGroupID=b.CurrencyGroupID
 						 AND a.GameGroupID=b.GameGroupID 
 						 AND a.SiteID = b.SiteID 
-						 AND a.IsCredit = b.IsCredit 
+						 AND a.IsDeposit = b.IsDeposit 
 						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
 	FROM #NewInputDataTbl a
-	WHERE a.IsCredit=0
-	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsCredit
+	WHERE a.IsDeposit=1
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsDeposit
 	HAVING COUNT(1)>1
 
 	IF EXISTS (SELECT TOP 1 1 FROM #SettingDuplicate)			
@@ -535,7 +535,7 @@ BEGIN
 	FROM 
 	(	SELECT RowID 
 		FROM #NewInputDataTbl a
-		WHERE a.IsCredit=1 
+		WHERE a.IsDeposit=0 
 			AND (EXISTS (SELECT TOP 1 1 FROM ProductStakeLevelGroup psl WITH(NOLOCK) 
 						 WHERE psl.Sporttype=a.SportType AND psl.GameGroupID=a.GameGroupID
 							AND psl.CreditGroupID=a.CurrencyGroupID
@@ -544,7 +544,7 @@ BEGIN
 		UNION ALL
 		SELECT RowID 
 		FROM #NewInputDataTbl a
-		WHERE a.IsCredit=0 
+		WHERE a.IsDeposit=1 
 			AND (EXISTS (SELECT TOP 1 1 FROM Dep_ProductStakeLevelGroup psl WITH(NOLOCK) 
 						 WHERE psl.Sporttype=a.SportType AND psl.GameGroupID=a.GameGroupID
 							AND psl.LicenseeGroupID=a.CurrencyGroupID 
