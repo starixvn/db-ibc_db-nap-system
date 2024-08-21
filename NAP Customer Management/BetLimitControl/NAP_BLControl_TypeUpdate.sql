@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeUpdate] 
 	@BetLimitTypeID INT,
 	@BetLimitType VARCHAR(50) = NULL,
@@ -26,6 +26,7 @@ AS
 	Revisions:  
 		- 20200525@Eden: Create New SP  [RedmineID: #132736]
 		- 20220303@Johnson: Add league group [RedmineID: #156808]
+		- 20240621@Winfred: Bet Limit Control - Remove validation and change UI for League Group ID [redmine:#206358]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 

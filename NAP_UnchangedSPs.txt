@@ -1,2 +1,2 @@
-NAP Customer Management\BetLimitControl\NAP_BLControl_TypeInsert.sql
 NAP Customer Management\BetLimitControl\NAP_BLControl_TypeUpdate.sql
+NAP Customer Management\BetLimitControl\NAP_BLControl_TypeInsert.sql
