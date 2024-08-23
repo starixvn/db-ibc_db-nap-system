@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap,asv_cust" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteIns] (
 	  @SiteID				INT
 	 ,@UserId				INT
@@ -20,7 +20,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
-	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
+	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]          
 
 	Parameter explanation:
 	@ErrCode = :
