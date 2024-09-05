@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBAGE-bodb_Age" executers="wsv_nap" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_LimitLoss_MonitorList]
 	@ActionID TINYINT = 1
 AS
@@ -12,7 +12,8 @@ AS
 		- 20140620@Elodie: Add icon to indicate loss movement [Redmine:#17906]
 		- 20160607@Aaron: Get CustId [Redmine: #58855]
 		- 20170915@Elodie: Support Group Headline Setting [Redmine: #82892]
-		- 20180301@Elodie: Support send lettalk notification [RedmineID: #210405]
+		- 20180301@Elodie: Support send lettalk notification [RedmineID: #91064]
+		- 20240905@Elodie: Only send lettalk notification when SMA change level [RedmineID: #210405]
 
 	Parameter's explaination: 
 		@ActionID:	1	Alert on report
