@@ -12,7 +12,7 @@ AS
 		- 20140620@Elodie: Add icon to indicate loss movement [Redmine:#17906]
 		- 20160607@Aaron: Get CustId [Redmine: #58855]
 		- 20170915@Elodie: Support Group Headline Setting [Redmine: #82892]
-		- 20180301@Elodie: Support send lettalk notification [RedmineID: #91064]
+		- 20180301@Elodie: Support send lettalk notification [RedmineID: #210405]
 
 	Parameter's explaination: 
 		@ActionID:	1	Alert on report
@@ -41,7 +41,7 @@ BEGIN
 	FROM dbo.LimitLoss_Setting t WITH(NOLOCK) 
 	WHERE t.LevelID >= @LevelThreshold
 		AND NOT EXISTS (SELECT 1 FROM #GroupList WHERE CustID = t.CustID)       
-		AND ((t.NotifyLetsTalk = 1 AND @ActionID = 3) OR @ActionID <> 3)
+		AND ((@ActionID = 3 AND t.NotifyLetsTalk = 1 AND t.LevelID <> t.OldLevelID) OR @ActionID <> 3)
 
 	--Insert Headline setting
 	INSERT INTO #MonitorList (CustID, MaxLoss, TotalBalance, LevelID, YesterdayBalance, OldLevelID, GroupHeadlineID, NotifyLetsTalk)
@@ -49,7 +49,7 @@ BEGIN
 	FROM dbo.LimitLoss_HeadlineSetting t WITH(NOLOCK)	
 		INNER JOIN #GroupList l ON t.GroupHeadlineID = l.GroupID AND l.IsGroupHeadline = 1
 	WHERE t.LevelID >= @LevelThreshold
-		AND ((t.NotifyLetsTalk = 1 AND @ActionID = 3) OR @ActionID <> 3)
+		AND ((@ActionID = 3 AND t.NotifyLetsTalk = 1 AND t.LevelID <> t.OldLevelID) OR @ActionID <> 3)
 
 	SELECT	c.CustId, c.Username, c.roleid, CASE WHEN t.GroupHeadlineID <> 0 THEN 'RM' ELSE e.currency END AS currency, 
 			t.GroupHeadlineID, t.YesterdayBalance, t.TotalBalance, t.MaxLoss, t.LevelID,
