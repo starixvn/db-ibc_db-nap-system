@@ -1,7 +1,6 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Nap_ProblemAccountLimitDownlineDel]
 	@CustomerList VARCHAR(MAX),
-	
 	@UserID		INT,
 	@IP			VARCHAR(15),
 	@ErrCode 	INT = 0 OUTPUT,
@@ -15,7 +14,8 @@ AS
 
 	Revisions:
 		- 20210302@Johnson: Initial SP [Redmine:#149477]		
-		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]
+		- 20240807@Helios: Scale Out DBCUST - Apply Inhouse replication for tables of problem account [Redmine:#209747]  
 	Parameter's explaination: 	
 		- @cntMember: number of SMA remove successfully
 	
@@ -75,7 +75,11 @@ BEGIN
 		INNER JOIN ProblemAccountLimitDownline p WITH(NOLOCK) ON t.custid = p.custid
 	
 	--500 accounts per request, no need execrep
-	DELETE ProblemAccountLimitDownline WITH(UPDLOCK,ROWLOCK)
+
+	DELETE p
+	OUTPUT DELETED.custid , [dbo].[f_GetDateTime2]()
+	INTO ProblemAccountLimitDownline_Del_Inhouse (CustID , RepUpdateTime)
+	FROM ProblemAccountLimitDownline p WITH (UPDLOCK,ROWLOCK)
 	WHERE custid IN (
 		SELECT custid
 		FROM @tmpCust t
