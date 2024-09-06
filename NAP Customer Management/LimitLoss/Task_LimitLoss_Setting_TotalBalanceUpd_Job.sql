@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb_Age" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBAGE-bodb_Age" executers="wsv_nap" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Task_LimitLoss_Setting_TotalBalanceUpd_Job]
 AS
 /*
@@ -843,7 +843,8 @@ BEGIN
 	SET l.TotalBalance = b.NewTotalBalance,
 		l.YesterdayBalance = b.YesterdayTotalBalance,
 		l.OldLevelID = CASE WHEN l.LevelID = b.NewLevelID THEN l.OldLevelID ELSE l.LevelID END,
-		l.LevelID = b.NewLevelID
+		l.LevelID = b.NewLevelID,
+		l.IsNotified = CASE WHEN l.LevelID <> b.NewLevelID THEN 0 ELSE l.IsNotified END
 	FROM LimitLoss_Setting l WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN #BalanceCust b ON l.CustID = b.CustID
 
@@ -878,7 +879,8 @@ BEGIN
 	SET l.TotalBalance = b.NewTotalBalance,
 		l.YesterdayBalance = b.YesterdayTotalBalance,
 		l.OldLevelID = CASE WHEN l.LevelID = b.NewLevelID THEN l.OldLevelID ELSE l.LevelID END,
-		l.LevelID = b.NewLevelID
+		l.LevelID = b.NewLevelID,
+		l.IsNotified = CASE WHEN l.LevelID <> b.NewLevelID THEN 0 ELSE l.IsNotified END
 	FROM LimitLoss_HeadlineSetting l WITH (ROWLOCK, UPDLOCK)
 		INNER JOIN #BalanceGroupHeadline b ON b.GroupHeadlineID = l.GroupHeadlineID
 END

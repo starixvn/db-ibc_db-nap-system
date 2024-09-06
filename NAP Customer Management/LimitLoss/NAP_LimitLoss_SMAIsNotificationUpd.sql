@@ -1,9 +1,7 @@
 /*<info serverAlias="DBAGE-bodb_Age" executers="wsv_nap" viewers="" isFunction="0"></info>*/
-ALTER PROCEDURE [dbo].[NAP_LimitLoss_SMAIsNotificationUpd]  
+CREATE PROCEDURE [dbo].[NAP_LimitLoss_SMAIsNotificationUpd]  
 	@custList	VARCHAR(MAX) = '',	
-	@HeadlineList	VARCHAR(MAX) = '',	
-	@ErrCode 	INT = 0 OUTPUT,	
-	@ErrMsg		VARCHAR(500) = '' OUTPUT
+	@HeadlineList	VARCHAR(MAX) = ''
 AS  
 /*  
 
@@ -15,22 +13,13 @@ AS
 		- 20200901@Elodie: Initial sp [redmine:#210405]
 		
 	Parameter's Explanation: 
-		@custList = [
-			{"CustId": "5569882544"},
-			{"CustId": "2654630324"},
-			{"CustId": "6569882544"},
-			{"CustId": "7569882544"},
-			{"CustId": "8569882544"},
-			{"CustId": "9569882544"},
-			{"CustId": "1569882544"}
-			]
-		@HeadlineList = [
-			{"CustId": "5569882545", "GroupHeadlineId": 137},
-			{"CustId": "2654630324", "GroupHeadlineId": 16},
-			{"CustId": "6569882542", "GroupHeadlineId": 60},
-			{"CustId": "7569882543", "GroupHeadlineId": 20},
-			{"CustId": "1569882549", "GroupHeadlineId": 13}
-			]							
+		EXEC NAP_LimitLoss_SMAIsNotificationUpd_xtest @custList = '[
+			{"CustId": "1362437"},
+			{"CustId": "269822"}]',
+			@HeadlineList = '[
+			{"CustId": "10708", "GroupHeadlineId": 49},
+			{"CustId": "4037357", "GroupHeadlineId": 173}
+			]'
 */
 BEGIN
 	SET NOCOUNT ON 
