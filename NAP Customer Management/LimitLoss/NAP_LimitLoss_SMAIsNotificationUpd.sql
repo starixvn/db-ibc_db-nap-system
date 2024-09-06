@@ -53,7 +53,7 @@ BEGIN
 		)
 	
 	INSERT INTO @tblHeadlineList (custid, GroupHeadlineId)
-	SELECT custId
+	SELECT custId, GroupHeadlineId
 	FROM OPENJSON(@HeadlineList) WITH (
 				CustId		INT  '$.CustId'		
 				,GroupHeadlineId INT  '$.GroupHeadlineId'
@@ -86,14 +86,22 @@ BEGIN
 		SELECT  @LogDataNew = '<R '
 							+ 'IsNotified=1" '
 							+ '/>'
-
-		EXEC Acc_WriteLog_UserLog_RunSP_Wrapper
-			@UserId				= 10278938, --starixIT
-			@CustId				= @CustId,
-			@ActionId			= 95119,
-			@TrackingValue		= @LogDataNew,
-			@Duration			= @Duration 
-		
+		BEGIN TRY
+			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+				@UserId				= 10278938, --starixIT
+				@CustId				= @CustId,
+				@ActionId			= 95119,
+				@TrackingValue		= @LogDataNew,
+				@Duration			= @Duration 			
+		END TRY
+		BEGIN CATCH
+			EXEC DBCUST.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+				@UserId				= 10278938, --starixIT
+				@CustId				= @CustId,
+				@ActionId			= 95119,
+				@TrackingValue		= @LogDataNew,
+				@Duration			= @Duration
+		END CATCH		
 	END
 	
 	WHILE (1=1)
@@ -113,12 +121,21 @@ BEGIN
 							+ 'IsNotified=1" '
 							+ '/>'
 
-		EXEC Acc_WriteLog_UserLog_RunSP_Wrapper
-			@UserId				= 10278938, --starixIT
-			@CustId				= @CustId,
-			@ActionId			= 95120,
-			@TrackingValue		= @LogDataNew,
-			@Duration			= @Duration 
-		
+		BEGIN TRY
+			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+				@UserId				= 10278938, --starixIT
+				@CustId				= @CustId,
+				@ActionId			= 95120,
+				@TrackingValue		= @LogDataNew,
+				@Duration			= @Duration 			
+		END TRY
+		BEGIN CATCH
+			EXEC DBCUST.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+				@UserId				= 10278938, --starixIT
+				@CustId				= @CustId,
+				@ActionId			= 95120,
+				@TrackingValue		= @LogDataNew,
+				@Duration			= @Duration 
+		END CATCH			
 	END
 END	
