@@ -1,5 +1,5 @@
 /*<info serverAlias="DBAGE-bodb_Age" executers="wsv_nap" viewers="" isFunction="0"></info>*/
-CREATE PROCEDURE [dbo].[NAP_LimitLoss_SMAIsNotificationUpd]  
+ALTER PROCEDURE [dbo].[NAP_LimitLoss_SMAIsNotificationUpd]  
 	@custList	VARCHAR(MAX) = '',	
 	@HeadlineList	VARCHAR(MAX) = ''
 AS  
@@ -30,12 +30,12 @@ BEGIN
 
 	SET @custList = LTRIM(RTRIM(@custList))
 	SET @HeadlineList = LTRIM(RTRIM(@HeadlineList))
-	IF ISNULL(@custList,'') = '' AND ISNULL(@HeadlineList,'') = '' 
+	IF ISNULL(@custList,'[]') = '[]' AND ISNULL(@HeadlineList,'[]') = '[]' 
 		RETURN
 
 	SELECT @startRun = GETDATE() , @ModifiedDate = GETDATE()	
 	
-	IF ISNULL(@custList,'') = ''
+	IF ISNULL(@custList,'[]') <> '[]'
 	BEGIN
 		INSERT INTO @tblCustList (custid)
 		SELECT custId
@@ -49,7 +49,7 @@ BEGIN
 			INNER JOIN LimitLoss_Setting ci WITH(NOLOCK) ON t.custid = ci.custid
 	END
 
-	IF ISNULL(@HeadlineList,'') = ''
+	IF ISNULL(@HeadlineList,'[]') <> '[]'
 	BEGIN
 		INSERT INTO @tblHeadlineList (custid, GroupHeadlineId)
 		SELECT custId, GroupHeadlineId
