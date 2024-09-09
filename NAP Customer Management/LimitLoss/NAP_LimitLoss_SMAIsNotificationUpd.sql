@@ -30,101 +30,113 @@ BEGIN
 
 	SET @custList = LTRIM(RTRIM(@custList))
 	SET @HeadlineList = LTRIM(RTRIM(@HeadlineList))
-	IF ISNULL(@custList,'') = '' OR ISNULL(@HeadlineList,'') = '' 
+	IF ISNULL(@custList,'') = '' AND ISNULL(@HeadlineList,'') = '' 
 		RETURN
 
 	SELECT @startRun = GETDATE() , @ModifiedDate = GETDATE()	
 	
-	INSERT INTO @tblCustList (custid)
-	SELECT custId
-	FROM OPENJSON(@custList) WITH (
-				CustId		INT  '$.CustId'							
-		)
+	IF ISNULL(@custList,'') = ''
+	BEGIN
+		INSERT INTO @tblCustList (custid)
+		SELECT custId
+		FROM OPENJSON(@custList) WITH (
+					CustId		INT  '$.CustId'							
+			)
 	
-	INSERT INTO @tblHeadlineList (custid, GroupHeadlineId)
-	SELECT custId, GroupHeadlineId
-	FROM OPENJSON(@HeadlineList) WITH (
-				CustId		INT  '$.CustId'		
-				,GroupHeadlineId INT  '$.GroupHeadlineId'
-		)
+		UPDATE ci
+		SET ci.IsNotified = 1
+		FROM @tblCustList t
+			INNER JOIN LimitLoss_Setting ci WITH(NOLOCK) ON t.custid = ci.custid
+	END
 
-	UPDATE ci
-	SET ci.IsNotified = 1
-	FROM @tblCustList t
-		INNER JOIN LimitLoss_Setting ci WITH(NOLOCK) ON t.custid = ci.custid
+	IF ISNULL(@HeadlineList,'') = ''
+	BEGIN
+		INSERT INTO @tblHeadlineList (custid, GroupHeadlineId)
+		SELECT custId, GroupHeadlineId
+		FROM OPENJSON(@HeadlineList) WITH (
+					CustId		INT  '$.CustId'		
+					,GroupHeadlineId INT  '$.GroupHeadlineId'
+			)
 	
-	UPDATE ci
-	SET ci.IsNotified = 1
-	FROM @tblHeadlineList t
-		INNER JOIN LimitLoss_HeadlineSetting ci WITH(NOLOCK) ON t.GroupHeadlineId = ci.GroupHeadlineId
-	
+		UPDATE ci
+		SET ci.IsNotified = 1
+		FROM @tblHeadlineList t
+			INNER JOIN LimitLoss_HeadlineSetting ci WITH(NOLOCK) ON t.GroupHeadlineId = ci.GroupHeadlineId
+	END
+
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 
-	WHILE (1=1)
+	IF EXISTS (SELECT TOP 1 1 FROM @tblCustList)
 	BEGIN
-		UPDATE TOP (1) t
-		SET isFinished = 1,
-			@CustId = custid
-		FROM @tblCustList t
-		WHERE isFinished = 0			
+		WHILE (1=1)
+		BEGIN
+			UPDATE TOP (1) t
+			SET isFinished = 1,
+				@CustId = custid
+			FROM @tblCustList t
+			WHERE isFinished = 0			
 		
-		IF @@ROWCOUNT = 0
-			BREAK;
+			IF @@ROWCOUNT = 0
+				BREAK;
 					
-		SELECT  @LogDataNew = '<R '
-							+ 'IsNotified=1" '
-							+ '/>'
-		BEGIN TRY
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@UserId				= 10278938, --starixIT
-				@CustId				= @CustId,
-				@ActionId			= 95119,
-				@TrackingValue		= @LogDataNew,
-				@Duration			= @Duration 			
-		END TRY
-		BEGIN CATCH
-			EXEC DBCUST.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@UserId				= 10278938, --starixIT
-				@CustId				= @CustId,
-				@ActionId			= 95119,
-				@TrackingValue		= @LogDataNew,
-				@Duration			= @Duration
-		END CATCH		
+			SELECT  @LogDataNew = '<R '
+								+ 'IsNotified=1" '
+								+ '/>'
+			BEGIN TRY
+				EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@UserId				= 10278938, --starixIT
+					@CustId				= @CustId,
+					@ActionId			= 95119,
+					@TrackingValue		= @LogDataNew,
+					@Duration			= @Duration 			
+			END TRY
+			BEGIN CATCH
+				EXEC DBCUST.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@UserId				= 10278938, --starixIT
+					@CustId				= @CustId,
+					@ActionId			= 95119,
+					@TrackingValue		= @LogDataNew,
+					@Duration			= @Duration
+			END CATCH		
+		END
 	END
-	
-	WHILE (1=1)
-	BEGIN
-		UPDATE TOP (1) t
-		SET isFinished = 1,
-			@CustId = custid,
-			@GroupHeadlineId = GroupHeadlineId
-		FROM @tblHeadlineList t
-		WHERE isFinished = 0			
-		
-		IF @@ROWCOUNT = 0
-			BREAK;
-			
-		SELECT  @LogDataNew = '<R '
-							+ 'GroupHeadlineId="' + coalesce(cast(@GroupHeadlineId as varchar(50)),space(1)) + '" ' 
-							+ 'IsNotified=1" '
-							+ '/>'
 
-		BEGIN TRY
-			EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@UserId				= 10278938, --starixIT
-				@CustId				= @CustId,
-				@ActionId			= 95120,
-				@TrackingValue		= @LogDataNew,
-				@Duration			= @Duration 			
-		END TRY
-		BEGIN CATCH
-			EXEC DBCUST.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
-				@UserId				= 10278938, --starixIT
-				@CustId				= @CustId,
-				@ActionId			= 95120,
-				@TrackingValue		= @LogDataNew,
-				@Duration			= @Duration 
-		END CATCH			
+	IF EXISTS (SELECT TOP 1 1 FROM @tblHeadlineList)
+	BEGIN
+		WHILE (1=1)
+		BEGIN
+			UPDATE TOP (1) t
+			SET isFinished = 1,
+				@CustId = custid,
+				@GroupHeadlineId = GroupHeadlineId
+			FROM @tblHeadlineList t
+			WHERE isFinished = 0			
+		
+			IF @@ROWCOUNT = 0
+				BREAK;
+			
+			SELECT  @LogDataNew = '<R '
+								+ 'GroupHeadlineId="' + coalesce(cast(@GroupHeadlineId as varchar(50)),space(1)) + '" ' 
+								+ 'IsNotified=1" '
+								+ '/>'
+
+			BEGIN TRY
+				EXEC DBLOG.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@UserId				= 10278938, --starixIT
+					@CustId				= @CustId,
+					@ActionId			= 95120,
+					@TrackingValue		= @LogDataNew,
+					@Duration			= @Duration 			
+			END TRY
+			BEGIN CATCH
+				EXEC DBCUST.bodb_CustomerLog.dbo.WriteLog_UserLog_RunSP
+					@UserId				= 10278938, --starixIT
+					@CustId				= @CustId,
+					@ActionId			= 95120,
+					@TrackingValue		= @LogDataNew,
+					@Duration			= @Duration 
+			END CATCH			
+		END
 	END
 END	
