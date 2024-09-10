@@ -17,7 +17,7 @@ AS
 
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
-
+	- 20240904@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 
 	Example: 
@@ -67,7 +67,8 @@ BEGIN
 
 	UPDATE t
 	SET t.MaxBet = @MaxBet,
-		t.MaxPerMatch = @MaxPerMatch
+		t.MaxPerMatch = @MaxPerMatch,
+		t.RepUpdateTime = SYSDATETIME()
 	FROM BetLimitControlDefaultSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE t.CustID = @CustID AND t.BetLimitTypeID = @BetLimitTypeID
 

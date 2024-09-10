@@ -16,7 +16,7 @@ AS
 
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
-
+	- 20240904@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 
 	Example: 
@@ -68,6 +68,8 @@ BEGIN
 	SELECT @RoleID = RoleID FROM custInfo  WITH(NOLOCK) WHERE custid = @CustID
 
 	DELETE t
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, SYSDATETIME()
+	INTO BetLimitControlDefaultSetting_Del_InHouse(CustID,BetLimitTypeID,RepUpdateTime)
 	FROM BetLimitControlDefaultSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID 
 

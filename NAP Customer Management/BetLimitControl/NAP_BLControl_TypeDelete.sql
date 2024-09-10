@@ -16,6 +16,7 @@ AS
 		- 20200525@Eden: Create New SP  [RedmineID: #132736]
 		- 20200818@Eden: Auto Update Bet Limit Control [RedmineID: #139701]
 		- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
+		- 20240830@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -125,15 +126,21 @@ BEGIN
 		,@ExcludedLeagueGroupList = ExcludedLeagueGroupList
 	FROM #OLdbetLimitTypeTbl
 
-	DELETE 
-	FROM BetLimitControlTypeDetail WITH(ROWLOCK,UPDLOCK)
+	DELETE t
+	OUTPUT DELETED.BetLimitTypeID, DELETED.ProductID,DELETED.Sporttype,DELETED.Bettype,DELETED.LeagueGroupID,DELETED.LeagueID,SYSDATETIME()
+	INTO BetLimitControlTypeDetail_Del_InHouse(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,RepUpdateTime) 
+	FROM BetLimitControlTypeDetail t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	DELETE 
-	FROM BetLimitControlType WITH(ROWLOCK,UPDLOCK)
+	DELETE t
+	OUTPUT DELETED.BetLimitTypeID, SYSDATETIME()
+	INTO BetLimitControlType_Del_InHouse(BetLimitTypeID,RepUpdateTime)
+	FROM BetLimitControlType t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	DELETE 
+	DELETE t
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, SYSDATETIME()
+	INTO BetLimitControlDefaultSetting_Del_InHouse(CustID,BetLimitTypeID,RepUpdateTime)
 	FROM BetLimitControlDefaultSetting WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 

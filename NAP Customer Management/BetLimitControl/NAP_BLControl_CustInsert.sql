@@ -21,7 +21,7 @@ AS
 	- 20200922@Eden: BetLimitControl - Add multiple customers [RedmineID: #141767]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
 	- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
-
+	- 20240830@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @ErrorCode: 
 		1: The bet limit type exist already.
@@ -120,8 +120,8 @@ BEGIN
 		BEGIN
 			SET @StartRun = GETDATE()
 
-			INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch,Mode)
-			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch,@Mode
+			INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch,Mode,RepUpdateTime)
+			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch,@Mode,SYSDATETIME()
 
 			SET @EndRun = GETDATE()
 			SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)

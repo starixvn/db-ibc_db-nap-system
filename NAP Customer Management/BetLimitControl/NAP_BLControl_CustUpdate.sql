@@ -20,7 +20,7 @@ AS
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
-
+	- 20240830@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @ErrorCode: 
 		3: Invalid Bet Limit Type. Please try again.
@@ -125,7 +125,8 @@ BEGIN
 	SET t.BetLimitTypeID = @NewBetLimitTypeID,
 		t.MaxBet = @MaxBet,
 		t.MaxPerMatch = @MaxPerMatch,
-		t.Mode = @Mode
+		t.Mode = @Mode,
+		RepUpdateTime = SYSDATETIME()
 	FROM BetLimitControlCustSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE t.CustID = @CustID AND t.BetLimitTypeID = @BetLimitTypeID
 

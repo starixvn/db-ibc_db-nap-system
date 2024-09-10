@@ -16,7 +16,7 @@ AS
 	Revisions:  
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
-
+	- 20240830@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @ErrorCode: 
 
@@ -90,6 +90,8 @@ BEGIN
 	END
 
 	DELETE t
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, SYSDATETIME()
+	INTO BetLimitControlCustSetting_Del_Inhouse(CustID,BetLimitTypeID,RepUpdateTime)
 	FROM BetLimitControlCustSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID 
 
