@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeDelete] 
 	@BetLimitTypeID INT,
 	@ErrorCode INT = 0 OUTPUT,
@@ -127,21 +127,21 @@ BEGIN
 	FROM #OLdbetLimitTypeTbl
 
 	DELETE t
-	OUTPUT DELETED.BetLimitTypeID, DELETED.ProductID,DELETED.Sporttype,DELETED.Bettype,DELETED.LeagueGroupID,DELETED.LeagueID,SYSDATETIME()
-	INTO BetLimitControlTypeDetail_Del_InHouse(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,RepUpdateTime) 
-	FROM BetLimitControlTypeDetail t WITH(ROWLOCK,UPDLOCK)
+	OUTPUT DELETED.ID, dbo.f_GetDateTime2()
+	INTO BetLimitControlTypeDetails_Del_InHouse(ID,RepUpdateTime) 
+	FROM BetLimitControlTypeDetails t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
 	DELETE t
-	OUTPUT DELETED.BetLimitTypeID, SYSDATETIME()
+	OUTPUT DELETED.BetLimitTypeID, dbo.f_GetDateTime2()
 	INTO BetLimitControlType_Del_InHouse(BetLimitTypeID,RepUpdateTime)
 	FROM BetLimitControlType t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
 	DELETE t
-	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, SYSDATETIME()
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, dbo.f_GetDateTime2()
 	INTO BetLimitControlDefaultSetting_Del_InHouse(CustID,BetLimitTypeID,RepUpdateTime)
-	FROM BetLimitControlDefaultSetting WITH(ROWLOCK,UPDLOCK)
+	FROM BetLimitControlDefaultSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
 	--Delete all setting on BetLimitControlCustSetting

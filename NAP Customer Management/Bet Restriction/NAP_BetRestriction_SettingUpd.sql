@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SettingUpd] (
 	  @UserId				INT
 	 ,@IP					VARCHAR(15) = ''
@@ -16,7 +16,7 @@ AS
 	Revisions:  
 		- 20190829@Eden: Create New SP [RedmineID: #117727]
 		- 20220615@Tacy: Hot modify Select Into statement to avoid dump [Redmine: #174035]
-
+		- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode : 
 			 =  0 - succeed 
@@ -123,7 +123,8 @@ BEGIN
 			UPDATE	BetRestriction_Setting WITH(ROWLOCK)
 			SET		LiveBetAcceptStatus = @LiveBetAcceptStatus,
 					SeizeBetTicketStatus = @SeizeBetTicketStatus,
-					BetLimitStatus = @BetLimitStatus
+					BetLimitStatus = @BetLimitStatus,
+					RepUpdateTime = dbo.f_GetDateTime2()
 			WHERE   SettingID = @SettingID
 		END TRY
 		BEGIN CATCH

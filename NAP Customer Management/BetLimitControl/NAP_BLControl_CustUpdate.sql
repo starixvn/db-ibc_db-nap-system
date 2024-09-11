@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustUpdate] 
 	@CustID INT = NULL,
 	@BetLimitTypeID INT = NULL,
@@ -126,7 +126,7 @@ BEGIN
 		t.MaxBet = @MaxBet,
 		t.MaxPerMatch = @MaxPerMatch,
 		t.Mode = @Mode,
-		RepUpdateTime = SYSDATETIME()
+		RepUpdateTime = dbo.f_GetDateTime2()
 	FROM BetLimitControlCustSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE t.CustID = @CustID AND t.BetLimitTypeID = @BetLimitTypeID
 

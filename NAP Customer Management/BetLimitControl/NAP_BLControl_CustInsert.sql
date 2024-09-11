@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert] 
 	@Usernames VARCHAR(MAX) = NULL,
 	@BetLimitTypeID INT = NULL,
@@ -121,7 +121,7 @@ BEGIN
 			SET @StartRun = GETDATE()
 
 			INSERT INTO BetLimitControlCustSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch,Mode,RepUpdateTime)
-			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch,@Mode,SYSDATETIME()
+			SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch,@Mode,dbo.f_GetDateTime2()
 
 			SET @EndRun = GETDATE()
 			SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustDelete] 
 	@CustID INT = NULL,
 	@BetLimitTypeID INT = NULL,
@@ -90,7 +90,7 @@ BEGIN
 	END
 
 	DELETE t
-	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, SYSDATETIME()
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, dbo.f_GetDateTime2()
 	INTO BetLimitControlCustSetting_Del_Inhouse(CustID,BetLimitTypeID,RepUpdateTime)
 	FROM BetLimitControlCustSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID 

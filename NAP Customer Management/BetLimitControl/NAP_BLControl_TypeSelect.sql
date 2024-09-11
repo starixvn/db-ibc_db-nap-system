@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeSelect] 
 	@BetLimitTypeID INT = 0,
 	@ProductID TINYINT = NULL,
@@ -19,6 +19,7 @@ AS
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
 	- 20220617@Johnson: define temp table to avoid dump db [redmine:#174035]
+	- 20240904@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	-@LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 
@@ -73,7 +74,7 @@ BEGIN
 			ProductList = SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,c.ProductID )
 										 FROM #BTC_SportBettypeReference c
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
-														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+														FROM BetLimitControlTypeDetails b WITH(NOLOCK) 
 														WHERE (b.ProductID = c.ProductID OR b.ProductID = 0)
 															AND BetLimitTypeID = t.BetLimitTypeID) pro
 										 GROUP BY c.ProductID
@@ -82,7 +83,7 @@ BEGIN
 			SportTypeList = SUBSTRING((  SELECT ',' + CONVERT(VARCHAR,SportType )
 										 FROM #BTC_SportBettypeReference c
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
-														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+														FROM BetLimitControlTypeDetails b WITH(NOLOCK) 
 														WHERE (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
 															AND (b.ProductID = c.ProductID OR b.ProductID = 0)
 															AND BetLimitTypeID = t.BetLimitTypeID) sp
@@ -92,7 +93,7 @@ BEGIN
 			BetTypeList = SUBSTRING((	SELECT ',' + CONVERT(VARCHAR,c.BetType)
 										 FROM #BTC_SportBettypeReference c
 										 CROSS APPLY (	SELECT DISTINCT cast (1 as bit) AS Selected 
-														FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+														FROM BetLimitControlTypeDetails b WITH(NOLOCK) 
 														WHERE (b.Bettype = c.Bettype OR b.Bettype = 0)
 															AND (b.Sporttype = c.Sporttype OR b.Sporttype = 0)
 															AND (b.ProductID = c.ProductID OR b.ProductID = 0)
@@ -101,14 +102,14 @@ BEGIN
 										 ORDER BY c.Bettype
 										 FOR XML PATH ('')),2,10000),
 			LeagueGroupList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR(10),b.leagueGroupID)
-										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+										 FROM BetLimitControlTypeDetails b WITH(NOLOCK) 
 										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueGroupID <> -1
 										 GROUP BY b.leagueGroupID
 										 ORDER BY b.leagueGroupID
 										 FOR XML PATH ('')),2,10000),''),
 			ISNULL(ExcludedLeagueGroupList,'') ExcludedLeagueGroupList,								
 			LeagueList = ISNULL(SUBSTRING((	 SELECT ',' + CONVERT(VARCHAR,b.leagueid)
-										 FROM BetLimitControlTypeDetail b WITH(NOLOCK) 
+										 FROM BetLimitControlTypeDetails b WITH(NOLOCK) 
 										 WHERE BetLimitTypeID = t.BetLimitTypeID AND LeagueID <> 0
 										 GROUP BY b.leagueid
 										 ORDER BY b.leagueid
@@ -126,7 +127,7 @@ BEGIN
 					IsAllLeague = MIN(CASE WHEN td.LeagueID > 0 THEN 0 ELSE 1 END),
 					t.BetLimitTypeID
 				FROM #BetLimitControlType t 
-					INNER JOIN BetLimitControlTypeDetail td WITH(NOLOCK)
+					INNER JOIN BetLimitControlTypeDetails td WITH(NOLOCK)
 						ON t.BetLimitTypeID = td.BetLimitTypeID
 				GROUP BY t.BetLimitTypeID
 	)

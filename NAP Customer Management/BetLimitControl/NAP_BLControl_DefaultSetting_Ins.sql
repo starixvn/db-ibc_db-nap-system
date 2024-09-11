@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_DefaultSetting_Ins] 
 	@Username VARCHAR(30) = NULL,
 	@BetLimitTypeID INT = NULL,
@@ -17,7 +17,8 @@ AS
 
 	Revisions:  
 	- 20200818@Eden: Create New SP  [RedmineID: #139701]
-
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
+	
 	Parameter explanation:
 	- @ErrorCode: 
 		1: The bet limit type exist already.
@@ -64,8 +65,8 @@ BEGIN
 	IF @ErrorCode <> 0
 		RETURN
 	
-	INSERT INTO BetLimitControlDefaultSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch)
-	SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch
+	INSERT INTO BetLimitControlDefaultSetting (CustID,BetLimitTypeID,MaxBet,MaxPerMatch,RepUpdateTime)
+	SELECT @CustID,@BetLimitTypeID,@MaxBet,@MaxPerMatch, dbo.f_GetDateTime2()
 
 	SELECT @BetLimitType = BetLimitType FROM BetLimitControlType WITH(NOLOCK) WHERE BetLimitTypeID = @BetLimitTypeID
 

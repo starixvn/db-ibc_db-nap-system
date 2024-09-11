@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteUpd] (
 	  @SiteID				INT
 	 ,@UserId				INT
@@ -21,7 +21,7 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
-
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed 
@@ -98,7 +98,8 @@ BEGIN
 		SET LiveBetAccept = @LiveBetAccept, 
 			SeizeBetTicket = @SeizeBetTicket, 
 			FollowAccount = @FollowAccountID,
-			AccumulateBalance = @AccumulateBalance
+			AccumulateBalance = @AccumulateBalance,
+			RepUpdateTime = dbo.f_GetDateTime2()
 		WHERE SiteID = @SiteID AND SportType = @SportType
 	END TRY
 	BEGIN CATCH

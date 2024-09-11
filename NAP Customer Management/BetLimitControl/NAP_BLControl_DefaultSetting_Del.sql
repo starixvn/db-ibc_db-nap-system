@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_DefaultSetting_Del] 
 	@CustID INT = NULL,
 	@BetLimitTypeID INT = NULL,
@@ -68,7 +68,7 @@ BEGIN
 	SELECT @RoleID = RoleID FROM custInfo  WITH(NOLOCK) WHERE custid = @CustID
 
 	DELETE t
-	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, SYSDATETIME()
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, dbo.f_GetDateTime2()
 	INTO BetLimitControlDefaultSetting_Del_InHouse(CustID,BetLimitTypeID,RepUpdateTime)
 	FROM BetLimitControlDefaultSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE CustID = @CustID and BetLimitTypeID = @BetLimitTypeID 

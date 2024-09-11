@@ -1,3 +1,0 @@
-NAP Customer Management\BetLimitControl\NAP_BLControl_EvidenceFlagged.sql
-NAP Customer Management\BetLimitControl\NAP_BLControl_EvidenceUnflagged.sql
-NAP Customer Management\BetLimitControl\NAP_BLControl_PerformanceChecking_ReduceBetLimit.sql

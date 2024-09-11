@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CurrencyDel] 
 	   @ExchangeID	INT = NULL
 	  ,@UserId		INT
@@ -16,7 +16,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
-
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode =: 
 			0 - succeed 
@@ -56,8 +56,10 @@ BEGIN
 						 WHEN @Type = 2 THEN 'Licensee' END
 
 	BEGIN TRY
-		DELETE
-		FROM  BetRestriction_Currency WITH(UPDLOCK,ROWLOCK)
+		DELETE t
+		OUTPUT DELETED.ExchangeID, DELETED.SportType, DELETED.Type, dbo.f_GetDateTime2()
+		INTO BetRestriction_Currency_Del_InHouse(ExchangeID,SportType,Type,RepUpdateTime)
+		FROM  BetRestriction_Currency t WITH(UPDLOCK,ROWLOCK)		
 		WHERE ExchangeID = @ExchangeID AND [Type] = @Type AND SportType = @SportType 
 	END TRY
 	BEGIN CATCH

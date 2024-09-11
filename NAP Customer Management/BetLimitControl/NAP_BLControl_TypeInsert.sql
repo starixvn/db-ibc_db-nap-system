@@ -110,10 +110,10 @@ BEGIN
 	OUTPUT Inserted.BetLimitTypeID INTO @Insert(BetLimitTypeID)
 	SELECT @BetLimitType,@BeginTime,@EndTime,@LiveIndicator,@RestrictVIP, 
 			CASE WHEN @IsExcludedLeagueGroup = 1 THEN @LeagueGroupList ELSE '' END,
-			SYSDATETIME()
+			dbo.f_GetDateTime2()
 
-	INSERT INTO BetLimitControlTypeDetail(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,RepUpdateTime)
-	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,SYSDATETIME()
+	INSERT INTO BetLimitControlTypeDetails(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,RepUpdateTime)
+	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,dbo.f_GetDateTime2()
 	FROM #ValidData v
 		CROSS APPLY @Insert i
 
