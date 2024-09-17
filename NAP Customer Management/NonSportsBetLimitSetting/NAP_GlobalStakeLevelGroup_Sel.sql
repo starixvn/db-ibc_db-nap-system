@@ -117,7 +117,7 @@ BEGIN
 		, GameGroup
 		, MinBet, MaxBet, Remark
 	FROM #GlobalStakeLevelGroup
-	ORDER BY Sportname, CurrencyGroupID, SiteID, GameGroup DESC
+	ORDER BY Sporttype, CurrencyGroupID, SiteID, GameGroup DESC, ExchangeID
 
 	DROP TABLE #GlobalStakeLevelGroup, #Sports, #ExchangeGroup
 END

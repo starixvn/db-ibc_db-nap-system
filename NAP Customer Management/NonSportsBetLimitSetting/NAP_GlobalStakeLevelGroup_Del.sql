@@ -168,8 +168,8 @@ BEGIN
 
 	DECLARE @NewLog VARCHAR(MAX)
 
-	SET @NewLog = '<NAP_GlobalStakeGroup_Del IP="' + COALESCE(CAST(@IP AS VARCHAR(15)),SPACE(1)) +'" >'
-	SELECT @logSpData = REPLACE(REPLACE(@InputData, '<ROOT>', @NewLog),'/ROOT','/NAP_GlobalStakeGroup_Del')
+	SET @NewLog = '<NAP_GlobalStakeLevelGroup_Del IP="' + COALESCE(CAST(@IP AS VARCHAR(15)),SPACE(1)) +'" >'
+	SELECT @logSpData = REPLACE(REPLACE(@InputData, '<ROOT>', @NewLog),'/ROOT','/NAP_GlobalStakeLevelGroup_Del')
 
 	EXEC  Acc_WriteLog_UserLog_RunSP_Wrapper
 				@UserID = @UserID,

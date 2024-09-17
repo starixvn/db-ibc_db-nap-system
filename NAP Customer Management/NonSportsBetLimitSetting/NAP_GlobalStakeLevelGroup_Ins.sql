@@ -149,6 +149,18 @@ BEGIN
 		--CREDIT
 		IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl WHERE IsCredit=1)
 		BEGIN
+			--DELETE: unchange
+			DELETE T
+			FROM #BetLimitTbl t
+			INNER JOIN ProductStakeLevelGroup s WITH (NOLOCK)
+					ON t.SportType=s.SportType
+					AND t.CurrencyGroupID=s.CreditGroupID
+					AND t.GameGroupID=s.GameGroupID
+			WHERE t.IsCredit=1 AND s.isDeleted=0
+				AND s.MinBet=t.NewMinBet
+				AND s.MaxBet=t.NewMaxBet
+				AND ISNULL(s.Remark,'')=ISNULL(t.NewRemark,'')
+			
 			--Update setting
 			UPDATE s
 			SET s.MinBet=t.NewMinBet
@@ -181,6 +193,20 @@ BEGIN
 		--DEPOSIT
 		IF EXISTS (SELECT TOP 1 1 FROM #BetLimitTbl WHERE IsCredit=0)
 		BEGIN
+			--DELETE: unchange
+			DELETE T
+			FROM #BetLimitTbl t 
+			INNER JOIN Dep_ProductStakeLevelGroup s  WITH (NOLOCK)
+					ON t.SportType=s.SportType
+					AND t.CurrencyGroupID=s.LicenseeGroupID
+					AND t.GameGroupID=s.GameGroupID
+					AND t.SiteID=s.SiteID
+			WHERE t.IsCredit=0 AND s.isDeleted=0
+				AND s.MinBet=t.NewMinBet
+				AND s.MaxBet=t.NewMaxBet
+				AND ISNULL(s.Remark,'')=ISNULL(t.NewRemark,'')
+
+			--Update new settings:
 			UPDATE s
 			SET s.MinBet=t.NewMinBet
 				,s.MaxBet=t.NewMaxBet
@@ -221,8 +247,8 @@ BEGIN
 	
 	DECLARE @NewLog VARCHAR(MAX)
 
-	SET @NewLog = '<NAP_GlobalStakeGroup_Ins IP="'+ COALESCE(CAST(@IP AS VARCHAR(15)),SPACE(1))+'" >'
-	SELECT @logSpData = REPLACE(REPLACE(@InputData, '<ROOT>', @NewLog),'/ROOT','/NAP_GlobalStakeGroup_Ins')
+	SET @NewLog = '<NAP_GlobalStakeLevelGroup_Ins IP="'+ COALESCE(CAST(@IP AS VARCHAR(15)),SPACE(1))+'" >'
+	SELECT @logSpData = REPLACE(REPLACE(@InputData, '<ROOT>', @NewLog),'/ROOT','/NAP_GlobalStakeLevelGroup_Ins')
 	
 	EXEC  Acc_WriteLog_UserLog_RunSP_Wrapper
 				@UserID = @UserID,

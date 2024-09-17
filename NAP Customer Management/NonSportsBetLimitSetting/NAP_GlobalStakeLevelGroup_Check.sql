@@ -3,8 +3,6 @@ ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Check]
 	-- Add the parameters for the stored procedure here
 	 @InputData	VARCHAR(MAX)=''
 	,@SettingStatus TINYINT = 0
-	,@UserID	INT
-	,@IP		VARCHAR(50)=''
 	,@NotiCode	INT=0				OUTPUT
 	,@NotiMsg	NVARCHAR(4000)=''	OUTPUT
 	,@ErrCode	INT = 0				OUTPUT
