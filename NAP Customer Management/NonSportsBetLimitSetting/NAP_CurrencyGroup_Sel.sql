@@ -21,6 +21,7 @@ BEGIN
 		SELECT ExchangeID, Currency, Code, CreditGroupID AS CurrencyGroupID
 		FROM Exchange  WITH(NOLOCK)
 		WHERE IsActive = 1 AND @IsCredit = 1 AND OfferSite IN (0,1)
+			AND CreditGroupID IS NOT NULL
 		ORDER BY CreditGroupID, Currency
 	END
 	ELSE 
@@ -28,6 +29,7 @@ BEGIN
 		SELECT ExchangeID, Currency, Code, LicenseeGroupID AS CurrencyGroupID
 		FROM Exchange  WITH(NOLOCK)
 		WHERE IsActive = 1 AND @IsCredit = 0 AND OfferSite IN (0,2)
+			AND LicenseeGroupID IS NOT NULL
 		ORDER BY LicenseeGroupID, Currency
 	END
 END
