@@ -6,9 +6,7 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustDelete]
 	@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = '',
-	@HasCN88_Permission BIT = 0,
-	@HasCredit_Permission BIT = 0,
-	@HasLicensee_Permission BIT = 0
+	@Permission	VARCHAR(20) = '1,2'
 AS
 /*
 	Created: 20200525@Eden
@@ -22,7 +20,8 @@ AS
 	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
-	- @ErrorCode: 
+		@Permission: 1 ~ Credit sites
+					 2 ~ Licensee sites
 
 	Example: 
 	DECLARE @ErrorCode INT = 0 ,@ErrorMsg VARCHAR(200) = '' 
@@ -46,10 +45,10 @@ BEGIN
 	FROM Customer c WITH(NOLOCK) 
 		INNER JOIN Site s WITH(NOLOCK) On s.site = c.site
 	WHERE c.custid = @CustID
-	AND ((c.site='CN88' AND @HasCN88_Permission=1)
-		OR (s.isLicensee=0 AND @HasCredit_Permission=1)
-		OR (s.isLicensee=1 AND @HasLicensee_Permission=1)
+	AND ((s.isLicensee=0 AND ',' + @Permission + ',' LIKE '%,1,%')
+		OR (s.isLicensee=1 AND ',' + @Permission + ',' LIKE '%,2,%')
 		)
+	AND s.site <> 'cn88'
 
 	IF @site IS NULL
 	BEGIN

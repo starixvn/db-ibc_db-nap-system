@@ -160,8 +160,7 @@ BEGIN
 		@Sporttype = 0,
 		@Bettype = 0,
 		@LiveIndicator = 3,
-		@BetLimitTypeID = @BetLimitTypeID,
-		@UserId = @UserId
+		@BetLimitTypeID = @BetLimitTypeID
 
 	SELECT   @Old_BeginTime     		= BeginTime     
 			,@Old_EndTime       		= EndTime       

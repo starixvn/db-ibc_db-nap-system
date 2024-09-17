@@ -8,9 +8,8 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustSelect]
 	@PageSize INT = 50,
 	@PageIndex	INT = 1,
 	@TotalItems	INT = 0 OUTPUT,
-	@HasCN88_Permission BIT = 0,
-	@HasCredit_Permission BIT = 0,
-	@HasLicensee_Permission BIT = 0
+	@Permission	VARCHAR(20) = '1,2'
+
 AS
 /*
 	Created: 20200528@Eden
@@ -25,6 +24,9 @@ AS
 
 	Parameter explanation:
 		- @LevelID : 1- Member, 2 - Agent, 3-Masrer, 4 - Super, 0 - all
+		
+		- @Permission:	1 ~ Credit sites
+						2 ~ Licensee sites
 
 	Example: 
 	DECLARE @TotalItems	INT 
@@ -93,11 +95,10 @@ BEGIN
 		  AND ISNULL(s.SiteID,agSite.siteid) = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE ISNULL(s.SiteID,agSite.siteid) END 
 		  AND c.Currency = CASE WHEN ISNULL(@Currency,0) <> 0 THEN @Currency ELSE c.Currency END
 		  AND bc.BetLimitTypeID = CASE WHEN ISNULL(@BetLimitTypeID,0) <> 0 THEN @BetLimitTypeID ELSE bc.BetLimitTypeID END
-		  AND ((COALESCE(s.Site,ag.site,'')  = 'CN88' AND @HasCN88_Permission = 1) 
-				OR (COALESCE(s.Site,ag.site,'')  != 'CN88' AND COALESCE(s.isLicensee,agSite.isLicensee) = 1 AND @HasLicensee_Permission = 1 ) 
-				OR (COALESCE(s.Site,ag.site,'')  != 'CN88' AND COALESCE(s.isLicensee,agSite.isLicensee) = 0 AND @HasCredit_Permission = 1 ) 
-				)
-
+		  AND (( COALESCE(s.isLicensee,agSite.isLicensee) = 1 AND ',' + @Permission + ',' LIKE '%,2,%' ) 
+				OR (COALESCE(s.isLicensee,agSite.isLicensee) = 0 AND ',' + @Permission + ',' LIKE '%,1,%' ))
+		  AND COALESCE(s.Site,ag.site,'') <> 'CN88'
+		
 	CREATE CLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
 
 	SELECT TOP 1 @TotalItems = RowNumber

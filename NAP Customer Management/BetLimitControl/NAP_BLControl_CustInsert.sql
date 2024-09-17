@@ -4,14 +4,10 @@ ALTER PROCEDURE [dbo].[NAP_BLControl_CustInsert]
 	@BetLimitTypeID INT = NULL,
 	@MaxBet MONEY = NULL,
 	@MaxPerMatch MONEY = NULL,
-	--@ErrorCode INT = 0 OUTPUT,
-	--@ErrorMsg VARCHAR(200) = '' OUTPUT,
 	@UserId INT = 0 ,
 	@IP	VARCHAR(15) = '',
 	@Mode TINYINT = 1  ,
-	@HasCN88_Permission		BIT = 0,
-	@HasCredit_Permission	BIT = 0,
-	@HasLicensee_Permission BIT = 0
+	@Permission	VARCHAR(20) = '1,2'
 AS
 /*
 	Created: 20200525@Eden
@@ -34,6 +30,8 @@ AS
 		 1: Fixed Value
 		 2: X times of Odds' Max Bet
 
+	@Permission: 1 ~ Credit sites
+				 2 ~ Licensee sites
 	Example: 
 	EXEC NAP_BLControl_CustInsert 
 		@Usernames = 'member01,agent01,member0x',
@@ -106,9 +104,9 @@ BEGIN
 			NOT EXISTS (SELECT 1
 						FROM Site s WITH(NOLOCK)
 						WHERE s.site = @site
-						AND ((s.site='CN88' AND @HasCN88_Permission=1)
-							OR (s.isLicensee=0 AND @HasCredit_Permission=1)
-							OR (s.isLicensee=1 AND @HasLicensee_Permission=1)
+						AND s.site<>'CN88' 
+						AND ((s.isLicensee=0 AND ',' + @Permission + ',' LIKE '%,1,%')
+							OR (s.isLicensee=1 AND ',' + @Permission + ',' LIKE '%,2,%')
 							)
 						)
 		BEGIN

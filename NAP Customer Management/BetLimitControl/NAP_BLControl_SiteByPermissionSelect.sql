@@ -1,8 +1,6 @@
 /*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_SiteByPermissionSelect] 
-	@HasCN88_Permission BIT = 0,
-	@HasCredit_Permission BIT = 0,
-	@HasLicensee_Permission BIT = 0
+	@Permission	VARCHAR(20) = '1,2'
 AS
 /*
 	Created: 20200525@Eden
@@ -15,9 +13,10 @@ AS
 	- 20240725@Tacy: Remove linked-server/cross-db on NAP_UserControl [redmineID: #208402]
 
 	Parameter explanation:
-
+		@Permission: 1 ~ Credit sites
+					 2 ~ Licensee sites
 	Example: 
-	EXEC NAP_BLControl_SiteByPermissionSelect @UserID = 8
+	EXEC NAP_BLControl_SiteByPermissionSelect @Permission = '1,2'
 
 	*/
 BEGIN
@@ -25,15 +24,11 @@ BEGIN
 
 	SELECT SiteID,Site
 	FROM dbo.[Site] WITH(NOLOCK)
-	WHERE Site ='CN88' AND @HasCN88_Permission = 1
+	WHERE Site <> 'CN88' AND isLicensee = 1 AND ',' + @Permission + ',' LIKE '%,2,%'
 	UNION ALL
 	SELECT SiteID,Site
 	FROM dbo.[Site] WITH(NOLOCK)
-	WHERE Site <> 'CN88' AND isLicensee = 1 AND @HasLicensee_Permission = 1
-	UNION ALL
-	SELECT SiteID,Site
-	FROM dbo.[Site] WITH(NOLOCK)
-	WHERE Site <> 'CN88' AND isLicensee = 0 AND @HasCredit_Permission = 1
+	WHERE Site <> 'CN88' AND isLicensee = 0 AND ',' + @Permission + ',' LIKE '%,1,%'
 	ORDER BY Site
 END
 GO
