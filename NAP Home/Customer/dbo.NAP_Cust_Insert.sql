@@ -1,6 +1,6 @@
-﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 Create PROCEDURE [dbo].[NAP_Cust_Insert]
-	@CustId			INT							OUTPUT,	
+	@CustId			INT,	
 	@Username		VARCHAR (30),
 	@UserPwd		VARCHAR (40)	= '',
 	@FirstName		NVARCHAR (50)	= NULL,
@@ -27,7 +27,8 @@ AS
 		- 20150606@Kathy: Change link server DBTXN.CustDB to DBCust.CustDB [Redmine:#36216]
 	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20220517@Winfred: Insert new OTP Login requried for VPN's users [redmine:170994]
-	    
+	    - 20240704@Louisa: Scaleout DBCUST [Redmine:#199915]
+
 	Param's Explanation:
 	• @CustId :
 		= custid from bodb02.dbo.Customer and bodb02.dbo.custinfo
@@ -64,42 +65,6 @@ BEGIN
 
 	-- Time start
 	SET @startRun = GETDATE()
-	
-	-- Check role of current user of bodb02.dbo.Customer 
-	DECLARE @isAllow TINYINT
-
-	SELECT @isAllow = roleid 
-	FROM CUSTDB.dbo.Customer WITH (NOLOCK) 
-	WHERE custid = @CurrentUserId
-	
-	-- Check duplicate username
-	IF EXISTS (	SELECT 1
-				FROM   CustDB.dbo.Customer WITH (NOLOCK)
-				WHERE  username = @Username	)
-		BEGIN
-			SELECT 
-				@ErrCode = 102,
-				@ErrMsg = N'This username is not available.'			
-			RETURN
-		END
-
-	-- create new user in customer/custinfo tables
-	EXEC [CustDB].[dbo].[NAP_Admin_Ins]
-			@FirstName		= @FirstName	OUTPUT,
-			@LastName		= @LastName		OUTPUT,
-			@Email			= @Email		OUTPUT,
-			@UserName		= @UserName		OUTPUT,
-			@UserPwd		= @UserPwd,
-			@CustID			= @CustID		OUTPUT,
-			@CurrentUserId	= @CurrentUserId,
-			@ErrCode		= @ErrCode		OUTPUT,
-			@ErrMsg			= @ErrMsg		OUTPUT
-	IF @ErrCode > 0
-	BEGIN
-		SELECT @ErrCode = @ErrCode, @ErrMsg = @ErrMsg
-		RETURN	
-	END
-	
 
 	-- Create new NAP user
 	EXEC [dbo].[NAP_User_Insert] 
@@ -168,8 +133,4 @@ BEGIN
 	@Duration		= @Duration
 
 END
-
 GO
-GRANT EXECUTE ON [dbo].[NAP_Cust_Insert] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_Cust_Insert] TO [vnteam] AS [dbo]
