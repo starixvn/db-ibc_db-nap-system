@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="1"></info>*/
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="1"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_Insert]
     @UserId             INT
     ,@username			VARCHAR(30) = null
@@ -22,7 +22,8 @@ AS
 	Revisions:
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 	    - 20220517@Winfred: Search OTP Login requried for VPN's users [redmine:170994]
-		     
+		- 20240704@Louisa: remove bodbAdminNet [Redmine:#199915]
+		
 	Param's Explanation: 	
 	WRITE LOG template:
 	Main	:	<root><xml path="r" />
@@ -100,8 +101,4 @@ BEGIN
 	@OldData		= @logSPDataOld,
 	@Duration		= @Duration
 END
-
 GO
-GRANT EXECUTE ON [dbo].[NAP_User_Insert] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_User_Insert] TO [vnteam] AS [dbo]

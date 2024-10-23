@@ -1,14 +1,16 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Admin_Ins]
-	@FirstName		NVARCHAR (50)	= NULL OUTPUT,
-	@LastName		NVARCHAR (50)	= NULL OUTPUT,
-	@Email			NVARCHAR (50)	= NULL OUTPUT,
-	@UserName		VARCHAR (30) OUTPUT,
+(
+	@FirstName		NVARCHAR (50)	= NULL,
+	@LastName		NVARCHAR (50)	= NULL,
+	@Email			NVARCHAR (50)	= NULL,
+	@UserName		VARCHAR (30),
 	@UserPwd		VARCHAR (40)	= '',
-	@CustId			INT OUTPUT, 
+	@CustId			INT, 
 	@CurrentUserId	INT, 
 	@ErrCode		INT				= 0 OUTPUT,
 	@ErrMsg			NVARCHAR (200)	= '' OUTPUT
+)
 AS
 
 /*
@@ -23,6 +25,7 @@ AS
 		- 20220110@Eden: Saba Casino use DCS Setting [RedmineID: #164280]
 		- 20221013@Eden: Remove unused columns from Custinfo table [RedmineID: #179014]
 		- 20221123@Elodie: Migrate NG and Keno to DCS structure [Redmine: #179711]
+		- 20240704@Louisa: Scaleout DBCUST [Redmine:#199915]
 
 	Param's Explanation:
 	• @ErrCode:
@@ -37,48 +40,36 @@ BEGIN
 
 	DECLARE @roleId TINYINT
 	SELECT	@roleId	= 6
-	
-	INSERT INTO dbo.Customer (username, userpwd, roleid, firstname, lastname, email, creator)
-	VALUES (@UserName, @userpwd, @roleId, @firstname, @lastname, @Email, @CurrentUserId)
-
-	SELECT @CustID = @@IDENTITY
-
-	IF @@ERROR <> 0
-	BEGIN
-		SELECT @ErrMsg = N'Create new user failed.',
-			@ErrCode = 103
-		
-		-- ROLLBACK MANUALLY
-		DELETE FROM dbo.Customer WITH (ROWLOCK) WHERE custId = @CustId
-
-		RETURN
-	END
-
-	INSERT INTO dbo.custinfo (username, [custid], [currency], [roleid], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [danger], [danger2], [danger3], [Enabled], [closed])
-	VALUES (@UserName, @CustId, NULL, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
-
-	IF @@ERROR <> 0
-		BEGIN
-			SELECT @ErrMsg = N'Create new user failed.',
-				@ErrCode = 103
-		
-			-- ROLLBACK MANUALLY
-			DELETE FROM dbo.Customer WITH (ROWLOCK) WHERE custId = @CustID
-			DELETE FROM dbo.custInfo WITH (ROWLOCK) WHERE custId = @CustID
-
-			RETURN
-		END
 
 	BEGIN TRY
-		EXEC DBPRO.bodb02.dbo.Dot_Admin_Add_AdminSiteUser @CustId, @UserName, @userpwd, @CurrentUserId
+		EXEC Acc_CustomerIns
+			@FirstName	= @firstname
+			,@LastName	= @lastname
+			,@Email		= @Email
+			,@UserName	= @UserName
+			,@UserPwd	= @userpwd
+			,@roleid	= @roleId
+			,@CustID	= @CustId
+			,@srecommend= 0
+			,@creator	= @CurrentUserId
+			,@ErrCode	= @ErrCode OUTPUT
+			,@ErrMsg	= @ErrMsg OUTPUT
+	
+			IF ISNULL(@ErrCode,0) > 0
+			BEGIN
+				EXEC Acc_CustomerInsUserInfo_Rollback @CustID = @CustID
+				RETURN;
+			END
+
+		INSERT INTO dbo.custinfo (username, [custid], [currency], [roleid], [srecommend], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [danger], [danger2], [danger3], [Enabled], [closed])
+		VALUES (@UserName, @CustId, NULL, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
 	END TRY
-	BEGIN CATCH
+	BEGIN CATCH	
 		SELECT
 			@ErrMsg = N'Create new user failed.',
 			@ErrCode = 104
 	
-		DELETE FROM dbo.Customer WITH (ROWLOCK,UPDLOCK) WHERE custid = @CustId
-		DELETE FROM dbo.custInfo WITH (ROWLOCK,UPDLOCK) WHERE custid = @CustId
+		EXEC Acc_CustomerInsUserInfo_Rollback @CustID = @CustID
 
 		RETURN
 	END CATCH
