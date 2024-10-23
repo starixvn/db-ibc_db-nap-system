@@ -1,6 +1,6 @@
-﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_SearchByUsername]
-	@Username	NVARCHAR(50),
+	@Username	VARCHAR(30),
 	@PageIndex	INT,
 	@PageSize	INT,
 	@TotalRows	INT			= 0	OUTPUT
@@ -13,7 +13,7 @@ AS
 	Revisions:
 		- 20171124@Kos: Return additional column Closed [Redmine: #87124]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-		
+		- 20241023@Elodie: Enhance SP 
 	Param's Explanation:
 */
 
@@ -31,7 +31,7 @@ BEGIN
 		SELECT COUNT(1)
 		FROM CustDB.dbo.Customer AS c WITH (NOLOCK)
 		WHERE c.roleid > 4
-			AND c.username LIKE '%' + @Username + '%'
+			AND c.username LIKE @Username + '%'
 			AND NOT EXISTS (SELECT 1 FROM dbo.NAP_Users WITH (NOLOCK) WHERE UserId = c.custid)
 	)
 
@@ -48,15 +48,11 @@ BEGIN
 		 FROM CustDB.dbo.Customer AS c WITH (NOLOCK)
 			INNER JOIN CustDB.dbo.custInfo AS ci WITH (NOLOCK) ON c.custid = ci.custid
 		 WHERE c.roleid > 4
-			AND c.username LIKE '%' + @Username + '%'
+			AND c.username LIKE @Username + '%'
 			AND NOT EXISTS (SELECT 1 FROM dbo.NAP_Users WITH (NOLOCK) WHERE UserId = c.custid)
 		) AS Temp
 	WHERE Temp.num BETWEEN @FirstRec AND @LastRec
 	ORDER BY Temp.num
 END
+GO
 
-GO
-GRANT EXECUTE ON [dbo].[NAP_User_SearchByUsername] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_User_SearchByUsername] TO [vnteam] AS [dbo]
-GO
