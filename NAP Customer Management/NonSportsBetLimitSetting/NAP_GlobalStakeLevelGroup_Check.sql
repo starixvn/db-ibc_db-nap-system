@@ -223,31 +223,45 @@ BEGIN
 	--------------------------------------------------------------------------------------------------------------------------------------
 	SELECT TOP (1)
 			@ErrCode=CASE 
-						WHEN NewMinBet=0									THEN 108
-						WHEN NewMaxBet=0									THEN 109
+						WHEN NewMinBet<=0									THEN 108
+						WHEN NewMaxBet<=0									THEN 109
 						WHEN NewMinBet > NewMaxBet							THEN 110
 						WHEN CurMinBet > CurMaxBet							THEN 111
 						WHEN CurMinBet IS NULL AND CurMaxBet IS NOT NULL	THEN 112
 						WHEN CurMinBet IS NOT NULL AND CurMaxBet IS NULL	THEN 113
+						WHEN CurMinBet IS NULL AND CurMaxBet IS NULL 
+							AND CurRemark IS NOT NULL						THEN 126
+						WHEN CurMinBet IS NOT NULL AND CurMaxBet IS NOT NULL THEN 
+							CASE WHEN CurMinBet<=0							THEN 127
+								 WHEN CurMaxBet<=0							THEN 128
+							END
 																			ELSE 107 
 					END
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
 			,@ValueError=CASE
-							WHEN NewMinBet=0 			THEN ': The Min Bet must be different from 0.'
-							WHEN NewMaxBet=0			THEN ': The Max Bet must be different from 0.'
+							WHEN NewMinBet<=0 			THEN ': The Min Bet must be greater than 0.'
+							WHEN NewMaxBet<=0			THEN ': The Max Bet must be greater than 0.'
 							WHEN NewMinBet > NewMaxBet	THEN ': The New Min Bet must be less than or equal to the Current Max Bet.'
 							WHEN CurMinBet > CurMaxBet	THEN ': The Current Min Bet must be less than or equal to the Current Max Bet.'
-							WHEN CurMinBet IS NULL AND (CurMaxBet IS NOT NULL OR CurRemark IS NOT NULL)	THEN ': You input missing data with the product''s format. Please input data on Current Min Bet.'
-							WHEN CurMaxBet IS NULL AND (CurMinBet IS NOT NULL OR CurRemark IS NOT NULL)	THEN ': You input missing data with the product''s format. Please input data on Current Max Bet.'
+							WHEN CurMinBet IS NULL AND CurMaxBet IS NOT NULL	THEN ': You input missing data with the product''s format. Please input data on Current Min Bet.'
+							WHEN CurMinBet IS NOT NULL AND CurMaxBet IS NULL	THEN ': You input missing data with the product''s format. Please input data on Current Max Bet.'
+							WHEN CurMinBet IS NULL AND CurMaxBet IS NULL 
+								AND CurRemark IS NOT NULL						 THEN ': You input redundant data. Please remove data on Current Remark column.'
+							WHEN CurMinBet IS NOT NULL AND CurMaxBet IS NOT NULL THEN 
+								CASE WHEN CurMinBet<=0		THEN ': The Current Min Bet must be greater than 0.'
+									 WHEN CurMaxBet<=0		THEN ': The Current Max Bet must be greater than 0.'
+								END
 							ELSE '' 
 							END 						  
 	FROM #NewInputDataTbl t
-	WHERE NewMinBet=0 OR NewMaxBet=0
-		OR (CurMinBet IS NULL AND (CurMaxBet IS NOT NULL OR CurRemark IS NOT NULL))
-		OR (CurMaxBet IS NULL AND (CurMinBet IS NOT NULL OR CurRemark IS NOT NULL))
+	WHERE NewMinBet<=0 OR NewMaxBet<=0
+		OR (CurMinBet IS NULL AND CurMaxBet IS NOT NULL)
+		OR (CurMaxBet IS NULL AND CurMinBet IS NOT NULL)
+		OR (CurMinBet IS NULL AND CurMaxBet IS NULL AND CurRemark IS NOT NULL)
 		OR NewMinBet > NewMaxBet 
 		OR CurMinBet > CurMaxBet
-		
+		OR (CurMinBet IS NOT NULL AND CurMaxBet IS NOT NULL AND (CurMinBet<=0 OR CurMaxBet<=0))
+
 	IF @ErrCode<>0
 		GOTO SetErr
 
