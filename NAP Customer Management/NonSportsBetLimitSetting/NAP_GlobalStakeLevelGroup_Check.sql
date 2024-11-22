@@ -3,8 +3,6 @@ ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Check]
 	-- Add the parameters for the stored procedure here
 	 @InputData	VARCHAR(MAX)=''
 	,@SettingStatus TINYINT = 0
-	,@NotiCode	INT=0				OUTPUT
-	,@NotiMsg	NVARCHAR(4000)=''	OUTPUT
 	,@ErrCode	INT = 0				OUTPUT
 	,@ErrMsg	NVARCHAR(4000)=''	OUTPUT
 AS
@@ -91,7 +89,7 @@ BEGIN
 	IF @InputData IS NULL OR @InputData=''
 		RETURN
 	
-	SELECT @ErrCode=0, @ErrMsg='', @NotiCode=0, @NotiMsg=''
+	SELECT @ErrCode=0, @ErrMsg=''
 	
 	--Parse XML data
 	DECLARE @iDoc INT
@@ -287,7 +285,7 @@ BEGIN
 												AND sn.IsDeposit=t.IsDeposit
 				WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL)		
 	BEGIN
-		SELECT @NotiCode=119
+		SELECT @ErrCode=119
 
 		SELECT @ValueError=STUFF((SELECT DISTINCT ', ' + s.SportName 
 								  FROM #NewInputDataTbl t
@@ -299,9 +297,9 @@ BEGIN
 								  WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL
 								  FOR XML PATH('')), 1, 1, '')
 
-		SELECT @NotiMsg = 'This function does not support adding global bet limit settings for' + @ValueError + '.'
+		SELECT @ValueError = 'This function does not support adding global bet limit settings for' + @ValueError + '.'
 
-		RETURN
+		GOTO SetErr
 	END	
 
 	--CurrencyGroupID
@@ -376,9 +374,9 @@ BEGIN
 	SELECT TOP(1) 
 			@ErrCode=122
 			,@RowError=CAST(t.RowID AS VARCHAR(5))
-			,@ValueError=': The New Min Bet, New Max Bet are the same as The Current Min Bet, the Current Max Bet. Please input another value for the New values again.'
+			,@ValueError=': The New Min Bet, New Max Bet, New Remark are the same as The Current Min Bet, the Current Max Bet, the Current Remark. Please input another value for the New values again.'
 	FROM #NewInputDataTbl t 
-	WHERE t.CurMinBet=t.NewMinBet AND t.CurMaxBet=t.NewMaxBet
+	WHERE t.CurMinBet=t.NewMinBet AND t.CurMaxBet=t.NewMaxBet AND ISNULL(t.CurRemark,'')=ISNULL(t.NewRemark,'')
 
 	IF @ErrCode=122			
 		GOTO SetErr
@@ -449,51 +447,6 @@ BEGIN
 	IF @ErrCode=121			
 		GOTO SetErr
 
-	--RowDuplicate
-	INSERT INTO #RowDuplicate (SettingRows)
-	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
-						 FROM #NewInputDataTbl b
-						 WHERE a.SportType=b.SportType
-						 AND a.CurrencyGroupID=b.CurrencyGroupID
-						 AND a.GameGroupID=b.GameGroupID 
-						 AND a.IsDeposit = b.IsDeposit 
-						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
-						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
-						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
-	FROM #NewInputDataTbl a
-	WHERE a.IsDeposit=0
-	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsDeposit
-			, CurMinBet, CurMaxBet
-			, NewMinBet, NewMaxBet
-	HAVING COUNT(1)>1
-	UNION
-	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
-						 FROM #NewInputDataTbl b
-						 WHERE a.SportType=b.SportType
-						 AND a.CurrencyGroupID=b.CurrencyGroupID
-						 AND a.GameGroupID=b.GameGroupID 
-						 AND a.SiteID = b.SiteID 
-						 AND a.IsDeposit = b.IsDeposit 
-						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
-						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
-						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
-	FROM #NewInputDataTbl a
-	WHERE a.IsDeposit=1
-	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsDeposit
-			, CurMinBet, CurMaxBet
-			, NewMinBet, NewMaxBet
-	HAVING COUNT(1)>1
-	
-	IF EXISTS (SELECT TOP 1 1 FROM #RowDuplicate)			
-	BEGIN
-		SET @ErrCode=123
-		SELECT @ValueError=STUFF((SELECT DISTINCT ', ' + SettingRows 
-								FROM #RowDuplicate t
-								FOR XML PATH('')), 1, 1, '') + ': These rows have duplicate data' 
-
-		GOTO SetErr
-	END	
-
 	--Upload more than 1 setting line with the same primary keys
 	--Duplicate setting
 	;WITH NewInputDataTbl AS (
@@ -539,6 +492,55 @@ BEGIN
 		GOTO SetErr
 	END	
 
+	--RowDuplicate
+	INSERT INTO #RowDuplicate (SettingRows)
+	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
+						 FROM #NewInputDataTbl b
+						 WHERE a.SportType=b.SportType
+						 AND a.CurrencyGroupID=b.CurrencyGroupID
+						 AND a.GameGroupID=b.GameGroupID 
+						 AND a.IsDeposit = b.IsDeposit 
+						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
+						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
+						 AND ISNULL(a.CurRemark,0) = ISNULL(b.NewRemark,0)  
+						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
+	FROM #NewInputDataTbl a
+	WHERE a.IsDeposit=0
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, IsDeposit
+			, CurMinBet, CurMaxBet
+			, NewMinBet, NewMaxBet
+			, CurRemark, NewRemark
+	HAVING COUNT(1)>1
+	UNION
+	SELECT STUFF((STUFF((SELECT ' - Row ' + CAST(RowID AS VARCHAR(5))
+						 FROM #NewInputDataTbl b
+						 WHERE a.SportType=b.SportType
+						 AND a.CurrencyGroupID=b.CurrencyGroupID
+						 AND a.GameGroupID=b.GameGroupID 
+						 AND a.SiteID = b.SiteID 
+						 AND a.IsDeposit = b.IsDeposit 
+						 AND ISNULL(a.CurMinBet,0) = ISNULL(b.CurMinBet,0) AND ISNULL(a.CurMaxBet,0)=ISNULL(b.CurMaxBet,0) 
+						 AND a.NewMaxBet = b.NewMaxBet AND a.NewMinBet = b.NewMinBet  
+						 AND ISNULL(a.CurRemark,0) = ISNULL(b.NewRemark,0)  
+						 FOR XML PATH('')), 1, 1, '')),1,2,'') AS t
+	FROM #NewInputDataTbl a
+	WHERE a.IsDeposit=1
+	GROUP BY SportType, CurrencyGroupID, GameGroupID, SiteID, IsDeposit
+			, CurMinBet, CurMaxBet
+			, NewMinBet, NewMaxBet
+			, CurRemark, NewRemark
+	HAVING COUNT(1)>1
+	
+	IF EXISTS (SELECT TOP 1 1 FROM #RowDuplicate)			
+	BEGIN
+		SET @ErrCode=123
+		SELECT @ValueError=STUFF((SELECT DISTINCT ', ' + SettingRows 
+								FROM #RowDuplicate t
+								FOR XML PATH('')), 1, 1, '') + ': These rows have duplicate data' 
+
+		GOTO SetErr
+	END	
+
 	--EXISTED
 	SELECT TOP(1) 
 			@ErrCode=125
@@ -552,7 +554,10 @@ BEGIN
 						 WHERE psl.Sporttype=a.SportType AND psl.GameGroupID=a.GameGroupID
 							AND psl.CreditGroupID=a.CurrencyGroupID
 							AND psl.isDeleted=0
-							AND (a.NewMinBet=psl.MinBet AND a.NewMaxBet=psl.MaxBet)))
+							AND (a.NewMinBet=psl.MinBet AND a.NewMaxBet=psl.MaxBet
+								 AND ISNULL(a.NewRemark,'')=ISNULL(psl.Remark,'')
+								 )
+						))
 		UNION ALL
 		SELECT RowID 
 		FROM #NewInputDataTbl a
@@ -562,7 +567,10 @@ BEGIN
 							AND psl.LicenseeGroupID=a.CurrencyGroupID 
 							AND psl.SiteID=a.SiteID
 							AND psl.isDeleted=0
-							AND (a.NewMinBet=psl.MinBet AND a.NewMaxBet=psl.MaxBet)))
+							AND (a.NewMinBet=psl.MinBet AND a.NewMaxBet=psl.MaxBet
+								 AND ISNULL(a.NewRemark,'')=ISNULL(psl.Remark,'')
+								 )
+						))
 	) KQ
 	
 	IF @ErrCode=125			
