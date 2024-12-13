@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Cust_UpdatePassword]
 	@CustId			INT,
 	@UserPwd		NVARCHAR (50),
@@ -20,7 +20,7 @@ AS
 	Revisions:
 		- 20140219@Kos:	Sync password with AdminSiteTable
 	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-	    
+	    - 20241209@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]
 	Param's Explanation:
 	• @CustId :
 		= custid from bodb02.dbo.Customer and bodb02.dbo.custinfo
@@ -77,7 +77,8 @@ BEGIN
 	UPDATE dbo.Customer WITH (ROWLOCK, UPDLOCK)
 	SET	
 		userpwd = @UserPwd,
-		pwdexpiry = @PwdExpiry 
+		pwdexpiry = @PwdExpiry,
+		RepUpdateTime = dbo.f_GetDateTime2()	
 	WHERE custid = @CustId
 		
 	IF @@ERROR <> 0
@@ -96,7 +97,8 @@ BEGIN
 		UPDATE dbo.Customer WITH (ROWLOCK, UPDLOCK)
 		SET 
 			userpwd = @oldUserPwd, 
-			pwdexpiry = @oldPwdExpiry
+			pwdexpiry = @oldPwdExpiry,
+			RepUpdateTime = dbo.f_GetDateTime2()
 		WHERE custid = @CustId
 
  		SELECT 

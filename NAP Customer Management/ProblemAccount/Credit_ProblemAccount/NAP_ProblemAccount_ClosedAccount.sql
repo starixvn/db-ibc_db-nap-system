@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE NAP_ProblemAccount_ClosedAccount
 	@CustomerList	VARCHAR(MAX),
@@ -21,7 +21,7 @@ AS
 		- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
 		- 20210722@Tina: fix the issue that closeinfo cannot replicate on time [redmine: #158917]
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
-
+		- 20241217@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]
 	Parameter's explaination:
 */
 
@@ -86,7 +86,8 @@ BEGIN
 		IF @RoleID BETWEEN 2 AND 4
 		BEGIN
 			UPDATE CustProductStatus WITH(ROWLOCK, UPDLOCK) 
-			SET CloseInfo = (SELECT suspendinfo FROM dbo.f_GenerateSuspendInfo(@RoleID,1,ISNULL(CloseInfo,0)))
+			SET CloseInfo = (SELECT suspendinfo FROM dbo.f_GenerateSuspendInfo(@RoleID,1,ISNULL(CloseInfo,0))),
+				RepUpdateTime = dbo.f_GetDateTime2()
 			WHERE custid = @custid
 
 			UPDATE [dbo].CustLoginInfo WITH (ROWLOCK, UPDLOCK) set ClosedReason = 1
@@ -102,7 +103,8 @@ BEGIN
 		ELSE
 		BEGIN
 			UPDATE CustProductStatus WITH(ROWLOCK, UPDLOCK) 
-			SET CloseInfo = (SELECT suspendinfo FROM dbo.f_GenerateSuspendInfo(@RoleID,1,ISNULL(CloseInfo,0)))
+			SET CloseInfo = (SELECT suspendinfo FROM dbo.f_GenerateSuspendInfo(@RoleID,1,ISNULL(CloseInfo,0))),
+				RepUpdateTime = dbo.f_GetDateTime2()
 			WHERE custid = @custid
 
 			IF NOT EXISTS (SELECT 1 FROM dbo.CustLoginInfo_Member WITH(NOLOCK) WHERE custid = @custid)
