@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingInsert]
 	@UserName NVARCHAR(30),
 	@GlobalSetting VARCHAR(MAX) = '',
@@ -26,7 +26,8 @@ AS
 		- 20200122@Max: Support Separate setting and notification into Live/Non-Live major and minor bettypes [Redmine: #126841]
 		- 20201223@Max: Hotfix - ToControl_Percentlevel is not updated if user place bet made house TO negative then add SMA to ToControl [Redmine: #147580]
 		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
-		
+		- 20241225@July: Scale out DB - In-house Replicator - Support change for SMA TO Control [Redmine: #207042]
+
 	Parameter's explaination:
 		Sample data for @GlobalSetting: 
 			'<ROOT>
@@ -139,10 +140,9 @@ BEGIN
 		
 	END
 	
-	INSERT INTO dbo.TOControl_GlobalSetting(CustID, ProfileID, MaxTurnOver,SportType,IsGroupHeadLine) 
-	SELECT @CustID, m.ProfileID, m.MaxTurnover,@SportType, @IsGroupHeadline
+	INSERT INTO dbo.TOControl_GlobalSetting(CustID, ProfileID, MaxTurnOver, SportType, IsGroupHeadLine, RepUpdateTime) 
+	SELECT @CustID, m.ProfileID, m.MaxTurnover, @SportType, @IsGroupHeadline, dbo.f_GetDateTime2()
 	FROM #tmpMaxTurnover m WITH (NOLOCK)
-
 
 	SET @endRun = GETDATE()
 	SET @duration  = DATEDIFF(millisecond, @startRun, @endRun)
