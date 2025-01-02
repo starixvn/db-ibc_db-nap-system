@@ -14,6 +14,7 @@ AS
 
 	Revisions:
 		- 20241230@July: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
+		- 20250102@Hughie: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
 		
 	Parameter's explaination: 
 */
@@ -26,3 +27,12 @@ BEGIN
 END
 
 GO
+
+GRANT EXECUTE ON [dbo].[NAP_Email_NotificationInfoInsert] TO [bodbAdminNet]
+
+GO
+
+
+
+
+
