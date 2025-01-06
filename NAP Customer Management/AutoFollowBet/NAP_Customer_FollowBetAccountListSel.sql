@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" selecters=""></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" selecters=""></info>*/
 ALTER PROCEDURE [dbo].[NAP_Customer_FollowBetAccountListSel] 
 	@username VARCHAR(50) = '',
 	@currency TINYINT = 0,
@@ -15,6 +15,7 @@ AS
 	Revisions:
 		- 20220908@Johnson: initial sp [redmine: #176975]
 		- 20221026@Johnson: add isFollow [redmine:##179336]
+		- 20241107@Helios: Offer Direct Member for Super/Master [redmine: #211969]  
 	Paramter's Explanations:
 				
 */
@@ -41,7 +42,7 @@ BEGIN
 			
 	SELECT rs.custid, rs.username, c.username as Agent, DummyCustID, DummyUsername, e.currency, rs.site, creator.username as AddedBy, rs.createdDate, rs.isActive, rs.isFollow
 	FROM #Result rs
-		INNER JOIN customer c WITH(NOLOCK) ON rs.agentID = c.custid
+		LEFT JOIN customer c WITH(NOLOCK) ON rs.agentID = c.custid
 		INNER JOIN customer creator WITH(NOLOCK) ON rs.creator = creator.custid
 		INNER JOIN exchange e WITH(NOLOCK) ON rs.currency = e.exchangeid 
 			
