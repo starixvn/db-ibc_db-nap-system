@@ -28,9 +28,6 @@ END
 
 GO
 
-GRANT EXECUTE ON [dbo].[NAP_Email_NotificationInfoInsert] TO [bodbAdminNet]
-
-GO
 
 
 
