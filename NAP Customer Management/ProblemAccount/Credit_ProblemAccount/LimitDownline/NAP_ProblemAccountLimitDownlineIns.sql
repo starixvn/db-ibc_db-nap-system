@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[Nap_ProblemAccountLimitDownlineIns]
 	@CustomerList VARCHAR(MAX),
 	
@@ -15,7 +15,8 @@ AS
 
 	Revisions:
 		- 20210301@Johnson: Initial SP [Redmine:#149477]	
-		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
+		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831]
+		- 20240807@Helios: Scale Out DBCUST - Apply Inhouse replication for tables of problem account [Redmine:#209747] 
 	Parameter's explaination: 		
 		- cntMember: number of SMA add successfully
 */
@@ -74,8 +75,8 @@ BEGIN
 		INNER JOIN ProblemAccountLimitDownline p WITH(NOLOCK) ON t.custid = p.custid
 	
 	--500 accounts per request, no need execrep
-	INSERT INTO ProblemAccountLimitDownline(CustID,UserID,CreatedDate)
-	SELECT custid, @userid, GETDATE()
+	INSERT INTO ProblemAccountLimitDownline(CustID,UserID,CreatedDate,RepUpdateTime)
+	SELECT custid, @userid, GETDATE(), dbo.f_GetDateTime2()
 	FROM @tmpCust t
 	WHERE isExists = 0
 	
