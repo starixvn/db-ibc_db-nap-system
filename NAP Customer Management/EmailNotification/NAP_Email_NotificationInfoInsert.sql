@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Email_NotificationInfoInsert]
 (
 	@ActionID INT
@@ -28,6 +28,9 @@ END
 
 GO
 
+GRANT EXECUTE ON [dbo].[NAP_Email_NotificationInfoInsert] TO [bodbAdminNet]
+
+GO
 
 
 
