@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Email_NotificationInfoInsert]
 (
 	@ActionID INT
@@ -13,24 +13,16 @@ AS
 	DB: DBCUST/CustDB
 
 	Revisions:
+		- 20241230@July: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
 		
 	Parameter's explaination: 
 */
 BEGIN
 	SET NOCOUNT ON
 	
-	INSERT INTO dbo.EmailNotification (NotificationInfo, CreatedDate, ActionID)
-	VALUES (@NotificationInfo,@CreateDate,@ActionID)
+	INSERT INTO dbo.EmailNotification (NotificationInfo, CreatedDate, ActionID, RepUpdateTime)
+	VALUES (@NotificationInfo, @CreateDate, @ActionID, dbo.f_GetDateTime2())
 	
 END
 
 GO
-
-GRANT EXECUTE ON [dbo].[NAP_Email_NotificationInfoInsert] TO [bodbAdminNet]
-
-GO
-
-
-
-
-
