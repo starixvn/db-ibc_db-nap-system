@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Del] 
 	-- Add the parameters for the stored procedure here
 	 @InputData	VARCHAR(MAX)	= ''
@@ -11,10 +11,11 @@ AS
 /*
 	Created: 20240625@Tacy
 	Task: NAP CM - Non-sports Company Bet Limit Setting
-	DB: DBCUST/CustDB
+	DB: DBGLOB-GlobCustDB
 
 	Revisions:
 		- 20240625@Tacy: Initalize SP [RedmineID: #196256]
+		- 20250205@Tacy: Move to GlobCustDB [RedmineID: #216870]
 		
 	Param's Explanation:
 		@InputData = '<ROOT>

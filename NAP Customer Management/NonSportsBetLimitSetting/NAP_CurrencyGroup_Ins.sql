@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_CurrencyGroup_Ins] 
 	-- Add the parameters for the stored procedure here
 	 @CurrencyGroup VARCHAR(4000)
@@ -10,10 +10,11 @@ AS
 /*
 	Created: 20231117@Tacy
 	Task : Nap CM - Non-sport Company Bet Limit Setting - Manage Currency Group
-	DB: DBCUST-CustDB
+	DB: DBGLOB-GlobCustDB
 
 	Revisions:
 		- 20231117@Tacy: Create SP [Redmine: #196256]
+		- 20250205@Tacy: Move to GlobCustDB [RedmineID: #216870]
 		
 	Param's Explanation:
 		@CurrencyGroup: 
