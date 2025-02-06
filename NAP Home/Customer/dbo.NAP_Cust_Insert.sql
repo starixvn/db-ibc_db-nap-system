@@ -115,7 +115,7 @@ BEGIN
 		FOR XML PATH('r'), TYPE
 	)	
 
-	SET @logSPData = REPLACE(CONVERT(NVARCHAR(MAX), @xml), '" />', '"/"')	
+	SET @logSPData = REPLACE(CONVERT(VARCHAR(MAX), @xml), '" />', '"/"')	
 
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
