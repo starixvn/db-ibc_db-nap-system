@@ -28,6 +28,7 @@ AS
 	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 		- 20220517@Winfred: Insert new OTP Login requried for VPN's users [redmine:170994]
 	    - 20240704@Louisa: Scaleout DBCUST [Redmine:#199915]
+		- 20250206@Virgil: Hotfix cannot create new user [Redmine: #217493]
 
 	Param's Explanation:
 	• @CustId :
@@ -114,7 +115,7 @@ BEGIN
 		FOR XML PATH('r'), TYPE
 	)	
 
-	SET @logSPData = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')	
+	SET @logSPData = REPLACE(CONVERT(NVARCHAR(MAX), @xml), '" />', '"/"')	
 
 	SET @endRun	= GETDATE()  
 	SET @duration = DATEDIFF(millisecond, @startRun, @endRun)   
