@@ -1,4 +1,4 @@
-/*<info serverAlias="DBONUSER-ON_USER" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBONUSER-ON_USER" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 
 ALTER PROCEDURE [dbo].[NAP_Customer_RobotAccountNew_Ins]
 	@usernames VARCHAR(MAX),	
@@ -23,6 +23,7 @@ AS
 			- 20200113@Johnson: add default for robotdate [redmine:#126998]
 			- 20200205@Johnson: call sp wrapper from DBCUST to write log [redmine:#127911]
 			- 20211101@Johnson: Set default counter = 11 [redmine:#163803]
+			- 20241216@Winfred: Credit - Direct Member for Super/Master [RedmineID: #214585]
 		Parameter's Explanation:
 			- ErrCode = 0: success
 					> 0 : have some accounts insert fail	
@@ -100,14 +101,6 @@ BEGIN
 		RETURN
 	END
 	
-	IF @level = 1
-	BEGIN
-		UPDATE t
-		SET t.site = c.site
-		FROM @tmpUser t
-			INNER JOIN bodb02.dbo.customer c WITH(NOLOCK) ON t.recommend = c.custid		
-	END
-		
 	IF EXISTS(SELECT 1 FROM RobotUsers WITH(NOLOCK) 
 			WHERE custid IN (SELECT custid FROM @tmpUser)
 			)
