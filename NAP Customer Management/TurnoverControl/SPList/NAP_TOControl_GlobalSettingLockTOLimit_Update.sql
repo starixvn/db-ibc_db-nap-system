@@ -1,5 +1,5 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
-CREATE PROCEDURE [dbo].[NAP_TOControl_GlobalSettingLockTOLimit_Update]
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
+ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingLockTOLimit_Update]
 (
 	@CustID INT,
 	@IsGlobalLockTOLimit BIT,
@@ -21,6 +21,7 @@ AS
 	Revisions:
 		- 20200714@Max: SMA TO Control - Add block increasing TO Limit feature to specific SMAs - [Redmine: #136254]
 		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
+		- 20241225@July: Scale out DB - In-house Replicator - Support change for SMA TO Control [Redmine: #207042]
 		
 	Parameter's explaination:
 	 
@@ -63,6 +64,7 @@ BEGIN
 
 	UPDATE dbo.TOControl_GlobalSetting WITH(ROWLOCK, UPDLOCK) 
 	SET IsGlobalLockTOLimit = @IsGlobalLockTOLimit
+	  , RepUpdateTime = dbo.f_GetDateTime2()
 	WHERE CustID = @CustID AND Sporttype = @SportType AND IsGroupHeadLine= @IsGroupHeadLine
 	
 	UPDATE t
