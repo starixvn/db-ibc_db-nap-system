@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE [dbo].[NAP_Misc_OpenCloseMembers_UPD]
 	@CustIDs varchar(8000),
@@ -22,7 +22,7 @@ BEGIN
 			--20170601@Winnie: Apply color for closed account [RedmineID: #74494]
 			- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
 			- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
-
+			- 20241217@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]
 	Explanation's Param:
 		• @custid: list custid need to be updated
 		• @updatetype: 0: close account
@@ -50,7 +50,10 @@ BEGIN
 			return;
 		end
 
-		UPDATE CustProductStatus with(rowlock,updlock) set CloseInfo = 1 where custid in (select custid from @TempCust)
+		UPDATE CustProductStatus with(rowlock,updlock) 
+		set CloseInfo = 1,
+			RepUpdateTime = dbo.f_GetDateTime2()
+		where custid in (select custid from @TempCust)
 
 		UPDATE CustLoginInfo_Member with(rowlock,updlock) SET ClosedReason=1  where custid in (select custid from @TempCust)
 
@@ -127,7 +130,10 @@ BEGIN
 			CROSS APPLY (SELECT * FROM f_GetInfoStatus(cps.CloseInfo)) AS cl
 		WHERE (cl.SuperStatus + cl.MasterStatus + cl.AgentStatus) > 0
 
-		UPDATE CustProductStatus with(rowlock,updlock) set CloseInfo = 0 where custid in (select custid from @TempCust)
+		UPDATE CustProductStatus with(rowlock,updlock) 
+		set CloseInfo = 0,
+			RepUpdateTime = dbo.f_GetDateTime2()
+		where custid in (select custid from @TempCust)
 
 		UPDATE CustLoginInfo_Member with(rowlock,updlock) SET ClosedReason=0  where custid in (select custid from @TempCust)
 

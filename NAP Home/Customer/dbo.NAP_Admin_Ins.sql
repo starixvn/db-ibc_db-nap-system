@@ -26,7 +26,7 @@ AS
 		- 20221013@Eden: Remove unused columns from Custinfo table [RedmineID: #179014]
 		- 20221123@Elodie: Migrate NG and Keno to DCS structure [Redmine: #179711]
 		- 20240704@Louisa: Scaleout DBCUST [Redmine:#199915]
-
+		- 20241209@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]
 	Param's Explanation:
 	• @ErrCode:
 		= 0: Insert successfully.
@@ -61,8 +61,8 @@ BEGIN
 				RETURN;
 			END
 
-		INSERT INTO dbo.custinfo (username, [custid], [currency], [roleid], [srecommend], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [danger], [danger2], [danger3], [Enabled], [closed])
-		VALUES (@UserName, @CustId, NULL, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0);
+		INSERT INTO dbo.custinfo (username, [custid], [currency], [roleid], [srecommend], [mrecommend], [recommend], [dangercust], [autosuspend], [reject], [credit], [MatchLimit], [VirtualMultiplier], [DisableOutright], [danger], [danger2], [danger3], [Enabled], [closed], RepUpdateTime)
+		VALUES (@UserName, @CustId, NULL, @roleid, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, dbo.f_GetDateTime2());
 	END TRY
 	BEGIN CATCH	
 		SELECT
