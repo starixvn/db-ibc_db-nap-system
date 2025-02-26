@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerDel] 
 	  @CustID		INT
 	 ,@UserId		INT
@@ -15,7 +15,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
-
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed 
@@ -54,8 +54,10 @@ BEGIN
 	SELECT @UserName = username FROM Customer WITH(NOLOCK) WHERE custid = @CustID
 	
 	BEGIN TRY
-		DELETE
-		FROM BetRestriction_Customer WITH(UPDLOCK,ROWLOCK)
+		DELETE t
+		OUTPUT DELETED.CustID, DELETED.SportType, dbo.f_GetDateTime2()
+		INTO BetRestriction_Customer_Del_InHouse(CustID,SportType,RepUpdateTime)
+		FROM BetRestriction_Customer t WITH(UPDLOCK,ROWLOCK)
 		WHERE CustID = @CustID AND SportType = @SportType
 	END TRY
 	BEGIN CATCH

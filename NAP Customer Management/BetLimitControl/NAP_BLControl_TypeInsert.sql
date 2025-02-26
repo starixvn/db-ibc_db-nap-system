@@ -26,6 +26,7 @@ AS
 	- 20200525@Eden: Create New SP  [RedmineID: #132736]
 	- 20220302@Johnson: Add league group [RedmineID: #156808]
 	- 20240621@Winfred: Bet Limit Control - Remove validation and change UI for League Group ID [redmine:#206358]
+	- 20240904@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -105,13 +106,14 @@ BEGIN
 	SELECT @EndTime = DATEADD(ms,59999,@EndTime)
 	DECLARE @Insert TABLE (BetLimitTypeID INT)
 
-	INSERT INTO BetLimitControlType(BetLimitType,BeginTime,EndTime,LiveIndicator,RestrictVIP,ExcludedLeagueGroupList)
+	INSERT INTO BetLimitControlType(BetLimitType,BeginTime,EndTime,LiveIndicator,RestrictVIP,ExcludedLeagueGroupList,RepUpdateTime)
 	OUTPUT Inserted.BetLimitTypeID INTO @Insert(BetLimitTypeID)
 	SELECT @BetLimitType,@BeginTime,@EndTime,@LiveIndicator,@RestrictVIP, 
-			CASE WHEN @IsExcludedLeagueGroup = 1 THEN @LeagueGroupList ELSE '' END
+			CASE WHEN @IsExcludedLeagueGroup = 1 THEN @LeagueGroupList ELSE '' END,
+			dbo.f_GetDateTime2()
 
-	INSERT INTO BetLimitControlTypeDetail(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
-	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID
+	INSERT INTO BetLimitControlTypeDetails(BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,RepUpdateTime)
+	SELECT BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,dbo.f_GetDateTime2()
 	FROM #ValidData v
 		CROSS APPLY @Insert i
 

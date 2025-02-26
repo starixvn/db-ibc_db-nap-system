@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_TypeDelete] 
 	@BetLimitTypeID INT,
 	@ErrorCode INT = 0 OUTPUT,
@@ -16,6 +16,7 @@ AS
 		- 20200525@Eden: Create New SP  [RedmineID: #132736]
 		- 20200818@Eden: Auto Update Bet Limit Control [RedmineID: #139701]
 		- 20220413@Johnson: BLC implement setting by League Group [redmine:#156808]
+		- 20240830@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -125,16 +126,22 @@ BEGIN
 		,@ExcludedLeagueGroupList = ExcludedLeagueGroupList
 	FROM #OLdbetLimitTypeTbl
 
-	DELETE 
-	FROM BetLimitControlTypeDetail WITH(ROWLOCK,UPDLOCK)
+	DELETE t
+	OUTPUT DELETED.ID, dbo.f_GetDateTime2()
+	INTO BetLimitControlTypeDetails_Del_InHouse(ID,RepUpdateTime) 
+	FROM BetLimitControlTypeDetails t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	DELETE 
-	FROM BetLimitControlType WITH(ROWLOCK,UPDLOCK)
+	DELETE t
+	OUTPUT DELETED.BetLimitTypeID, dbo.f_GetDateTime2()
+	INTO BetLimitControlType_Del_InHouse(BetLimitTypeID,RepUpdateTime)
+	FROM BetLimitControlType t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	DELETE 
-	FROM BetLimitControlDefaultSetting WITH(ROWLOCK,UPDLOCK)
+	DELETE t
+	OUTPUT DELETED.CustID, DELETED.BetLimitTypeID, dbo.f_GetDateTime2()
+	INTO BetLimitControlDefaultSetting_Del_InHouse(CustID,BetLimitTypeID,RepUpdateTime)
+	FROM BetLimitControlDefaultSetting t WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
 	--Delete all setting on BetLimitControlCustSetting

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	  @UserName				NVARCHAR(50)
 	 ,@UserId				INT
@@ -25,7 +25,7 @@ AS
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230303@Helios: Add Column LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
-	
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -116,7 +116,8 @@ BEGIN
 			MaxPerMatch, 
 			FollowAccount,
 			AccumulateBalance,
-			LeagueGroupID    -- Add new Column #183663
+			LeagueGroupID,    -- Add new Column #183663
+			RepUpdateTime 
 		   )
 		SELECT  @CustID, 
 				@SportType, 
@@ -126,7 +127,8 @@ BEGIN
 				@MaxPerMatch, 
 				@FollowAccountID,
 				@AccumulateBalance,
-				CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END  -- Add new Column #183663
+				CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END,  -- Add new Column #183663
+				dbo.f_GetDateTime2()
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()

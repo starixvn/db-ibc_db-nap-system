@@ -27,6 +27,7 @@ AS
 		- 20200525@Eden: Create New SP  [RedmineID: #132736]
 		- 20220303@Johnson: Add league group [RedmineID: #156808]
 		- 20240621@Winfred: Bet Limit Control - Remove validation and change UI for League Group ID [redmine:#206358]
+		- 20240910@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	- @LiveIndicator : 0 : NonLive , 1: Live , 2 : Both, 3 : All
 	- @ErrorCode: 
@@ -191,25 +192,33 @@ BEGIN
 		LiveIndicator = @LiveIndicator,
 		RestrictVIP = @RestrictVIP,
 		BetLimitType = @BetLimitType,
-		ExcludedLeagueGroupList = CASE WHEN @IsExcludedLeagueGroup = 1 THEN @LeagueGroupList ELSE '' END
+		ExcludedLeagueGroupList = CASE WHEN @IsExcludedLeagueGroup = 1 THEN @LeagueGroupList ELSE '' END,
+		RepUpdateTime = dbo.f_GetDateTime2()
 	FROM BetLimitControlType bc WITH(ROWLOCK,UPDLOCK)
 	WHERE BetLimitTypeID = @BetLimitTypeID
 
-	--> Reresh BetLimitControlTypeDetail
-	MERGE BetLimitControlTypeDetail bc
-	USING #ValidData t
-		ON bc.ProductID = t.ProductID 
-		AND bc.Sporttype = t.Sporttype
-		AND bc.Bettype = t.Bettype 
-		AND bc.LeagueGroupID = t.LeagueGroupID
-		AND bc.LeagueID = t.LeagueID
-		AND bc.BetLimitTypeID = @BetLimitTypeID
-	WHEN NOT MATCHED THEN INSERT (BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID)
-						VALUES( @BetLimitTypeID,t.ProductID,t.Sporttype,t.Bettype,t.LeagueGroupID,t.LeagueID)
+	--> Reresh BetLimitControlTypeDetails
+	INSERT INTO BetLimitControlTypeDetails_Del_InHouse(ID,RepUpdateTime)
+	SElECT ID, RepUpdateTime
+	FROM (
+			MERGE BetLimitControlTypeDetails bc
+			USING #ValidData t
+				ON bc.ProductID = t.ProductID 
+				AND bc.Sporttype = t.Sporttype
+				AND bc.Bettype = t.Bettype 
+				AND bc.LeagueGroupID = t.LeagueGroupID
+				AND bc.LeagueID = t.LeagueID
+				AND bc.BetLimitTypeID = @BetLimitTypeID
+			WHEN NOT MATCHED THEN INSERT (BetLimitTypeID,ProductID,Sporttype,Bettype,LeagueGroupID,LeagueID,RepUpdateTime)
+								VALUES( @BetLimitTypeID,t.ProductID,t.Sporttype,t.Bettype,t.LeagueGroupID,t.LeagueID,dbo.f_GetDateTime2())
 
-	WHEN NOT MATCHED BY SOURCE AND bc.BetLimitTypeID = @BetLimitTypeID
-		THEN DELETE; 
-
+			WHEN NOT MATCHED BY SOURCE AND bc.BetLimitTypeID = @BetLimitTypeID
+				THEN DELETE
+			OUTPUT $action, DELETED.ID, dbo.f_GetDateTime2()
+		) t([Action], [ID], [RepUpdateTime])
+	WHERE [Action] = 'DELETE'; --only capture deleted $action
+	
+	
 	SET @EndRun = GETDATE()
 	SET @Duration = DATEDIFF (MILLISECOND, @StartRun, @EndRun)
 

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerUpd] (
 	  @CustID				INT
 	 ,@UserId				INT
@@ -24,7 +24,7 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230306@Helios: Update LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
-
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -143,7 +143,8 @@ BEGIN
 			MaxPerMatch = @MaxPerMatch, 
 			FollowAccount = @FollowAccountID,
 			AccumulateBalance = @AccumulateBalance,
-			LeagueGroupID = CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END -- Edit LeagueGroupID #183663
+			LeagueGroupID = CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END, -- Edit LeagueGroupID #183663
+			RepUpdateTime = dbo.f_GetDateTime2()
 		WHERE CustID = @CustID
 			AND SportType = @SportType;  
 	END TRY

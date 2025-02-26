@@ -25,6 +25,7 @@ AS
 		- 20220304@Johnson: Add league group [RedmineID: #156808]
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20240306@Elodie: Enhance SP [Redmine:#199517]
+		- 20240920@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 
 	Example: 
@@ -63,7 +64,7 @@ BEGIN
 	FROM BetLimitControlCustSetting c WITH (NOLOCK)
 			CROSS APPLY (SELECT TOP 1 1 valid
 						FROM BetLimitControlType bt WITH(NOLOCK) 
-								INNER JOIN BetLimitControlTypeDetail btd WITH(NOLOCK) ON bt.BetLimitTypeID = btd.BetLimitTypeID
+								INNER JOIN BetLimitControlTypeDetails btd WITH(NOLOCK) ON bt.BetLimitTypeID = btd.BetLimitTypeID
 						WHERE c.BetLimitTypeID = bt.BetLimitTypeID
 								AND((@bettime between bt.BeginTime AND bt.EndTime AND bt.BeginTime <= bt.EndTime) 
 								OR ((@bettime >= bt.BeginTime OR @bettime <= bt.EndTime) AND bt.BeginTime > bt.EndTime)

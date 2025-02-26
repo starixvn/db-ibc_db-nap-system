@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_SiteDel] 
 	  @SiteID		INT = NULL
 	 ,@UserId		INT
@@ -15,7 +15,7 @@ AS
 
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
-
+	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -51,8 +51,10 @@ BEGIN
 	SELECT @Site = Site FROM Site WITH(NOLOCK) WHERE siteid = @SiteID
 
 	BEGIN TRY
-		DELETE
-		FROM BetRestriction_Site WITH(UPDLOCK,ROWLOCK)
+		DELETE t
+		OUTPUT DELETED.siteid, DELETED.SportType, dbo.f_GetDateTime2()
+		INTO BetRestriction_Site_Del_Inhouse(siteid,SportType,RepUpdateTime)
+		FROM BetRestriction_Site t WITH(UPDLOCK,ROWLOCK)
 		WHERE siteid = @SiteID AND SportType = @SportType
 	END TRY
 	BEGIN CATCH
