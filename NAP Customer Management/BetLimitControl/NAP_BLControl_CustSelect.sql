@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BLControl_CustSelect] 
 	@LevelID TINYINT = NULL,
 	@Currency INT = NULL,
@@ -21,6 +21,7 @@ AS
 	Revisions:  
 	- 20200528@Eden: Create New SP  [RedmineID: #132736]
 	- 20210513@Eden: BLC by pecentage of Match Max Bet [RedmineID: #154984]
+	- 20250228@Logan: Enhance SP search by 1 Username [RedmineID: #218264]
 
 	Parameter explanation:
 		- @LevelID : 1- Member, 2 - Agent, 3-Masrer, 4 - Super, 0 - all
@@ -57,14 +58,14 @@ BEGIN
 		@HasCredit_Permission BIT = 0,
 		@HasLicensee_Permission BIT = 0
 
-	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
-			@UserId=@userid,
-			@SiteKey='CustomerManagement',
-			@FunctionKey='BLC_CN88Site',
-			@Policy=1,
-			@ErrCode=@ErrorCode OUTPUT
+	--EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
+	--		@UserId=@userid,
+	--		@SiteKey='CustomerManagement',
+	--		@FunctionKey='BLC_CN88Site',
+	--		@Policy=1,
+	--		@ErrCode=@ErrorCode OUTPUT
 
-	IF @ErrorCode = 0 SET @HasCN88_Permission = 1
+	--IF @ErrorCode = 0 SET @HasCN88_Permission = 1
 
 	SET @ErrorCode = 0
 	EXEC DBCUST.NAP_UserControl.dbo.NAP_User_CheckPermission 
@@ -90,66 +91,89 @@ BEGIN
 
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
 
-	SELECT bc.CustID,
-		c.username,
-		VIP = CAST(CASE WHEN vip.CustID IS NOT NULL THEN 1 ELSE 0 END  AS BIT),
-		[Level] = CASE WHEN c.roleid = 1 THEN 'Member'
-						WHEN c.roleid = 2 THEN 'Agent'
-						WHEN c.roleid = 3 THEN 'Master'
-						WHEN c.roleid = 4 THEN 'Super'
-						ELSE 'N/A'
-				END,
-		e.Currency,
-		COALESCE(s.Site,ag.site,'') AS Site,
-		b.BetLimitType,
-		b.BetLimitTypeID,
-		bc.Mode,
-		bc.MaxBet,
-		bc.MaxPerMatch,
-		agbc.Mode AS AgentMode,
-		agbc.MaxBet AS Agent_MaxBet,
-		agbc.MaxPerMatch AS Agent_MaxPerMatch,
-		mtbc.Mode AS MasterMode,
-		mtbc.MaxBet AS Master_MaxBet,
-		mtbc.MaxPerMatch AS Master_MaxPerMatch,
-		spbc.Mode AS SuperMode,
-		spbc.MaxBet AS Super_MaxBet,
-		spbc.MaxPerMatch AS Super_MaxPerMatch,
-		ROW_NUMBER() OVER (ORDER BY c.Username,b.BetLimitType) AS RowNumber
+	SELECT c.CustID,
+       c.username,
+       VIP = CAST(CASE
+                       WHEN vip.CustID IS NOT NULL THEN 1
+                       ELSE 0 END AS BIT),
+       [Level] = CASE
+                      WHEN c.roleid = 1 THEN 'Member'
+                      WHEN c.roleid = 2 THEN 'Agent'
+                      WHEN c.roleid = 3 THEN 'Master'
+                      WHEN c.roleid = 4 THEN 'Super'
+                      ELSE 'N/A' END,
+       e.Currency,
+       ISNULL(c.Site, '') AS Site,
+       a.BetLimitType,
+       a.BetLimitTypeID,
+       bc.Mode,
+       bc.MaxBet,
+       bc.MaxPerMatch,
+       agbc.Mode AS AgentMode,
+       agbc.MaxBet AS Agent_MaxBet,
+       agbc.MaxPerMatch AS Agent_MaxPerMatch,
+       mtbc.Mode AS MasterMode,
+       mtbc.MaxBet AS Master_MaxBet,
+       mtbc.MaxPerMatch AS Master_MaxPerMatch,
+       spbc.Mode AS SuperMode,
+       spbc.MaxBet AS Super_MaxBet,
+       spbc.MaxPerMatch AS Super_MaxPerMatch,
+	   ROW_NUMBER() OVER (ORDER BY c.Username, a.BetLimitType) AS RowNumber
 	INTO #Cust
-	FROM BetLimitControlCustSetting bc WITH(NOLOCK)
-		INNER JOIN customer c WITH(NOLOCK) on bc.CustID = c.CustID
-		INNER JOIN exchange e WITH(NOLOCK) ON c.currency = e.exchangeid
-		INNER JOIN BetLimitControlType b WITH(NOLOCK) ON bc.BetLimitTypeID = b.BetLimitTypeID
-		LEFT JOIN dbo.Dep_CustVIP vip WITH(NOLOCK) ON bc.CustID = vip.CustID
-		LEFT JOIN Customer Ag WITH(NOLOCK) ON ag.custid = c.recommend
-		LEFT JOIN BetLimitControlCustSetting agbc WITH(NOLOCK) ON agbc.CustID = ag.custid AND agbc.BetLimitTypeID = bc.BetLimitTypeID AND agbc.CustID <> bc.CustID
-		LEFT JOIN Customer mt WITH(NOLOCK) ON mt.custid = c.mrecommend
-		LEFT JOIN BetLimitControlCustSetting mtbc WITH(NOLOCK) ON mtbc.CustID = mt.custid AND mtbc.BetLimitTypeID = bc.BetLimitTypeID AND mtbc.CustID <> bc.CustID
-		LEFT JOIN Customer sp WITH(NOLOCK) ON sp.custid = c.srecommend
-		LEFT JOIN BetLimitControlCustSetting spbc WITH(NOLOCK) ON spbc.CustID = sp.custid AND spbc.BetLimitTypeID = bc.BetLimitTypeID AND spbc.CustID <> bc.CustID
-		LEFT JOIN Site s WITH(NOLOCK) ON s.site = c.site AND s.site <> ''
-		LEFT JOIN Site agSite WITH(NOLOCK) ON agSite.site = ag.site	
-	WHERE c.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE c.username END
-		  AND c.roleid = CASE WHEN ISNULL(@LevelID,0) <> 0 THEN @LevelID ELSE c.roleid END
-		  AND ISNULL(s.SiteID,agSite.siteid) = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE ISNULL(s.SiteID,agSite.siteid) END 
-		  AND c.Currency = CASE WHEN ISNULL(@Currency,0) <> 0 THEN @Currency ELSE c.Currency END
-		  AND bc.BetLimitTypeID = CASE WHEN ISNULL(@BetLimitTypeID,0) <> 0 THEN @BetLimitTypeID ELSE bc.BetLimitTypeID END
-		  AND ((COALESCE(s.Site,ag.site,'')  = 'CN88' AND @HasCN88_Permission = 1) 
-				OR (COALESCE(s.Site,ag.site,'')  != 'CN88' AND COALESCE(s.isLicensee,agSite.isLicensee) = 1 AND @HasLicensee_Permission = 1 ) 
-				OR (COALESCE(s.Site,ag.site,'')  != 'CN88' AND COALESCE(s.isLicensee,agSite.isLicensee) = 0 AND @HasCredit_Permission = 1 ) 
-				)
-
+  FROM BetLimitControlType a WITH (NOLOCK)
+       CROSS APPLY (   SELECT TOP 1 custid,
+                                    username,
+                                    site,
+                                    currency,
+                                    roleid,
+                                    srecommend,
+                                    mrecommend,
+                                    recommend
+                         FROM customer cu WITH (NOLOCK)
+                              CROSS APPLY ( SELECT TOP 1 SiteID , isLicensee FROM Site WITH (NOLOCK) WHERE site  = cu.site) s
+                        WHERE username = @Username
+						  AND cu.roleid   = CASE                         WHEN ISNULL(@LevelID, 0) <> 0 THEN @LevelID
+                         ELSE cu.roleid END
+                          AND s.SiteID = CASE WHEN @SiteID <> 0 THEN @SiteID ELSE s.SiteID END
+						   AND cu.Currency = CASE
+                         WHEN ISNULL(@Currency, 0) <> 0 THEN @Currency
+                         ELSE cu.Currency END 	
+                          AND (   (   s.isLicensee            = 1 AND   @HasLicensee_Permission = 1)
+                             OR   (   s.isLicensee              = 0  AND   @HasCredit_Permission     = 1))) c
+       INNER JOIN exchange e WITH (NOLOCK) ON c.currency = e.exchangeid
+       LEFT JOIN dbo.Dep_CustVIP vip WITH (NOLOCK)
+         ON c.CustID = vip.CustID
+       CROSS APPLY (   SELECT Mode,
+                              MaxBet,
+                              MaxPerMatch
+                         FROM BetLimitControlCustSetting WITH (NOLOCK)
+                        WHERE custid         = c.custid
+                          AND BetLimitTypeID = a.BetLimitTypeID
+                          AND BetLimitTypeID = CASE
+                                                    WHEN ISNULL(@BetLimitTypeID, 0) <> 0 THEN @BetLimitTypeID
+                                                    ELSE BetLimitTypeID END) bc
+       OUTER APPLY (   SELECT TOP 1 Mode,
+                              MaxBet,
+                              MaxPerMatch
+                         FROM BetLimitControlCustSetting WITH (NOLOCK)
+                        WHERE custid         = c.srecommend
+                          AND BetLimitTypeID = a.BetLimitTypeID
+                          AND c.srecommend   <> c.custid) spbc
+       OUTER APPLY (   SELECT TOP 1 Mode, MaxBet, MaxPerMatch
+                         FROM BetLimitControlCustSetting WITH (NOLOCK)
+                        WHERE custid         = c.mrecommend
+                          AND BetLimitTypeID = a.BetLimitTypeID
+                          AND c.mrecommend   <> c.custid) mtbc
+       OUTER APPLY (   SELECT TOP 1 Mode,MaxBet,MaxPerMatch FROM BetLimitControlCustSetting WITH (NOLOCK)
+                        WHERE custid         = c.recommend AND BetLimitTypeID = a.BetLimitTypeID AND c.recommend    <> c.custid) agbc; 	
+	
 	CREATE CLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
-
+	
 	SELECT TOP 1 @TotalItems = RowNumber
 	FROM #Cust
 	ORDER BY RowNumber DESC
-
+	
 	SELECT * 
 	FROM #Cust
 	WHERE RowNumber BETWEEN @rowstart AND @rowend 	
 END
-GO
-
-
