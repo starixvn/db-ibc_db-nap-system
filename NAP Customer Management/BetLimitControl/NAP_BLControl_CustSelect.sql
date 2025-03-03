@@ -90,7 +90,33 @@ BEGIN
 	DECLARE @RowCount int, @RowStart int, @RowEnd int
 
 	SELECT @PageIndex = @PageIndex - 1, @RowStart = @PageSize * @PageIndex + 1, @RowEnd = @RowStart + @PageSize - 1 
+	
+	CREATE TABLE #Cust
+		(
+		CustID INT,
+		username VARCHAR(30),
+		VIP BIT,
+		[Level] VARCHAR(10),
+		Currency NVARCHAR(50),
+		[Site] VARCHAR(10),
+		BetLimitType VARCHAR(50),
+		BetLimitTypeID INT,
+		Mode TINYINT,
+		MaxBet MONEY,
+		MaxPerMatch MONEY,
+		AgentMode TINYINT,
+		Agent_MaxBet MONEY,	
+		Agent_MaxPerMatch MONEY,
+		MasterMode TINYINT,
+		Master_MaxBet MONEY,
+		Master_MaxPerMatch MONEY,
+		SuperMode TINYINT,
+		Super_MaxBet MONEY,
+		Super_MaxPerMatch MONEY,
+		RowNumber INT PRIMARY KEY
+		)
 
+	INSERT INTO #Cust
 	SELECT c.CustID,
        c.username,
        VIP = CAST(CASE
@@ -119,7 +145,6 @@ BEGIN
        spbc.MaxBet AS Super_MaxBet,
        spbc.MaxPerMatch AS Super_MaxPerMatch,
 	   ROW_NUMBER() OVER (ORDER BY c.Username, a.BetLimitType) AS RowNumber
-	INTO #Cust
   FROM BetLimitControlType a WITH (NOLOCK)
        CROSS APPLY (   SELECT TOP 1 custid,
                                     username,
@@ -166,8 +191,7 @@ BEGIN
                           AND c.mrecommend   <> c.custid) mtbc
        OUTER APPLY (   SELECT TOP 1 Mode,MaxBet,MaxPerMatch FROM BetLimitControlCustSetting WITH (NOLOCK)
                         WHERE custid         = c.recommend AND BetLimitTypeID = a.BetLimitTypeID AND c.recommend    <> c.custid) agbc; 	
-	
-	CREATE CLUSTERED INDEX IX_BLTmpCust_Rownum ON #Cust(RowNumber)  
+
 	
 	SELECT TOP 1 @TotalItems = RowNumber
 	FROM #Cust
