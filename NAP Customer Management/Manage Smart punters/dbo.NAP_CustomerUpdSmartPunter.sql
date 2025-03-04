@@ -1,4 +1,4 @@
-﻿ /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+﻿ /*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" isFunction="0" isNested="0"></info>*/
  ALTER PROCEDURE [dbo].[NAP_CustomerUpdSmartPunter]
 	@custid		INT,
 	@remark	NVARCHAR(200) = '',
@@ -16,7 +16,8 @@
 	Revisions:
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-			
+		- 20241230@July: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
+
 	Parameter's Explanation:
  */
  BEGIN
@@ -47,7 +48,8 @@
 	UPDATE SmartPunterList WITH(ROWLOCK,UPDLOCK)
 	SET	Remark = @Remark,
 		lastmodifytime = GETDATE(),
-		lastmodifyuser = @userid		
+		lastmodifyuser = @userid,
+		RepUpdateTime = dbo.f_GetDateTime2()
 	WHERE CustID = @CustID
 	
 	IF @@ERROR <> 0

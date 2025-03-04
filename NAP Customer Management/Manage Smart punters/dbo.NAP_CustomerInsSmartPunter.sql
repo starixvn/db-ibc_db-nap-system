@@ -1,4 +1,4 @@
- /*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" isFunction="0" isNested="0"></info>*/
+ /*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" isFunction="0" isNested="0"></info>*/
  ALTER PROCEDURE [dbo].[NAP_CustomerInsSmartPunter]
 	@username	VARCHAR(50),
 	@remark		NVARCHAR(200) = '',
@@ -18,6 +18,7 @@ AS
 		- 20161003@Winnie: Modify to write log when user select smart punters RedmineID: #58901
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
+		- 20241230@July: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
 	*/ 
 BEGIN
 	SET NOCOUNT ON
@@ -60,13 +61,15 @@ BEGIN
            ,[creator]
            ,[createdate]          
            ,[remark]
+		   ,[RepUpdateTime]
 		)
 	VALUES
 		(		
 			@CustID,
 			@userid, 					
 			GETDATE(),						
-			@Remark
+			@Remark,
+			dbo.f_GetDateTime2()
 		)
 
 	IF @@ERROR <> 0

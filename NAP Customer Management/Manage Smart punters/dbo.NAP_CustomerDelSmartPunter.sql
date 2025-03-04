@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Nap_CustomerDelSmartPunter]
 	@custid		INT,
 	@userid		INT,
@@ -15,7 +15,8 @@ AS
 	Revisions:
 		- 20171115@Vicky: change location check permission [RedmineID: #86455]		
 		- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-		
+		- 20241230@July: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
+
 	Paramter's Explanation:
 */
 BEGIN
@@ -38,7 +39,10 @@ BEGIN
 		RETURN
 	END		
 	
-	DELETE SmartPunterList  WITH (ROWLOCK) WHERE CustID = @CustID
+	DELETE SmartPunterList WITH (ROWLOCK) 
+		OUTPUT DELETED.custid, dbo.f_GetDateTime2()
+		INTO SmartPunterList_Del_Inhouse (custid, RepUpdateTime)
+	WHERE CustID = @CustID
 			
 	IF @@ERROR <> 0
 	BEGIN		
