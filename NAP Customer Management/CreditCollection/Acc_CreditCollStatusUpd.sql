@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCust-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCust-CustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[Acc_CreditCollStatusUpd] 
 	@CustId 			INT,
 	@Status 			INT = 0,
@@ -16,6 +16,7 @@ AS
 
 	Revisions:
 		--20181105@Louis: Credit Collection Summary  [RedmineID: #98621]
+		- 20250102@Hughie: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
 	Parameter's explaination: 		
 		• @Status: 			 0: Normal
 							 1: Alert							  
@@ -42,6 +43,7 @@ BEGIN
 	
 	UPDATE CustDirectAccount WITH(ROWLOCK, UPDLOCK)
 	SET Coll_Status = @Status
+		,RepUpdateTime = dbo.f_GetDateTime2()
 	WHERE CustId = @CustId;
 	
 	SET @ErrMsg = '';
