@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Email_NotificationInfoUpdateByFunction]
 (
 	@NotificationIDList VARCHAR(MAX)
@@ -17,6 +17,7 @@ AS
 		- 20171012@Elodie: Update email notifications for Loss Limit monitoring function [Redmine:#82892]
 		- 20220614@Eden: DBCUST - modify sp syntax to adapt with the SQL Server upgrade to 2019 [Redmine: #171831] 
 		- 20241230@July: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
+		- 20250102@Hughie: Scale Out DBCUST - Apply Inhouse replication for the remaning tables [Redmine: #215627]
 	
 	Parameter's explaination: 
 		- @NotificationIDList: ID of table EmailNotification
@@ -56,3 +57,8 @@ BEGIN
 	END
 END
 GO
+
+
+
+
+
