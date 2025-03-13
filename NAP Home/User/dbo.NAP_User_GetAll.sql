@@ -1,4 +1,4 @@
-﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="bodbAdminNet" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+﻿/*<info serverAlias="DBPOL-NAP_UserControl" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_User_GetAll]
 AS
 
@@ -9,7 +9,7 @@ AS
  *  
  * Revisions:
 	- 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
-	     
+	- 20250312@Jacob: Force Admin User to Update Account Password after It's Reset [RedmineID: #208328]
  * Param's Explanation: 
 */
 
@@ -32,6 +32,7 @@ BEGIN
         ,ci1.username	AS CreatorUsername
         ,ci2.custid		AS ModifierId
         ,ci2.username	AS ModifierUsername
+		,c.pwdexpiry	AS PasswordExpiry
     FROM 
 		dbo.NAP_Users AS u WITH (NOLOCK)
 		INNER JOIN CustDB.dbo.Customer AS C WITH (NOLOCK) ON u.UserId = c.custid
@@ -41,8 +42,4 @@ BEGIN
 		LEFT JOIN CustDB.dbo.custInfo AS ci2 WITH (NOLOCK) ON u.ModifiedBy = ci2.custid
   
 END
-
 GO
-GRANT EXECUTE ON [dbo].[NAP_User_GetAll] TO [bodbAdminNet] AS [dbo]
-GO
-GRANT VIEW DEFINITION ON [dbo].[NAP_User_GetAll] TO [vnteam] AS [dbo]
