@@ -4,6 +4,7 @@ ALTER PROCEDURE [dbo].[NAP_Cust_UpdatePassword]
 	@UserPwd		NVARCHAR (50),
 	@CurrentUserId	INT,
     @CurrentSiteId	INT,
+	@PasswordExpiry		DATETIME = NULL,
 	@LogDate		DATETIME,
 	@LoginIP		VARCHAR(30)		=   '',
 	@Language		VARCHAR(20)		=   'en-us',
@@ -21,6 +22,7 @@ AS
 		- 20140219@Kos:	Sync password with AdminSiteTable
 	    - 20180925@Helen: DB052.bodb_NAP Migration to DBCust - [Redmine:100493]
 	    - 20241209@Johnson: Apply In-house replication for Credit Setting [RedmineID: #212684]
+		- 20250312@Jacob: Force Admin User to Update Account Password after It's Reset [RedmineID: #208328]
 	Param's Explanation:
 	• @CustId :
 		= custid from bodb02.dbo.Customer and bodb02.dbo.custinfo
@@ -58,13 +60,12 @@ BEGIN
 
 	SET @logSPDataOld = REPLACE(CONVERT(varchar(max), @xml), '" />', '"/"')		
 
-	DECLARE 
-		@pwdExpiry		DATETIME,
+	DECLARE 		
 		@oldUserPwd		VARCHAR(40),
 		@oldPwdExpiry	DATETIME,
 		@roleId			INT
 
-	SELECT @pwdExpiry = DATEADD(DD, 30, GETDATE())
+	SELECT @PasswordExpiry = ISNULL(@PasswordExpiry, DATEADD(DD, 30, GETDATE()))
 
 	SELECT 
 		@oldUserPwd = userpwd, 
@@ -77,7 +78,7 @@ BEGIN
 	UPDATE dbo.Customer WITH (ROWLOCK, UPDLOCK)
 	SET	
 		userpwd = @UserPwd,
-		pwdexpiry = @PwdExpiry,
+		pwdexpiry = @PasswordExpiry,
 		RepUpdateTime = dbo.f_GetDateTime2()	
 	WHERE custid = @CustId
 		
