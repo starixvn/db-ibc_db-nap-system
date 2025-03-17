@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="vnteam" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_TOControl_GlobalSettingDelete]
 (
 	@CustID INT,
@@ -26,7 +26,8 @@ AS
 		- 20200110@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
 		- 20241225@July: Scale out DB - In-house Replicator - Support change for SMA TO Control [Redmine: #207042]
-
+		- 20250317@July: Scale Out DBCUST - Change unique key table TOControl_GlobalSetting [Redmine: #215627]
+		
 	Parameter's explaination:
 	
 */
@@ -89,8 +90,8 @@ BEGIN
 	END
 
 	DELETE dbo.TOControl_GlobalSetting WITH(ROWLOCK) 
-		OUTPUT DELETED.CustID, DELETED.Sporttype, DELETED.IsGroupHeadLine, DELETED.ProfileID, dbo.f_GetDateTime2()
-		INTO dbo.TOControl_GlobalSetting_Del_Inhouse(CustID, Sporttype, IsGroupHeadLine, ProfileID, RepUpdateTime)
+		OUTPUT DELETED.CustID, DELETED.Sporttype, DELETED.IsGroupHeadLine, DELETED.ProfileID, dbo.f_GetDateTime2(), DELETED.ID
+		INTO dbo.TOControl_GlobalSetting_Del_Inhouse(CustID, Sporttype, IsGroupHeadLine, ProfileID, RepUpdateTime, ID)
 	WHERE CustID=@CustID AND SportType = @SportType AND IsGroupHeadLine = @IsGroupHeadline
 	
 	DELETE t
