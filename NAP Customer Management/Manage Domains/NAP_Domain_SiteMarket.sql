@@ -1,13 +1,14 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROC [dbo].[NAP_Domain_SiteMarket]
 AS
 /*
 	Created: 20231013@Tacy
 	Task: Mapping Site and Market Code
-	DB: DBACC-bodb02
+	DB: DBGLOB-GlobCustDB
 	
 	Revisions:
 		- 20231013@Tacy: Create SP [RedmineID: #194024]
+		- 20250120@Tacy: Move to GlobCustDB [RedmineID: #216870]
 */
 BEGIN
 	SELECT siteid, site, SiteLabel

@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="1"></info>*/
+/*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="1"></info>*/
 ALTER PROC [dbo].[NAP_Domain_Check]
 	 @DomainList	NVARCHAR(MAX)	
 	,@IsUpdate		BIT=0
@@ -8,10 +8,11 @@ AS
 /*
 	Created: 20231013@Tacy
 	Task: Validation Domains
-	DB: DBCUST-CUSTDB
+	DB: DBGLOB-GlobCustDB
 	
 	Revisions:
 		- 20231013@Tacy: NAP CM - Manage Domain [RedmineID: #194024]
+		- 20250120@Tacy: Move to GlobCustDB [RedmineID: #216870]
 
 	Param's Explanation:
 		@DomainList:
@@ -55,7 +56,7 @@ BEGIN
 	DECLARE @tbSiteMarket TABLE (SiteID INT, Site VARCHAR(50), SiteLabel VARCHAR(50), MarketCode VARCHAR(30))
 
 	INSERT INTO @tbSiteMarket (SiteID, Site, SiteLabel, MarketCode)
-	EXEC DBACC.bodb02.dbo.NAP_Domain_SiteMarket
+	EXEC dbo.NAP_Domain_SiteMarket
 
 	--Parse XML data
 	DECLARE @iDoc INT
