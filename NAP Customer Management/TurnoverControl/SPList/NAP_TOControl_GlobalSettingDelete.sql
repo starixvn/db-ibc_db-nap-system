@@ -136,6 +136,3 @@ BEGIN
 	END CATCH
 				
 END
-GO
-GRANT EXECUTE ON [dbo].[NAP_TOControl_GlobalSettingDelete] TO [wsv_nap]
-GO
