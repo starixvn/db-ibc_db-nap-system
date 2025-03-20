@@ -1,4 +1,4 @@
-/*<info serverAlias="DBCUST-CUSTDB" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROC [dbo].[NAP_Domain_Ins]
 	 @DomainList	NVARCHAR(MAX)	OUTPUT
 	,@UserID		INT
@@ -10,10 +10,11 @@ AS
 /*
 	Created: 20231013@Tacy
 	Task: Insert/Update domain
-	DB: DBCUST-CUSTDB
+	DB: DBGLOB-GlobCustDB
 	
 	Revisions:
 		- 20231013@Tacy: NAP CM - Manage Domain [RedmineID: #194024]
+		- 20250120@Tacy: Move to GlobCustDB [RedmineID: #216870]
 
 	Param's Explanation:
 		@DomainList:
