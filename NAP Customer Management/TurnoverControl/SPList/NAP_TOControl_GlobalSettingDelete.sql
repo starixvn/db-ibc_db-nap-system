@@ -26,7 +26,7 @@ AS
 		- 20200110@Malcolm: Separate setting and notification into Live/Non-Live and bettypes - [Redmine: #126348]
 		- 20231127@Max: Apply try catch when write log [Redmine: #197464]
 		- 20241225@July: Scale out DB - In-house Replicator - Support change for SMA TO Control [Redmine: #207042]
-		- 20250317@July: Scale Out DBCUST - Change unique key table TOControl_GlobalSetting [Redmine: #215627]
+		- 20250317@July: Scale Out DBCUST - Change unique key table TOControl_GlobalSetting [Redmine: #221252]
 		
 	Parameter's explaination:
 	
