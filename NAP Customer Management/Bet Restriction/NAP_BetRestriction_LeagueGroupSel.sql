@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 CREATE PROCEDURE [dbo].[NAP_BetRestriction_LeagueGroupSel] 
 @SportType SMALLINT
 AS  
@@ -10,6 +10,7 @@ AS
   
  Revisions:    
  - 20230302@Helios: Create New SP  [RedmineID: #183663]  
+ - 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
   
  Example:   
  EXEC NAP_BetRestriction_LeagueGroupSel 1 

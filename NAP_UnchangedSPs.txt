@@ -1,1 +1,3 @@
-NAP Home\Customer\dbo.NAP_Admin_Ins.sql
+NAP Customer Management\Bet Restriction\NAP_BetRestriction_CustomerDel.sql
+NAP Customer Management\Bet Restriction\NAP_BetRestriction_CustomerIns.sql
+NAP Customer Management\Bet Restriction\NAP_BetRestriction_CustomerUpd.sql
