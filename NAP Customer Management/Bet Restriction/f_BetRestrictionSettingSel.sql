@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" selecters="bodbAdminNet" executers="" viewers="" isFunction="1"></info>*/
+/*<info serverAlias="DBACC-bodb02" selecters="wsv_nap" executers="" viewers="" isFunction="1"></info>*/
 ALTER FUNCTION [dbo].[f_BetRestrictionSettingSel](
 	@RestrictionLevel VARCHAR(30),
 	@IsTest BIT
@@ -14,6 +14,7 @@ AS
 
 	Revisions:  
 	- 20190819@Eden: Create New SP  [RedmineID: #117727]
+	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
 
 	Example: 
 	select * from dbo.f_BetRestrictionSettingSel('BetRestriction_Site',0) 

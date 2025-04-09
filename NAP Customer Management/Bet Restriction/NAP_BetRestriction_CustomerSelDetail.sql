@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerSelDetail] 
 	  @CustID		INT = NULL
 	 ,@SportType    SMALLINT = 1
@@ -13,6 +13,7 @@ AS
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230306@Helios: Add Show LeagueGroupID [RedmineID: #183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
+	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
 
 	Example: EXEC NAP_BetRestriction_CustomerSelDetail @CustID = 1176092, @SportType = 1
 	
