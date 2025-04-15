@@ -1,4 +1,4 @@
-/*<info serverAlias="DBAGE-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBAGE-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_Misc_OpenCloseMembers_List] 
 	@username VARCHAR(30),
 	@TotalItems INT = 0 OUTPUT,
@@ -20,7 +20,7 @@ AS
 		- 20190527@Elodie: New account status for CN88 [Redmine: 113198]
 		- 20210505@Tina: Lock account & indirect close account [redmine: #148600]
 		- 20220110@Eden: Saba Casino use DCS Setting [RedmineID: #164280]
-	
+		- 20241107@Helios: Offer Direct Member for Super/Master [redmine: #211969] 
 	Example: NAP_customerUpdClosebyList_sel
 				@username = 'SSS',
 				@TotalPages = 0 ,
@@ -32,7 +32,7 @@ BEGIN
 	--DECLARE @closedacc TABLE(custid INT)
 	CREATE TABLE #Customer (custid INT,srecommend INT,mrecommend INT,recommend INT,username VARCHAR(50))
 
-	SELECT @custid = ci.custid, @roleid = ci.roleid 
+	SELECT @custid = ci.custid, @roleid = ci.roleid
 	FROM custinfo ci WITH (NOLOCK) 
 		INNER JOIN dbo.Customer c WITH (NOLOCK) ON c.custid = ci.custid
 		INNER JOIN CustProductStatus cps WITH (NOLOCK) ON cps.CustID = c.custid
@@ -129,10 +129,11 @@ BEGIN
 				master.username master,
 				agent.username agent,
 				ci.username member, 
-				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed
+				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed,
+				CASE WHEN ci.recommend IN (-3,-4) THEN ci.recommend ELSE 0 END AS AgentID
 		FROM custInfo(NOLOCK) ci
-			INNER JOIN custInfo(NOLOCK) master ON master.custid = ci.mrecommend
-			INNER JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
+			LEFT JOIN custInfo(NOLOCK) master ON master.custid = ci.mrecommend
+			LEFT JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
 			INNER JOIN CustProductStatus cps WITH (NOLOCK) ON cps.CustID = ci.custid
 		WHERE ci.custid IN(SELECT custid FROM #temp)
 		ORDER BY master.username ASC, 
@@ -145,9 +146,10 @@ BEGIN
 		SELECT ci.custid,
 				agent.username agent,
 				ci.username member, 
-				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed
+				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed,
+				CASE WHEN ci.recommend IN (-3,-4) THEN ci.recommend ELSE 0 END AS AgentID
 		FROM custInfo(NOLOCK) ci
-			INNER JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
+			LEFT JOIN custInfo(NOLOCK) agent ON agent.custid = ci.recommend
 			INNER JOIN CustProductStatus cps WITH (NOLOCK) ON cps.CustID = ci.custid
 		WHERE ci.custid IN(SELECT custid FROM #temp)
 		ORDER BY agent.username,
@@ -158,8 +160,8 @@ BEGIN
 	BEGIN
 		SELECT ci.custid,
 				ci.username member, 
-		
-				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed
+				CASE WHEN cps.CloseInfo > 0 THEN 1 ELSE 0 END closed,
+				0 AS AgentID
 		FROM custInfo(NOLOCK) ci
 			INNER JOIN CustProductStatus cps WITH (NOLOCK) ON cps.CustID = ci.custid
 		WHERE ci.custid IN(SELECT custid FROM #temp)
