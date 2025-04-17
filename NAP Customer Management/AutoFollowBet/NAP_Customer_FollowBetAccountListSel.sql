@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-CustDB" executers="wsv_nap" viewers="" selecters=""></info>*/
 ALTER PROCEDURE [dbo].[NAP_Customer_FollowBetAccountListSel] 
 	@username VARCHAR(50) = '',
-	@currency TINYINT = 0,
+	@currency INT = 0,
 	@site VARCHAR(10) = '',
 	@DummyAgentID INT,	
 	@isActive BIT = 1,
@@ -16,6 +16,7 @@ AS
 		- 20220908@Johnson: initial sp [redmine: #176975]
 		- 20221026@Johnson: add isFollow [redmine:##179336]
 		- 20241107@Helios: Offer Direct Member for Super/Master [redmine: #211969]  
+		- 20250410@Johnson: change datatype for ExchangeID[redmine: #223630]
 	Paramter's Explanations:
 				
 */
@@ -23,9 +24,9 @@ BEGIN
 	SET NOCOUNT ON;
 	
 	DECLARE @_site VARCHAR(10) = NULLIF (@site,''),
-			@_currency TINYINT = NULLIF(@currency,0)
+			@_currency INT = NULLIF(@currency,0)
 	
-	CREATE TABLE #Result (custid INT PRIMARY KEY, username VARCHAR(30), agentID INT, DummyCustID INT, DummyUsername VARCHAR(30), DummyAgentID INT, currency TINYINT, site VARCHAR(10), creator INT, createdDate DATETIME, isActive BIT, isFollow BIT)
+	CREATE TABLE #Result (custid INT PRIMARY KEY, username VARCHAR(30), agentID INT, DummyCustID INT, DummyUsername VARCHAR(30), DummyAgentID INT, currency INT, site VARCHAR(10), creator INT, createdDate DATETIME, isActive BIT, isFollow BIT)
 	
 	INSERT INTO #Result(custid, username, agentID, DummyCustID, DummyUsername, currency, site, creator, createdDate, isActive, isFollow)
 	SELECT c.custid, c.username, c.recommend as agentID, cf.DummyCustID, cf.DummyUsername, c.currency, c.site, cf.creator, cf.createdDate, cf.IsActive, cf.isFollow		
