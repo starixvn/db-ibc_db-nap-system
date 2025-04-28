@@ -26,6 +26,7 @@ AS
 	- 20230303@Helios: Remove Column ProblemAccount AND Get NewColumn LeagueGroupID [redmine:#183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
@@ -78,7 +79,8 @@ BEGIN
 		   bc.SeizeBetTicket, 
 		   e.Currency,
 		   bc.MaxBet, 
-		   bc.MaxPerMatch, 
+		   bc.MaxPerMatch,
+		   bc.LeastStake,	-- Add New Column #223442
 		   --CASE WHEN cp.CustId IS NOT NULL THEN 'YES' ELSE 'NO' END AS ProblemAccount,          -- Change By [redmine:#183663]
 		   bc.FollowAccount AS FollowAccountID,
 		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
@@ -112,10 +114,10 @@ BEGIN
 	WHERE ci.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE ci.username END
 		  AND ci.roleid = CASE WHEN @RoleID IS NOT NULL THEN @RoleID ELSE ci.roleid END
 		  AND ci.currency IN (SELECT val FROM dbo.f_SplitString(@CurrencyIDs,','))
-	OPTION (maxrecursion 0)
+	OPTION (MAXRECURSION 0)
 	
 	CREATE TABLE #BetRestriction_Customer2(
-		CustID int,
+		CustID INT,
 		SportType smallint,
 		Headline nvarchar(50),
 		Account nvarchar(50),
@@ -129,6 +131,7 @@ BEGIN
 		Currency nvarchar(50),
 		MaxBet money,
 		MaxPerMatch money,
+		LeastStake MONEY,	-- Add New Column #223442
 		--ProblemAccount VARCHAR(3), -- Change By [redmine:#183663]
 		FollowAccountID int,
 		[FollowAccount] nvarchar(50),
@@ -152,6 +155,7 @@ BEGIN
 		Currency,
 		MaxBet,
 		MaxPerMatch,
+		LeastStake,	-- Add New Column #223442
 		--ProblemAccount, -- Change By [redmine:#183663]
 		FollowAccountID,
 		[FollowAccount],
@@ -173,6 +177,7 @@ BEGIN
 		Currency,
 		MaxBet,
 		MaxPerMatch,
+		LeastStake,	-- Add New Column #223442
 		--ProblemAccount, -- Change By [redmine:#183663]
 		FollowAccountID,
 		[FollowAccount], 

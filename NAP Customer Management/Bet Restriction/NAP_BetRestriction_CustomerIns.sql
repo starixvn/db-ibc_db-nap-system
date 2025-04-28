@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	 ,@SeizeBetTicket		TINYINT = NULL
 	 ,@MaxBet				MONEY = NULL
 	 ,@MaxPerMatch			MONEY = NULL
+	 ,@LeastStake			MONEY	-- Add New Param #223442
 	 ,@FollowAccount		NVARCHAR(50) = NULL
 	 ,@AccumulateBalance	BIT = 0
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT	
@@ -26,6 +27,7 @@ AS
 	- 20230303@Helios: Add Column LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -47,6 +49,7 @@ AS
 		@SeizeBetTicket = 50 , 
 		@MaxBet = 100.00, 
 		@MaxPerMatch = 1000.00, 
+		@LeastStake	= 2000.00	-- Add New Param #223442
 		@FollowAccount = '8RM888',
 		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
@@ -114,6 +117,7 @@ BEGIN
 			SeizeBetTicket, 
 			MaxBet, 
 			MaxPerMatch, 
+			LeastStake,	-- Add New Column #223442
 			FollowAccount,
 			AccumulateBalance,
 			LeagueGroupID,    -- Add new Column #183663
@@ -125,9 +129,10 @@ BEGIN
 				@SeizeBetTicket, 
 				@MaxBet, 
 				@MaxPerMatch, 
+				@LeastStake,              -- Add New Param #223442
 				@FollowAccountID,
 				@AccumulateBalance,
-				CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END,  -- Add new Column #183663
+				CASE WHEN @LeagueGroupID IS NULL THEN NULL ELSE @LeagueGroupID END,  -- Add new Column #183663
 				dbo.f_GetDateTime2()
 	END TRY
 	BEGIN CATCH

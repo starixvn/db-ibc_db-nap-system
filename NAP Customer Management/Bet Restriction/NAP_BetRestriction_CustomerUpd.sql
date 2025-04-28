@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerUpd] (
 	 ,@SeizeBetTicket		TINYINT = NULL
 	 ,@MaxBet				MONEY = NULL
 	 ,@MaxPerMatch			MONEY = NULL
+	 ,@LeastStake			MONEY	-- Add New Param #223442
 	 ,@FollowAccount		NVARCHAR(50) = NULL
 	 ,@AccumulateBalance	BIT = 0
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT
@@ -25,6 +26,7 @@ AS
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230306@Helios: Update LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -44,6 +46,7 @@ AS
 		@SeizeBetTicket = 40 , 
 		@MaxBet = 200.00, 
 		@MaxPerMatch = 2000.00, 
+		@LeastStake	= 2000.00	-- Add New Param #223442
 		@FollowAccount = '8RM888',
 		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
@@ -60,6 +63,7 @@ BEGIN
 			@SeizeBetTicket_Old TINYINT, 
 			@MaxBet_Old         MONEY, 
 			@MaxPerMatch_Old    MONEY, 
+			@LeastStake_Old    MONEY,	-- Add New Param #223442 
 			@FollowAccountID_Old  INT,
 			@UserName	NVARCHAR(50),
 			@FollowAccount_Old	NVARCHAR(50),
@@ -77,6 +81,7 @@ BEGIN
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
 		   @MaxBet_Old = MaxBet, 
 		   @MaxPerMatch_Old = MaxPerMatch, 
+		   @LeastStake_Old = LeastStake, -- Add New Param #223442
 		   @FollowAccountID_Old = FollowAccount,
 		   @LeagueGroupID_Old = LeagueGroupID,  -- Add Data Old LeagueGroupID
 		   @AccumulateBalance_Old = AccumulateBalance
@@ -124,6 +129,7 @@ BEGIN
 		AND ISNULL(@SeizeBetTicket_Old,200) = ISNULL(@SeizeBetTicket,200)
 		AND ISNULL(@MaxBet_Old,-1) = ISNULL(@MaxBet,-1)
 		AND ISNULL(@MaxPerMatch_Old,-1) = ISNULL(@MaxPerMatch,-1)
+		AND ISNULL(@LeastStake_Old, -1) = ISNULL(@LeastStake, -1)	-- Add New Param #223442
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 		AND ISNULL(@AccumulateBalance_Old,0) = ISNULL(@AccumulateBalance,0)
 		AND ISNULL(@LeagueGroupID_Old , '') = ISNULL(@LeagueGroupID, '')  -- Add validate #183663
@@ -141,6 +147,7 @@ BEGIN
 			SeizeBetTicket = @SeizeBetTicket, 
 			MaxBet = @MaxBet, 
 			MaxPerMatch = @MaxPerMatch, 
+			LeastStake = @LeastStake,-- Add New Column #223442
 			FollowAccount = @FollowAccountID,
 			AccumulateBalance = @AccumulateBalance,
 			LeagueGroupID = CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END, -- Edit LeagueGroupID #183663
