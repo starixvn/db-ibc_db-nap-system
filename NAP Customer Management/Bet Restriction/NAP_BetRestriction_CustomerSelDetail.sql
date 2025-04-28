@@ -27,11 +27,11 @@ BEGIN
 		   bc.SeizeBetTicket, 
 		   bc.MaxBet, 
 		   bc.MaxPerMatch,		   
-		   bc.LeastStake,	-- Add New Column #223442
 		   bc.FollowAccount AS FollowAccountID,
 		   rm.username AS [FollowAccount],
 		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
-		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID -- [RedmineID: #183663]
+		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID, -- [RedmineID: #183663]
+		   bc.LeastStake	-- Add New Column #223442
 	FROM BetRestriction_Customer bc WITH(NOLOCK)
 		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.[FollowAccount]

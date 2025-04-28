@@ -8,7 +8,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	 ,@SeizeBetTicket		TINYINT = NULL
 	 ,@MaxBet				MONEY = NULL
 	 ,@MaxPerMatch			MONEY = NULL
-	 ,@LeastStake			MONEY	-- Add New Param #223442
+	 ,@LeastStake			MONEY = NULL	-- Add New Param #223442
 	 ,@FollowAccount		NVARCHAR(50) = NULL
 	 ,@AccumulateBalance	BIT = 0
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT	
@@ -117,11 +117,11 @@ BEGIN
 			SeizeBetTicket, 
 			MaxBet, 
 			MaxPerMatch, 
-			LeastStake,	-- Add New Column #223442
 			FollowAccount,
 			AccumulateBalance,
 			LeagueGroupID,    -- Add new Column #183663
-			RepUpdateTime 
+			RepUpdateTime, 
+			LeastStake	-- Add New Column #223442
 		   )
 		SELECT  @CustID, 
 				@SportType, 
@@ -129,11 +129,11 @@ BEGIN
 				@SeizeBetTicket, 
 				@MaxBet, 
 				@MaxPerMatch, 
-				@LeastStake,              -- Add New Param #223442
 				@FollowAccountID,
 				@AccumulateBalance,
 				CASE WHEN @LeagueGroupID IS NULL THEN NULL ELSE @LeagueGroupID END,  -- Add new Column #183663
-				dbo.f_GetDateTime2()
+				dbo.f_GetDateTime2(),
+				@LeastStake              -- Add New Param #223442
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
@@ -157,9 +157,9 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(4000)
 	SELECT  @LogDataNew = '<R '
-						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
-						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
-						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '   
+						+ 'UserName="'+ COALESCE(CAST(@UserName AS VARCHAR(50)),SPACE(1)) + '" ' 
+						+ 'LBA="'+ COALESCE(CAST(@LiveBetAccept AS VARCHAR(50)),'FUL') + '" '
+						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE CAST(@SeizeBetTicket AS VARCHAR(50)) END  + '" '   
 						+ 'LeagueGroupName="'+ coalesce(cast(@LeagueGroupName as varchar(4000)) , space(1)) + '" '  -- Add new LogChanged #183663
 						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
 						+ 'AB="'+ CASE WHEN ISNULL(@AccumulateBalance,0) = 0 THEN 'No' ELSE 'Yes' END + '" '

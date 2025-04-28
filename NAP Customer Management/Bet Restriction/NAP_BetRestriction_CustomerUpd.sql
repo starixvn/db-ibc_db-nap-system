@@ -8,12 +8,12 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerUpd] (
 	 ,@SeizeBetTicket		TINYINT = NULL
 	 ,@MaxBet				MONEY = NULL
 	 ,@MaxPerMatch			MONEY = NULL
-	 ,@LeastStake			MONEY	-- Add New Param #223442
 	 ,@FollowAccount		NVARCHAR(50) = NULL
 	 ,@AccumulateBalance	BIT = 0
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT
 	 ,@ErrCode				TINYINT = 0 OUTPUT
 	 ,@LeagueGroupID		VARCHAR(4000) = NULL -- Add New Param #183663
+	 ,@LeastStake			MONEY = NULL	-- Add New Param #223442
 )
 AS
 /*
@@ -81,10 +81,10 @@ BEGIN
 		   @SeizeBetTicket_Old = SeizeBetTicket, 
 		   @MaxBet_Old = MaxBet, 
 		   @MaxPerMatch_Old = MaxPerMatch, 
-		   @LeastStake_Old = LeastStake, -- Add New Param #223442
 		   @FollowAccountID_Old = FollowAccount,
 		   @LeagueGroupID_Old = LeagueGroupID,  -- Add Data Old LeagueGroupID
-		   @AccumulateBalance_Old = AccumulateBalance
+		   @AccumulateBalance_Old = AccumulateBalance,
+		   @LeastStake_Old = LeastStake -- Add New Column #223442
 
 	FROM BetRestriction_Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
@@ -129,10 +129,10 @@ BEGIN
 		AND ISNULL(@SeizeBetTicket_Old,200) = ISNULL(@SeizeBetTicket,200)
 		AND ISNULL(@MaxBet_Old,-1) = ISNULL(@MaxBet,-1)
 		AND ISNULL(@MaxPerMatch_Old,-1) = ISNULL(@MaxPerMatch,-1)
-		AND ISNULL(@LeastStake_Old, -1) = ISNULL(@LeastStake, -1)	-- Add New Param #223442
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 		AND ISNULL(@AccumulateBalance_Old,0) = ISNULL(@AccumulateBalance,0)
 		AND ISNULL(@LeagueGroupID_Old , '') = ISNULL(@LeagueGroupID, '')  -- Add validate #183663
+		AND ISNULL(@LeastStake_Old, -1) = ISNULL(@LeastStake, -1)	-- Add New Param #223442
 
 	BEGIN
 		SELECT @ErrMsg = N'No change'
@@ -147,11 +147,11 @@ BEGIN
 			SeizeBetTicket = @SeizeBetTicket, 
 			MaxBet = @MaxBet, 
 			MaxPerMatch = @MaxPerMatch, 
-			LeastStake = @LeastStake,-- Add New Column #223442
 			FollowAccount = @FollowAccountID,
 			AccumulateBalance = @AccumulateBalance,
 			LeagueGroupID = CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END, -- Edit LeagueGroupID #183663
-			RepUpdateTime = dbo.f_GetDateTime2()
+			RepUpdateTime = dbo.f_GetDateTime2(),
+			LeastStake = @LeastStake-- Add New Column #223442
 		WHERE CustID = @CustID
 			AND SportType = @SportType;  
 	END TRY
