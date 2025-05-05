@@ -9,7 +9,7 @@
 
 	Example:			
 */
-DROP PROCEDURE dbo.Repl_PutBetRestriction_Customer ;
+DROP PROCEDURE [dbo].[DR_Repl_PutBetRestriction_Customer_Dist]
 DROP TYPE [dbo].[TVP_ReplBetRestriction_Customer] ;
 CREATE TYPE [dbo].[TVP_ReplBetRestriction_Customer] AS TABLE (
 	[CustID] [INT] NOT NULL
