@@ -196,7 +196,7 @@ BEGIN
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LeastStake="'+ coalesce(cast(@LeastStake as varchar(50)),space(1)) + '" ' 
+						+ 'LeastStake="' + COALESCE(REPLACE(FORMAT(@LeastStake, 'N4'), ',', ''), SPACE(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />',
 
@@ -210,7 +210,7 @@ BEGIN
 						+ 'maxb="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LeastStake="'+ coalesce(cast(@LeastStake_Old as varchar(50)),space(1)) + '" ' 
+						+ 'LeastStake="' + COALESCE(REPLACE(FORMAT(@LeastStake_Old, 'N4'), ',', ''), SPACE(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

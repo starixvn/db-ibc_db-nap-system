@@ -166,7 +166,7 @@ BEGIN
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
-						+ 'LeastStake="'+ coalesce(cast(@LeastStake as varchar(50)),space(1)) + '" ' 
+						+ 'LeastStake="' + COALESCE(REPLACE(FORMAT(@LeastStake, 'N4'), ',', ''), SPACE(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 
