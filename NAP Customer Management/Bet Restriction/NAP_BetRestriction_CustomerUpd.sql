@@ -13,6 +13,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerUpd] (
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT
 	 ,@ErrCode				TINYINT = 0 OUTPUT
 	 ,@LeagueGroupID		VARCHAR(4000) = NULL -- Add New Param #183663
+	 ,@LeastStake			MONEY = NULL	-- Add New Param #223442
 )
 AS
 /*
@@ -25,6 +26,7 @@ AS
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20230306@Helios: Update LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -44,6 +46,7 @@ AS
 		@SeizeBetTicket = 40 , 
 		@MaxBet = 200.00, 
 		@MaxPerMatch = 2000.00, 
+		@LeastStake	= 2000.00	-- Add New Param #223442
 		@FollowAccount = '8RM888',
 		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
@@ -60,6 +63,7 @@ BEGIN
 			@SeizeBetTicket_Old TINYINT, 
 			@MaxBet_Old         MONEY, 
 			@MaxPerMatch_Old    MONEY, 
+			@LeastStake_Old    MONEY,	-- Add New Param #223442 
 			@FollowAccountID_Old  INT,
 			@UserName	NVARCHAR(50),
 			@FollowAccount_Old	NVARCHAR(50),
@@ -79,7 +83,8 @@ BEGIN
 		   @MaxPerMatch_Old = MaxPerMatch, 
 		   @FollowAccountID_Old = FollowAccount,
 		   @LeagueGroupID_Old = LeagueGroupID,  -- Add Data Old LeagueGroupID
-		   @AccumulateBalance_Old = AccumulateBalance
+		   @AccumulateBalance_Old = AccumulateBalance,
+		   @LeastStake_Old = LeastStake -- Add New Column #223442
 
 	FROM BetRestriction_Customer WITH(NOLOCK)
 	WHERE CustID = @CustID
@@ -127,6 +132,7 @@ BEGIN
 		AND ISNULL(@FollowAccountID_Old ,0)= ISNULL(@FollowAccountID,0)
 		AND ISNULL(@AccumulateBalance_Old,0) = ISNULL(@AccumulateBalance,0)
 		AND ISNULL(@LeagueGroupID_Old , '') = ISNULL(@LeagueGroupID, '')  -- Add validate #183663
+		AND ISNULL(@LeastStake_Old, -1) = ISNULL(@LeastStake, -1)	-- Add New Param #223442
 
 	BEGIN
 		SELECT @ErrMsg = N'No change'
@@ -144,7 +150,8 @@ BEGIN
 			FollowAccount = @FollowAccountID,
 			AccumulateBalance = @AccumulateBalance,
 			LeagueGroupID = CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END, -- Edit LeagueGroupID #183663
-			RepUpdateTime = dbo.f_GetDateTime2()
+			RepUpdateTime = dbo.f_GetDateTime2(),
+			LeastStake = @LeastStake-- Add New Column #223442
 		WHERE CustID = @CustID
 			AND SportType = @SportType;  
 	END TRY
@@ -189,6 +196,7 @@ BEGIN
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
+						+ 'LeastStake="' + COALESCE(REPLACE(FORMAT(@LeastStake, 'N4'), ',', ''), SPACE(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" ' 
 						+ ' />',
 
@@ -202,6 +210,7 @@ BEGIN
 						+ 'maxb="'+ coalesce(cast(@MaxBet_Old as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch_Old as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
+						+ 'LeastStake="' + COALESCE(REPLACE(FORMAT(@LeastStake_Old, 'N4'), ',', ''), SPACE(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 		

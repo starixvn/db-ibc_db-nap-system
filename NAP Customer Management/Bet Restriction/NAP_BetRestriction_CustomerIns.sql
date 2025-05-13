@@ -8,6 +8,7 @@ ALTER PROCEDURE [dbo].[NAP_BetRestriction_CustomerIns] (
 	 ,@SeizeBetTicket		TINYINT = NULL
 	 ,@MaxBet				MONEY = NULL
 	 ,@MaxPerMatch			MONEY = NULL
+	 ,@LeastStake			MONEY = NULL	-- Add New Param #223442
 	 ,@FollowAccount		NVARCHAR(50) = NULL
 	 ,@AccumulateBalance	BIT = 0
 	 ,@ErrMsg				NVARCHAR(MAX) = '' OUTPUT	
@@ -26,6 +27,7 @@ AS
 	- 20230303@Helios: Add Column LeagueGroupID -  ADD LOG LeagueGroupID - Change Position DataLog [RedmineID: #183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 	- 20240911@Johnson: Apply Inhouse for BLC [redmine:#209892]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 	Parameter explanation:
 	@ErrCode = :
 			0 - succeed
@@ -47,6 +49,7 @@ AS
 		@SeizeBetTicket = 50 , 
 		@MaxBet = 100.00, 
 		@MaxPerMatch = 1000.00, 
+		@LeastStake	= 2000.00	-- Add New Param #223442
 		@FollowAccount = '8RM888',
 		@AccumulateBalance = 0,
 		@ErrMsg = @ErrMsg OUTPUT,
@@ -117,7 +120,8 @@ BEGIN
 			FollowAccount,
 			AccumulateBalance,
 			LeagueGroupID,    -- Add new Column #183663
-			RepUpdateTime 
+			RepUpdateTime, 
+			LeastStake	-- Add New Column #223442
 		   )
 		SELECT  @CustID, 
 				@SportType, 
@@ -127,8 +131,9 @@ BEGIN
 				@MaxPerMatch, 
 				@FollowAccountID,
 				@AccumulateBalance,
-				CASE WHEN @LeagueGroupID IS NULL THEN NULL Else @LeagueGroupID END,  -- Add new Column #183663
-				dbo.f_GetDateTime2()
+				CASE WHEN @LeagueGroupID IS NULL THEN NULL ELSE @LeagueGroupID END,  -- Add new Column #183663
+				dbo.f_GetDateTime2(),
+				@LeastStake              -- Add New Param #223442
 	END TRY
 	BEGIN CATCH
 		SET @ErrCode = ERROR_NUMBER()
@@ -152,15 +157,16 @@ BEGIN
 
 	DECLARE @LogDataNew VARCHAR(4000)
 	SELECT  @LogDataNew = '<R '
-						+ 'UserName="'+ coalesce(cast(@UserName as varchar(50)),space(1)) + '" ' 
-						+ 'LBA="'+ coalesce(cast(@LiveBetAccept as varchar(50)),'FUL') + '" '
-						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE cast(@SeizeBetTicket as varchar(50)) END  + '" '   
+						+ 'UserName="'+ COALESCE(CAST(@UserName AS VARCHAR(50)),SPACE(1)) + '" ' 
+						+ 'LBA="'+ COALESCE(CAST(@LiveBetAccept AS VARCHAR(50)),'FUL') + '" '
+						+ 'SBT="'+ CASE WHEN @SeizeBetTicket IS NULL THEN 'FUL' WHEN @SeizeBetTicket = 0 THEN 'None' ELSE CAST(@SeizeBetTicket AS VARCHAR(50)) END  + '" '   
 						+ 'LeagueGroupName="'+ coalesce(cast(@LeagueGroupName as varchar(4000)) , space(1)) + '" '  -- Add new LogChanged #183663
 						+ 'FA="'+ coalesce(cast(@FollowAccount as varchar(50)),space(1)) + '" '
 						+ 'AB="'+ CASE WHEN ISNULL(@AccumulateBalance,0) = 0 THEN 'No' ELSE 'Yes' END + '" '
 						+ 'maxb="'+ coalesce(cast(@MaxBet as varchar(50)),space(1)) + '" ' 
 						+ 'mpm="'+ coalesce(cast(@MaxPerMatch as varchar(50)),space(1)) + '" ' 
 						+ 'SportType="'+ coalesce(cast(@SportType as varchar(50)),space(1)) + '" ' 
+						+ 'LeastStake="' + COALESCE(REPLACE(FORMAT(@LeastStake, 'N4'), ',', ''), SPACE(1)) + '" '
 						+ 'IP="' + COALESCE(@IP, SPACE(1)) + '" '
 						+ ' />'
 

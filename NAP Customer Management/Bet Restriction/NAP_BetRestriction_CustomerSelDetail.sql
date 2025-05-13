@@ -14,6 +14,7 @@ AS
 	- 20230306@Helios: Add Show LeagueGroupID [RedmineID: #183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 
 	Example: EXEC NAP_BetRestriction_CustomerSelDetail @CustID = 1176092, @SportType = 1
 	
@@ -25,11 +26,12 @@ BEGIN
 		   bc.LiveBetAccept, 
 		   bc.SeizeBetTicket, 
 		   bc.MaxBet, 
-		   bc.MaxPerMatch, 
+		   bc.MaxPerMatch,		   
 		   bc.FollowAccount AS FollowAccountID,
 		   rm.username AS [FollowAccount],
 		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
-		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID -- [RedmineID: #183663]
+		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID, -- [RedmineID: #183663]
+		   bc.LeastStake	-- Add New Column #223442
 	FROM BetRestriction_Customer bc WITH(NOLOCK)
 		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
 		 LEFT JOIN custInfo rm WITH(NOLOCK) ON rm.custid = bc.[FollowAccount]

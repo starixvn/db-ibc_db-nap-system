@@ -26,6 +26,7 @@ AS
 	- 20230303@Helios: Remove Column ProblemAccount AND Get NewColumn LeagueGroupID [redmine:#183663]
 	- 20230613@Luke: Option to apply Seize Bet if reach risk balance [Redmine: #187771]
 	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
+	- 20250428@Logan: Basketball - AddcTicket Stake [redmine:#223442]
 
 	Parameter Definition
 		@RoleID = : 1- Member, 2 - Agent, 3-Masrer, 4 - Super
@@ -78,12 +79,13 @@ BEGIN
 		   bc.SeizeBetTicket, 
 		   e.Currency,
 		   bc.MaxBet, 
-		   bc.MaxPerMatch, 
+		   bc.MaxPerMatch,
 		   --CASE WHEN cp.CustId IS NOT NULL THEN 'YES' ELSE 'NO' END AS ProblemAccount,          -- Change By [redmine:#183663]
 		   bc.FollowAccount AS FollowAccountID,
 		   CASE WHEN ISNULL(bc.AccumulateBalance,0) = 0 THEN 0 ELSE 1 END AS AccumulateBalance,
 		   rm.username AS [FollowAccount],
-		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID    -- Change By [redmine:#183663]
+		   CASE WHEN bc.LeagueGroupID IS NULL THEN '' ELSE bc.LeagueGroupID END AS LeagueGroupID,    -- Change By [redmine:#183663]
+		   bc.LeastStake	-- Add New Column #223442
 	INTO #BetRestriction_Customer
 	FROM BetRestriction_Customer bc WITH(NOLOCK)
 		 INNER JOIN custInfo ci WITH(NOLOCK) ON bc.CustID = ci.custid
@@ -112,10 +114,10 @@ BEGIN
 	WHERE ci.username = CASE WHEN ISNULL(@Username,'') <> ''  THEN @Username  ELSE ci.username END
 		  AND ci.roleid = CASE WHEN @RoleID IS NOT NULL THEN @RoleID ELSE ci.roleid END
 		  AND ci.currency IN (SELECT val FROM dbo.f_SplitString(@CurrencyIDs,','))
-	OPTION (maxrecursion 0)
+	OPTION (MAXRECURSION 0)
 	
 	CREATE TABLE #BetRestriction_Customer2(
-		CustID int,
+		CustID INT,
 		SportType smallint,
 		Headline nvarchar(50),
 		Account nvarchar(50),
@@ -134,7 +136,8 @@ BEGIN
 		[FollowAccount] nvarchar(50),
 		AccumulateBalance BIT,
 		RowNumber INT PRIMARY KEY CLUSTERED,
-	    LeagueGroupID varchar(4000) -- Change By [redmine:#183663]
+	    LeagueGroupID varchar(4000), -- Change By [redmine:#183663]
+		LeastStake MONEY	-- Add New Column #223442
 	)
 	
 	INSERT INTO #BetRestriction_Customer2(
@@ -157,7 +160,8 @@ BEGIN
 		[FollowAccount],
 		AccumulateBalance,
 		RowNumber,
-		LeagueGroupID -- Change By [redmine:#183663]
+		LeagueGroupID, -- Change By [redmine:#183663]
+		LeastStake	-- Add New Column #223442
 	)
 	SELECT CustID,
 		SportType,
@@ -178,7 +182,8 @@ BEGIN
 		[FollowAccount], 
 		AccumulateBalance,
 		ROW_NUMBER() OVER (ORDER BY Headline, Account) AS RowNumber,
-		LeagueGroupID -- Change By [redmine:#183663]
+		LeagueGroupID, -- Change By [redmine:#183663]
+		LeastStake	-- Add New Column #223442
 	FROM #BetRestriction_Customer tmp
 	WHERE tmp.SiteID = CASE WHEN ISNULL(@SiteID,0) <> 0 THEN @SiteID ELSE tmp.SiteID END 
 		AND tmp.Status = CASE WHEN ISNULL(@Status,'All') <> 'All' THEN @Status ELSE tmp.Status END 
