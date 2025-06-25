@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0" isNested="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROC [dbo].[NAP_Domain_Sel]
 	 @System	VARCHAR(50)
 	,@Site		VARCHAR(500)
@@ -13,7 +13,7 @@ AS
 	
 	Revisions:
 		- 20231013@Tacy: Create SP [RedmineID: #194024]
-
+		- 20250624@Johnson: offer Agency Cash Service [RedmineID: #231219]
 	Param's Explanation:
 		@Countries: '0' ~ ALL coutries and include null value
 					''	~ Domain with none Restricted Countries
@@ -79,7 +79,7 @@ BEGIN
 		GROUP BY d.DomainID
 	END
 
-	SELECT d.DomainID, d.Domain, d.System, d.site, d.BrandName
+	SELECT d.DomainID, d.Domain, d.System, d.OfferType, d.site, d.BrandName
 		, d.Status
 		, d.RestrictedCountries
 		, d.Remark

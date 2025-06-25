@@ -1,10 +1,10 @@
 /*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROC [dbo].[NAP_Domain_Ins]
-	 @DomainList	NVARCHAR(MAX)	OUTPUT
+	 @DomainList	NVARCHAR(MAX)	OUTPUT	
 	,@UserID		INT
 	,@IP			VARCHAR(50)	= ''
 	,@ErrCode		INT=0			 OUTPUT
-	,@ErrMsg		VARCHAR(2000)='' OUTPUT
+	,@ErrMsg		VARCHAR(2000)='' OUTPUT	
 	,@DomainListOutput	NVARCHAR(MAX)	OUTPUT
 AS
 /*
@@ -15,30 +15,32 @@ AS
 	Revisions:
 		- 20231013@Tacy: NAP CM - Manage Domain [RedmineID: #194024]
 		- 20250120@Tacy: Move to GlobCustDB [RedmineID: #216870]
+		- 20250624@Johnson: offer Agency Cash Service [RedmineID: #231219]
 
 	Param's Explanation:
 		@DomainList:
 			**Add new:
 				<DomainList>
-						<Domain id="" d="alpha01.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
-						<Domain id="" d="alpha02.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""			r="" b="V"/>
+						<Domain id="" d="alpha01.com" ss="Agency" cs="1" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
+						<Domain id="" d="alpha02.com" ss="Agency" cs="0" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""			r="" b="V"/>
 				</DomainList>
 
 			**Update:
 				<DomainList>
-						<Domain id="1" d="alpha01.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
-						<Domain id="2" d="alpha02.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""		 r="" b="V"/>
+						<Domain id="1" d="alpha01.com" ss="Agency" cs="1" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
+						<Domain id="2" d="alpha02.com" ss="Agency" cs="0" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""		 r="" b="V"/>
 				</DomainList>
 
 			@id ~ DomainID
 			@d  ~ DomainName
 			@ss ~ System: {'Agency','Member Site'}
+			@cs ~ CashService: {0 ~ No; 1 ~ Yes}
 			@s  ~ Site
 			@stt ~ Status: {0 ~ Unavailable; 1 ~ Available; 2 ~ In-stock; 3 ~ Active}
 			@ed	~ ExpiredDate
 			@c  ~ Countries
 			@r  ~ Remark
-			@b	~ BrandName: {'B'; 'V'}
+			@b	~ BrandName: {'B'; 'V'}		
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -47,7 +49,7 @@ BEGIN
 
 	SET @StartRun = GETDATE()	
 
-	EXEC NAP_Domain_Check @DomainList=@DomainList	
+	EXEC NAP_Domain_Check @DomainList=@DomainList						 
 						 ,@IsUpdate=0
 						 ,@ErrCode=@ErrCode	OUTPUT
 						 ,@ErrMsg=@ErrMsg OUTPUT
@@ -57,6 +59,7 @@ BEGIN
 	CREATE TABLE #tbDomains (
 			 Domain				VARCHAR(50)
 			,System				VARCHAR(20)
+			,CashService		BIT
 			,Site				VARCHAR(500)
 			,Status				TINYINT
 			,ExpiredDate		DATETIME
@@ -65,7 +68,7 @@ BEGIN
 			,BrandName			VARCHAR(10)
 	)
 
-	DECLARE @tbAnnoucementDomain TABLE (Domain VARCHAR(50),Site	VARCHAR(200))
+	DECLARE @tbAnnoucementDomain TABLE (Domain VARCHAR(50),Site	VARCHAR(MAX))
 
 	--Parse XML data
 	DECLARE @iDoc INT
@@ -73,9 +76,10 @@ BEGIN
 	EXEC sp_xml_preparedocument @iDoc OUTPUT
 		, @DomainList
 
-	INSERT INTO #tbDomains(Domain, System, Site, Status, ExpiredDate, RestrictedCountries, Remark, BrandName)
+	INSERT INTO #tbDomains(Domain, System, CashService, Site, Status, ExpiredDate, RestrictedCountries, Remark, BrandName)
 	SELECT	d	AS Domain, 
-			ss	AS [System], 
+			ss	AS [System],
+			cs	AS [CashService], 
 			s	AS [Site], 
 			stt AS [Status],
 			CASE WHEN LEN(ed)=0			THEN NULL ELSE ed	END ExpiredDate, 
@@ -86,6 +90,7 @@ BEGIN
 				 id		SMALLINT
 				,d		VARCHAR(50)
 				,ss		VARCHAR(20)
+				,cs		BIT
 				,s		VARCHAR(500)
 				,stt	TINYINT
 				,ed		VARCHAR(50)
@@ -96,8 +101,8 @@ BEGIN
 	EXEC sp_xml_removedocument @iDoc
 
 	BEGIN TRY
-		INSERT INTO DomainManagement(Domain, System, Site, BrandName, Status, ExpiredDate, RestrictedCountries, Remark)
-		SELECT Domain, System, Site, BrandName, Status, ExpiredDate, RestrictedCountries, Remark
+		INSERT INTO DomainManagement(Domain, System, OfferType, Site, BrandName, Status, ExpiredDate, RestrictedCountries, Remark)
+		SELECT Domain, System, CashService, Site, BrandName, Status, ExpiredDate, RestrictedCountries, Remark
 		FROM #tbDomains t 
 	END TRY
 	BEGIN CATCH
@@ -138,9 +143,12 @@ BEGIN
 
 	--Gen XML to add Announcement
 	SELECT @DomainListOutput = CONVERT(VARCHAR(MAX),
-									(SELECT d.Domain AS 'd'
+									(SELECT dm.DomainID AS 'id'
+										, d.Domain AS 'd'
 										, d.Site	 AS 's'
 									 FROM @tbAnnoucementDomain d
+									 	INNER JOIN DomainManagement dm WITH (NOLOCK) ON dm.Domain=d.Domain
+									WHERE dm.isDeleted=0	
 									 FOR XML RAW ('Domain'), ROOT ('DomainList'))
 							)
 END
