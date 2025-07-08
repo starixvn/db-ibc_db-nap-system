@@ -186,6 +186,46 @@ BEGIN
 
 	IF @ErrCode=110	RETURN
 	
+	--Check if more than 2 domains with Cash Service enabled per site
+	-- Only perform this check if there are cash service domains in the new domain list
+	IF EXISTS (SELECT TOP 1 1 FROM #tbDomains WHERE CashService = 1 AND Status = 3)
+	BEGIN
+		;WITH SitesInNewDomains AS (
+			-- Get all sites from the new domain list
+			SELECT DISTINCT s.SiteID
+			FROM #tbDomains t
+			CROSS APPLY (SELECT CAST(TRIM(t.value) AS INT) SiteID FROM string_split(t.Site,',') t) s
+			WHERE s.SiteID IN (SELECT sm.SiteID FROM @tbSiteMarket sm WHERE sm.site IN (SELECT value FROM string_split(@CashSite,',')))
+		),
+		CashServiceDomains AS (
+			-- Get existing active cash service domains from DomainManagement for sites in new domain list
+			-- Exclude domains that are being updated (to avoid double counting)
+			SELECT s.SiteID, d.DomainID
+			FROM DomainManagement d WITH(NOLOCK)
+			CROSS APPLY (SELECT CAST(TRIM(t.value) AS INT) SiteID FROM string_split(d.Site,',') t) s
+			INNER JOIN SitesInNewDomains sid ON s.SiteID = sid.SiteID
+			WHERE d.isDeleted = 0 
+				AND d.Status = 3 
+				AND d.OfferType = 1
+				AND d.DomainID NOT IN (SELECT DomainID FROM #tbDomains WHERE DomainID IS NOT NULL)
+			UNION ALL
+			-- Get new/updated cash service domains from input
+			SELECT s.SiteID, t.DomainID
+			FROM #tbDomains t
+			CROSS APPLY (SELECT CAST(TRIM(t.value) AS INT) SiteID FROM string_split(t.Site,',') t) s
+			WHERE t.CashService = 1 AND t.Status = 3
+		)
+		SELECT TOP 1 
+				@ErrCode=115
+				,@ErrMsg='Cannot proceed: Site' + ISNULL(sm.Site,'') + ' already has the maximum of 2 domains with ''Offer Cash Service'' enabled.'
+		FROM CashServiceDomains csd
+		INNER JOIN @tbSiteMarket sm ON csd.SiteID=sm.SiteID
+		GROUP BY sm.Site, sm.SiteID
+		HAVING COUNT(1) > 2
+
+		IF @ErrCode=115	RETURN
+	END
+	
 	--check for cash service
 	IF @IsUpdate=1 
 	BEGIN

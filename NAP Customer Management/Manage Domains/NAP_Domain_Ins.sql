@@ -6,6 +6,7 @@ ALTER PROC [dbo].[NAP_Domain_Ins]
 	,@ErrCode		INT=0			 OUTPUT
 	,@ErrMsg		VARCHAR(2000)='' OUTPUT	
 	,@DomainListOutput	NVARCHAR(MAX)	OUTPUT
+	,@CashSite			VARCHAR(MAX)=''
 AS
 /*
 	Created: 20231013@Tacy
@@ -51,6 +52,7 @@ BEGIN
 
 	EXEC NAP_Domain_Check @DomainList=@DomainList						 
 						 ,@IsUpdate=0
+						 ,@CashSite=@CashSite
 						 ,@ErrCode=@ErrCode	OUTPUT
 						 ,@ErrMsg=@ErrMsg OUTPUT
 

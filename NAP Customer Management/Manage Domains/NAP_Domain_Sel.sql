@@ -3,6 +3,7 @@ ALTER PROC [dbo].[NAP_Domain_Sel]
 	 @System	VARCHAR(50)
 	,@Site		VARCHAR(500)
 	,@Status	VARCHAR(30)
+	,@OfferType	VARCHAR(2)=''
 	,@Remark	NVARCHAR(2000)=NULL
 	,@Countries	VARCHAR(4000)=''
 AS
@@ -87,8 +88,8 @@ BEGIN
 		, d.LastUpdateTime
 	FROM DomainManagement d WITH (NOLOCK)
 	INNER JOIN @tbDomains t ON t.DomainID=d.DomainID
-	WHERE @Remark IS NULL 
-	OR d.Remark LIKE '%' + @Remark + '%'
+	WHERE (@OfferType='' OR d.OfferType=@OfferType)
+	AND (@Remark IS NULL OR d.Remark LIKE '%' + @Remark + '%')
 	ORDER BY d.DomainID
 END
 GO
