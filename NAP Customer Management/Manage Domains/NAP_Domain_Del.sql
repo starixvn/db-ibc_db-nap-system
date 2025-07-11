@@ -37,7 +37,7 @@ BEGIN
 	EXEC dbo.NAP_Domain_Check
 		@DomainList = @DomainList,
 		@CashSite = @CashSite,
-		@IsDelete = 1,
+		@Action = 'Delete',
 		@ErrCode = @CheckErrCode OUTPUT,
 		@ErrMsg = @CheckErrMsg OUTPUT
 	

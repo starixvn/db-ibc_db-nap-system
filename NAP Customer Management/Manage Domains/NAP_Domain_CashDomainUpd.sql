@@ -1,6 +1,8 @@
 /*<info serverAlias="DBCUST-AgencyCashService" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROC [dbo].[NAP_Domain_CashDomainUpd]
 	 @DomainList	NVARCHAR(MAX)
+	,@UserID		INT
+	,@IP			VARCHAR(50)	= ''
 	,@ErrCode		INT=0			 OUTPUT
 	,@ErrMsg		VARCHAR(2000)='' OUTPUT		
 AS
@@ -14,10 +16,10 @@ AS
 	Param's Explanation:
 		 @DomainList :
 		 		<DomainList>
-						<Domain id="111" s="1045,1046" cs="1"/>
-						<Domain id="111" s="1050,1051" cs="0"/>
-						<Domain id="112" s="1047,1048" cs="0"/>
-						<Domain id="113" s="1052,1053" cs="1"/>
+						<Domain id="111" s="1045,1046" cs="1" d="1045.simplec.com"/>
+						<Domain id="111" s="1050,1051" cs="0" d="1050.simplec.com"/>
+						<Domain id="112" s="1047,1048" cs="0" d="1047.simplec.com"/>
+						<Domain id="113" s="1052,1053" cs="1" d="1052.simplec.com"/>
 				</DomainList>
 */
 BEGIN
@@ -25,6 +27,7 @@ BEGIN
 
 	DECLARE @tmpDomain TABLE (
 			 DomainID		SMALLINT
+			,Domain			VARCHAR(50)
 			,SiteID			INT
 			,CashService	BIT
 			,Site 			VARCHAR(50)
@@ -33,9 +36,19 @@ BEGIN
 	--active domains remaining for site removed
 	DECLARE @tmpDomainActive TABLE (
 			 DomainID		SMALLINT
+			,Domain			VARCHAR(50)
 			,SiteID			INT	
 			,Site 			VARCHAR(50)		
 	)
+
+	-- Table to store operations for logging
+	DECLARE @Operations TABLE (
+			 RowID			INT IDENTITY(1,1)
+			,AgentID		INT
+			,DomainID		SMALLINT
+			,DomainName		VARCHAR(50)
+			,Action			VARCHAR(10)
+		)
 
 	CREATE TABLE #tblCust(
 			 CustID			INT PRIMARY KEY
@@ -49,13 +62,15 @@ BEGIN
 	(
 		SELECT
 		T.N.value('@id', 'SMALLINT') AS DomainID,
+		T.N.value('@d', 'VARCHAR(50)') AS Domain,
 		T.N.value('@s', 'VARCHAR(500)') AS Site,
 		T.N.value('@cs', 'BIT') AS CashService
 	FROM @xml.nodes('/DomainList/Domain') AS T(N)
 	)
-	INSERT INTO @tmpDomain (DomainID, SiteID, CashService)
+	INSERT INTO @tmpDomain (DomainID, Domain, SiteID, CashService)
 	SELECT
         t.DomainID,
+				t.Domain,
         TRIM(s.value) AS SiteID,
         t.CashService
     FROM T
@@ -71,11 +86,19 @@ BEGIN
 	FROM CustDB.dbo.customer c WITH(NOLOCK)
 		CROSS APPLY (SELECT TOP 1 custid FROM  CustDB.dbo.CustProductStatus cs WITH(NOLOCK) WHERE cs.CustID = c.CustID AND cs.ServiceType = 1) t
 	WHERE roleid = 2
-		AND site IN (SELECT site FROM @tmpDomain)		
+		AND site IN (SELECT site FROM @tmpDomain)
 
 	--remove customer have site turn off domain
 	IF EXISTS (SELECT 1 FROM @tmpDomain WHERE CashService = 0)
 	BEGIN
+		-- Capture records to be deleted for logging
+		INSERT INTO @Operations (AgentID, DomainID, DomainName, Action)
+		SELECT cd.AgentID, cd.DomainID, ISNULL(td.Domain, 'Domain-' + CAST(cd.DomainID AS VARCHAR(10))), 'Delete'
+		FROM CashDomainManagement cd WITH(NOLOCK)
+		INNER JOIN #tblCust t ON t.custid = cd.AgentID
+		CROSS APPLY (SELECT * FROM @tmpDomain td WHERE td.Site = t.Site AND CashService = 0) td
+		WHERE cd.DomainID = td.DomainID
+
 		DELETE d 
 		FROM CashDomainManagement d WITH(ROWLOCK)
 		WHERE EXISTS (SELECT 1 
@@ -84,8 +107,8 @@ BEGIN
 					WHERE t.custid = d.AgentID
 						AND s.DomainID = d.DomainID)	
 
-		INSERT INTO @tmpDomainActive (DomainID, SiteID)
-		SELECT DomainID, SiteID
+		INSERT INTO @tmpDomainActive (DomainID, Domain, SiteID)
+		SELECT DomainID, Domain, SiteID
 		FROM GlobCustDB.dbo.DomainManagement d WITH(NOLOCK)
 			CROSS APPLY (SELECT CAST(TRIM(value) AS INT) SiteID FROM STRING_SPLIT(d.Site, ',')) s
 		WHERE Status = 3
@@ -114,6 +137,37 @@ BEGIN
 		RETURN;
 
 	BEGIN TRY
+		-- Capture records to be inserted for logging
+		INSERT INTO @Operations (AgentID, DomainID, DomainName, Action)
+		SELECT t.CustID, s.DomainID, ISNULL(s.Domain, 'Domain-' + CAST(s.DomainID AS VARCHAR(10))), 'Add'
+		FROM #tblCust t
+			CROSS APPLY (SELECT TOP (2) * 
+						FROM (SELECT Site,DomainID, Domain
+							FROM @tmpDomain WHERE CashService = 1
+							UNION 
+							SELECT Site,DomainID, Domain
+							FROM @tmpDomainActive 
+							) d
+						WHERE d.Site = t.Site
+						) s
+		WHERE t.cntDomain = 0
+		
+		UNION ALL
+		
+		SELECT t.CustID, s.DomainID, ISNULL(s.Domain, 'Domain-' + CAST(s.DomainID AS VARCHAR(10))), 'Add'
+		FROM #tblCust t
+			CROSS APPLY(SELECT TOP (1) * 
+						FROM (SELECT Site,DomainID, Domain
+							FROM @tmpDomain WHERE CashService = 1
+							UNION 
+							SELECT Site,DomainID, Domain
+							FROM @tmpDomainActive 
+							) d
+						WHERE d.Site = t.Site
+						) s
+		WHERE t.cntDomain = 1
+
+		-- Insert for customers with cntDomain = 0 (no existing domains)
 		INSERT INTO CashDomainManagement (AgentID, DomainID, SubDomainPrefix,RepUpdateTime)
 		SELECT t.CustID, 
 			s.DomainID, 
@@ -132,7 +186,9 @@ BEGIN
 						WHERE d.Site = t.Site
 						) s
 		WHERE t.cntDomain = 0
-		UNION 
+		
+		-- Insert for customers with cntDomain = 1 (one existing domain)
+		INSERT INTO CashDomainManagement (AgentID, DomainID, SubDomainPrefix,RepUpdateTime)
 		SELECT t.CustID, 
 			s.DomainID, 
 			'simplec-' + LEFT(CAST(t.CustID AS VARCHAR), 3) + 
@@ -150,10 +206,45 @@ BEGIN
 						WHERE d.Site = t.Site
 						) s
 		WHERE t.cntDomain = 1
+		
+		-- Log all operations at the end
+		DECLARE @TrackingValue NVARCHAR(MAX)
+		DECLARE @CurrentAgentID INT
+		DECLARE @CurrentAction VARCHAR(10)
+		DECLARE @CurrentActionID INT
+		DECLARE @RowCount INT = (SELECT COUNT(*) FROM @Operations)
+		DECLARE @CurrentRow INT = 1
+		
+		-- Debug: Check if operations exist
+		IF @RowCount > 0
+		BEGIN
+			WHILE @CurrentRow <= @RowCount
+			BEGIN
+				SELECT @TrackingValue = '<ROOT CustID="' + CONVERT(VARCHAR(20), AgentID) + '" IP="' + CONVERT(VARCHAR(50), @IP) + '" DomainId="' + CONVERT(VARCHAR(20), DomainID) + '" DomainName="' + ISNULL(DomainName, '') + '" Action="' + Action + '" />',
+					   @CurrentAgentID = AgentID,
+					   @CurrentAction = Action
+				FROM @Operations 
+				WHERE RowID = @CurrentRow
+				
+				-- Debug: Check if we got data
+				IF @CurrentAgentID IS NOT NULL
+				BEGIN
+					SET @CurrentActionID = CASE WHEN @CurrentAction = 'Delete' THEN 31782 ELSE 31781 END
+					
+					EXEC GlobCustDB.dbo.Acc_WriteLog_UserLog_RunSP_Wrapper
+						@UserID = @UserID,
+						@CustID = @CurrentAgentID,
+						@ActionID = @CurrentActionID,
+						@TrackingValue = @TrackingValue
+				END
+				
+				SET @CurrentRow = @CurrentRow + 1
+			END
+		END
+		
 	END TRY
 	BEGIN CATCH
 		SELECT   @ErrCode = ERROR_NUMBER(),@ErrMsg = ERROR_MESSAGE();		
 		RETURN
-	END CATCH	
-
+	END CATCH
 END	

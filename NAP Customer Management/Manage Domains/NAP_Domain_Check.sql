@@ -3,7 +3,7 @@ ALTER PROC [dbo].[NAP_Domain_Check]
 	 @DomainList	NVARCHAR(MAX)		
 	,@CashSite 		VARCHAR(MAX) = ''
 	,@IsUpdate		BIT=0
-	,@IsDelete		BIT=0
+	,@Action		VARCHAR(20) = ''
 	,@ErrCode		INT=0			 OUTPUT
 	,@ErrMsg		VARCHAR(2000)='' OUTPUT
 AS
@@ -48,7 +48,7 @@ AS
 			@r  ~ Remark
 			@b	~ BrandName: {'B'; 'V'}		
 			@CashSite ~ list cash site('best-odds,733333,...')
-			@IsDelete ~ Validate for delete operation
+			@Action ~ Action type: {'Delete'} for delete operations
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -78,7 +78,7 @@ BEGIN
 		, @DomainList
 
 	-- For delete operations, we need to get complete domain data from database
-	IF @IsDelete = 1
+	IF @Action = 'Delete'
 	BEGIN
 		INSERT INTO #tbDomains(DomainID,Domain, System, CashService, Site, Status, ExpiredDate, RestrictedCountries, Remark, BrandName)
 		SELECT	d.DomainID,
@@ -128,7 +128,7 @@ BEGIN
 	EXEC sp_xml_removedocument @iDoc
 	
 	-- For delete operations, skip required field checks since we get data from DB
-	IF @IsDelete = 0
+	IF @Action <> 'Delete'
 	BEGIN
 		--check: required field
 		SELECT TOP (1)
@@ -246,7 +246,7 @@ BEGIN
 	END
 	
 	-- For delete operations, check if domains exist and are not already deleted
-	IF @IsDelete = 1
+	IF @Action = 'Delete'
 	BEGIN
 		-- Check if domains exist and are not deleted
 		SELECT TOP 1 
@@ -262,7 +262,7 @@ BEGIN
 	--Check if more than 2 domains with Cash Service enabled per site
 	-- Only perform this check if there are cash service domains in the new domain list
 	-- Skip this check for delete operations since we're removing domains, not adding them
-	IF EXISTS (SELECT TOP 1 1 FROM #tbDomains WHERE CashService = 1 AND Status = 3) AND @IsDelete = 0
+	IF EXISTS (SELECT TOP 1 1 FROM #tbDomains WHERE CashService = 1 AND Status = 3) AND @Action <> 'Delete'
 	BEGIN
 		;WITH SitesInNewDomains AS (
 			-- Get all sites from the new domain list
@@ -424,7 +424,7 @@ BEGIN
 	END
 	
 	-- Check for delete operations - ensure we don't delete the last active cash service domain for any site
-	IF @IsDelete = 1
+	IF @Action = 'Delete'
 	BEGIN
 		-- Check if deleting active cash service domains would leave any site without an active cash service domain
 		SELECT TOP 1 
