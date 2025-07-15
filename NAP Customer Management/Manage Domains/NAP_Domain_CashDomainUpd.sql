@@ -81,6 +81,9 @@ BEGIN
 	FROM @tmpDomain t
 	INNER JOIN CustDB.dbo.Site s WITH(NOLOCK) ON s.SiteID = t.siteid
 
+	-- Debug: Check if domain names are properly captured
+	-- SELECT * FROM @tmpDomain WHERE Domain IS NULL
+
 	INSERT INTO #tblCust (CustID, Site)
 	SELECT c.custid, c.site
 	FROM CustDB.dbo.customer c WITH(NOLOCK)
@@ -93,11 +96,12 @@ BEGIN
 	BEGIN
 		-- Capture records to be deleted for logging
 		INSERT INTO @Operations (AgentID, DomainID, DomainName, Action)
-		SELECT cd.AgentID, cd.DomainID, ISNULL(td.Domain, 'Domain-' + CAST(cd.DomainID AS VARCHAR(10))), 'Delete'
+		SELECT cd.AgentID, cd.DomainID, td.Domain, 'Delete'
 		FROM CashDomainManagement cd WITH(NOLOCK)
 		INNER JOIN #tblCust t ON t.custid = cd.AgentID
 		CROSS APPLY (SELECT * FROM @tmpDomain td WHERE td.Site = t.Site AND CashService = 0) td
 		WHERE cd.DomainID = td.DomainID
+			AND td.Domain IS NOT NULL
 
 		DELETE d 
 		FROM CashDomainManagement d WITH(ROWLOCK)
@@ -107,14 +111,12 @@ BEGIN
 					WHERE t.custid = d.AgentID
 						AND s.DomainID = d.DomainID)	
 
-		INSERT INTO @tmpDomainActive (DomainID, Domain, SiteID)
-		SELECT DomainID, Domain, SiteID
-		FROM GlobCustDB.dbo.DomainManagement d WITH(NOLOCK)
-			CROSS APPLY (SELECT CAST(TRIM(value) AS INT) SiteID FROM STRING_SPLIT(d.Site, ',')) s
-		WHERE Status = 3
-			AND d.IsDeleted = 0
-			AND d.OfferType = 1
-			AND s.SiteID IN (SELECT SiteID FROM @tmpDomain WHERE CashService = 0)
+		-- Only add domains that are still active (not the ones we just deleted)
+		-- For now, we'll keep this empty since we're only handling the domains from input XML
+		-- INSERT INTO @tmpDomainActive (DomainID, Domain, SiteID)
+		-- SELECT td.DomainID, td.Domain, td.SiteID
+		-- FROM @tmpDomain td
+		-- WHERE td.CashService = 0
 
 		UPDATE t
 		SET t.Site = s.Site
@@ -137,35 +139,33 @@ BEGIN
 		RETURN;
 
 	BEGIN TRY
-		-- Capture records to be inserted for logging
+		-- Capture records to be inserted for logging (only non-duplicates)
 		INSERT INTO @Operations (AgentID, DomainID, DomainName, Action)
-		SELECT t.CustID, s.DomainID, ISNULL(s.Domain, 'Domain-' + CAST(s.DomainID AS VARCHAR(10))), 'Add'
+		SELECT t.CustID, s.DomainID, s.Domain, 'Add'
 		FROM #tblCust t
 			CROSS APPLY (SELECT TOP (2) * 
 						FROM (SELECT Site,DomainID, Domain
 							FROM @tmpDomain WHERE CashService = 1
-							UNION 
-							SELECT Site,DomainID, Domain
-							FROM @tmpDomainActive 
 							) d
 						WHERE d.Site = t.Site
 						) s
 		WHERE t.cntDomain = 0
+			AND NOT EXISTS (SELECT 1 FROM CashDomainManagement cdm WHERE cdm.AgentID = t.CustID AND cdm.DomainID = s.DomainID)
+			AND s.Domain IS NOT NULL
 		
 		UNION ALL
 		
-		SELECT t.CustID, s.DomainID, ISNULL(s.Domain, 'Domain-' + CAST(s.DomainID AS VARCHAR(10))), 'Add'
+		SELECT t.CustID, s.DomainID, s.Domain, 'Add'
 		FROM #tblCust t
 			CROSS APPLY(SELECT TOP (1) * 
 						FROM (SELECT Site,DomainID, Domain
 							FROM @tmpDomain WHERE CashService = 1
-							UNION 
-							SELECT Site,DomainID, Domain
-							FROM @tmpDomainActive 
 							) d
 						WHERE d.Site = t.Site
 						) s
 		WHERE t.cntDomain = 1
+			AND NOT EXISTS (SELECT 1 FROM CashDomainManagement cdm WHERE cdm.AgentID = t.CustID AND cdm.DomainID = s.DomainID)
+			AND s.Domain IS NOT NULL
 
 		-- Insert for customers with cntDomain = 0 (no existing domains)
 		INSERT INTO CashDomainManagement (AgentID, DomainID, SubDomainPrefix,RepUpdateTime)
@@ -179,13 +179,11 @@ BEGIN
 			CROSS APPLY (SELECT TOP (2) * 
 						FROM (SELECT Site,DomainID
 							FROM @tmpDomain WHERE CashService = 1
-							UNION 
-							SELECT Site,DomainID
-							FROM @tmpDomainActive 
 							) d
 						WHERE d.Site = t.Site
 						) s
 		WHERE t.cntDomain = 0
+			AND NOT EXISTS (SELECT 1 FROM CashDomainManagement cdm WHERE cdm.AgentID = t.CustID AND cdm.DomainID = s.DomainID)
 		
 		-- Insert for customers with cntDomain = 1 (one existing domain)
 		INSERT INTO CashDomainManagement (AgentID, DomainID, SubDomainPrefix,RepUpdateTime)
@@ -199,13 +197,11 @@ BEGIN
 			CROSS APPLY(SELECT TOP (1) * 
 						FROM (SELECT Site,DomainID
 							FROM @tmpDomain WHERE CashService = 1
-							UNION 
-							SELECT Site,DomainID
-							FROM @tmpDomainActive 
 							) d
 						WHERE d.Site = t.Site
 						) s
 		WHERE t.cntDomain = 1
+			AND NOT EXISTS (SELECT 1 FROM CashDomainManagement cdm WHERE cdm.AgentID = t.CustID AND cdm.DomainID = s.DomainID)
 		
 		-- Log all operations at the end
 		DECLARE @TrackingValue NVARCHAR(MAX)
@@ -220,7 +216,10 @@ BEGIN
 		BEGIN
 			WHILE @CurrentRow <= @RowCount
 			BEGIN
-				SELECT @TrackingValue = '<ROOT CustID="' + CONVERT(VARCHAR(20), AgentID) + '" IP="' + CONVERT(VARCHAR(50), @IP) + '" DomainId="' + CONVERT(VARCHAR(20), DomainID) + '" DomainName="' + ISNULL(DomainName, '') + '" Action="' + Action + '" />',
+				-- Debug: Check what's in the operations table
+				-- SELECT * FROM @Operations WHERE RowID = @CurrentRow
+				
+				SELECT @TrackingValue = '<ROOT CustID="' + CONVERT(VARCHAR(20), AgentID) + '" IP="' + CONVERT(VARCHAR(50), @IP) + '" DomainId="' + CONVERT(VARCHAR(20), DomainID) + '" DomainName="' + ISNULL(DomainName, '') + '" />',
 					   @CurrentAgentID = AgentID,
 					   @CurrentAction = Action
 				FROM @Operations 

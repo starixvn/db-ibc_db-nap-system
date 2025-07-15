@@ -195,14 +195,14 @@ BEGIN
 				,@ErrMsg='You''re unable to enable Offer Cash right now because no sites currently support the cash service.'
 			FROM #tbDomains d
 			WHERE d.CashService = 1 
-				AND EXISTS (
-					-- Check if any site of this domain does NOT offer cash service
+				AND NOT EXISTS (
+					-- Check if there is no site offer cash
 					SELECT TOP 1 1
 					FROM #tbDomains d2
 					CROSS APPLY (SELECT CAST(TRIM(t.value) AS INT) SiteID FROM string_split(d2.Site,',') t) t
 					INNER JOIN @tbSiteMarket sm ON t.SiteID=sm.SiteID
 					WHERE (d2.DomainID = d.DomainID OR (d2.DomainID IS NULL AND d.DomainID IS NULL AND d2.Domain = d.Domain))
-						AND sm.site NOT IN (SELECT value FROM string_split(@CashSite,','))
+						AND sm.site IN (SELECT value FROM string_split(@CashSite,','))
 				)
 
 			IF @ErrCode=117	RETURN
@@ -373,8 +373,13 @@ BEGIN
 		--Check if remove site info for domain cash service
 		IF EXISTS (SELECT top 1 DomainID FROM #tbDomains WHERE CashService=1 AND Status=3)
 		BEGIN
-			SELECT s1.SiteID, d.DomainID
-			INTO #tmpCashSite
+			CREATE TABLE #tmpCashSite(
+				SiteID INT,
+				DomainID SMALLINT
+			)
+			
+			INSERT INTO #tmpCashSite(SiteID, DomainID)
+			SELECT s1.SiteID, d.DomainID			
 			FROM DomainManagement d WITH(NOLOCK)
 			CROSS APPLY (SELECT CAST(TRIM(t1.value) AS INT) SiteID FROM string_split(d.Site,',') t1) s1	
 			WHERE d.isDeleted=0 

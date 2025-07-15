@@ -136,7 +136,7 @@ BEGIN
 		
 		WHILE @CurrentRow <= @RowCount
 		BEGIN
-			SELECT @TrackingValue = '<ROOT CustID="' + CONVERT(VARCHAR(20), AgentID) + '" IP="' + CONVERT(VARCHAR(50), @IP) + '" DomainId="' + CONVERT(VARCHAR(20), DomainID) + '" DomainName="' + DomainName + '" Action="Add" />',
+			SELECT @TrackingValue = '<ROOT CustID="' + CONVERT(VARCHAR(20), AgentID) + '" IP="' + CONVERT(VARCHAR(50), @IP) + '" DomainId="' + CONVERT(VARCHAR(20), DomainID) + '" DomainName="' + ISNULL(DomainName, '') + '" />',
 				   @CurrentAgentID = AgentID
 			FROM @Operations 
 			WHERE Action = 'Add' AND RowID = @CurrentRow
