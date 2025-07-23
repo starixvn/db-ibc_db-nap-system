@@ -1,6 +1,7 @@
 /*<info serverAlias="DBGLOB-GlobCustDB" executers="wsv_nap" viewers="" isFunction="0" isNested="0"></info>*/
 ALTER PROC [dbo].[NAP_Domain_Upd]
 	 @DomainList	NVARCHAR(MAX)
+	,@CashSite 		VARCHAR(MAX) = ''
 	,@UserID		INT
 	,@IP			VARCHAR(50)	= ''
 	,@ErrCode		INT=0			 OUTPUT
@@ -15,30 +16,32 @@ AS
 	Revisions:
 		- 20231013@Tacy: NAP CM - Manage Domain [RedmineID: #194024]
 		- 20250120@Tacy: Move to GlobCustDB [RedmineID: #216870]
-
+		- 20250702@Johnson: offer Agency Cash Service [RedmineID: #231219]
 	Param's Explanation:
 		@DomainList:
 			**Add new:
 				<DomainList>
-						<Domain id="" d="alpha01.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
-						<Domain id="" d="alpha02.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""			r="" b="V"/>
+						<Domain id="" d="alpha01.com" ss="Agency" cs="1" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
+						<Domain id="" d="alpha02.com" ss="Agency" cs="0" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""			r="" b="V"/>
 				</DomainList>
 
 			**Update:
 				<DomainList>
-						<Domain id="1" d="alpha01.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
-						<Domain id="2" d="alpha02.com" ss="Agency" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""		 r="" b="V"/>
+						<Domain id="1" d="alpha01.com" ss="Agency" cs="1" s="1045,1046,1047,1048" stt="2" ed="2023-10-17 23:59:59" c="VN,AF,AO" r="" b="B"/>
+						<Domain id="2" d="alpha02.com" ss="Agency" cs="0" s="1045,1046,1047,1048" stt="2" ed="2023-11-17 23:59:59" c=""		 r="" b="V"/>
 				</DomainList>
 
 			@id ~ DomainID
 			@d  ~ DomainName
 			@ss ~ System: {'Agency','Member Site'}
+			@cs ~ CashService: {0 ~ No; 1 ~ Yes}
 			@s  ~ Site
 			@stt ~ Status: {0 ~ Unavailable; 1 ~ Available; 2 ~ In-stock; 3 ~ Active}
 			@ed	~ ExpiredDate
 			@c  ~ Countries
 			@r  ~ Remark
 			@b	~ BrandName: {'B'; 'V'}
+			@CashSite ~ list cash site('best-odds,733333,...')		
 */
 BEGIN
 	SET NOCOUNT ON;
@@ -50,6 +53,7 @@ BEGIN
 	SET @StartRun = GETDATE()	
 
 	EXEC NAP_Domain_Check @DomainList=@DomainList	
+						 ,@CashSite=@CashSite
 						 ,@IsUpdate=1
 						 ,@ErrCode=@ErrCode	OUTPUT
 						 ,@ErrMsg=@ErrMsg OUTPUT
@@ -60,6 +64,7 @@ BEGIN
 			 DomainID			SMALLINT
 			,Domain				VARCHAR(50)
 			,System				VARCHAR(20)
+			,CashService		BIT
 			,Site				VARCHAR(500)
 			,Status				TINYINT
 			,ExpiredDate		DATETIME
@@ -76,10 +81,11 @@ BEGIN
 	EXEC sp_xml_preparedocument @iDoc OUTPUT
 		, @DomainList
 
-	INSERT INTO #tbDomains(DomainID,Domain, System, Site, Status, ExpiredDate, RestrictedCountries, Remark, BrandName)
+	INSERT INTO #tbDomains(DomainID,Domain, System, CashService, Site, Status, ExpiredDate, RestrictedCountries, Remark, BrandName)
 	SELECT	id	AS DomainID,
 			d	AS Domain, 
 			ss	AS [System], 
+			cs	AS [CashService],
 			s	AS [Site], 
 			stt AS [Status],
 			CASE WHEN LEN(ed)=0			THEN NULL ELSE ed	END ExpiredDate, 
@@ -90,7 +96,8 @@ BEGIN
 				 id		SMALLINT
 				,d		VARCHAR(50)
 				,ss		VARCHAR(20)
-				,s		VARCHAR(500)
+				,cs		BIT
+				,s		VARCHAR(500)				
 				,stt	TINYINT
 				,ed		VARCHAR(50)
 				,c		VARCHAR(4000)
@@ -125,6 +132,7 @@ BEGIN
 				SELECT d.DomainID	AS 'id'
 					, d.Domain		AS 'd'
 					, d.System		AS 'ss'
+					, d.OfferType	AS 'cs'
 					, d.Site		AS 's'
 					, d.Status		AS 'stt'
 					, d.ExpiredDate	AS 'ed'
@@ -141,6 +149,7 @@ BEGIN
 		UPDATE d
 		SET d.Domain=CASE WHEN @IsUpdateSingle=1 THEN t.Domain ELSE d.Domain END	--not allow to update multiple domain name
 			,d.System=t.System
+			,d.OfferType=t.CashService
 			,d.Site=t.Site
 			,d.BrandName=t.BrandName
 			,d.Status=t.Status
