@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 
 ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_Sel] 
 	-- Add the parameters for the stored procedure here
@@ -14,7 +14,8 @@ AS
 
 	Revisions:
 		- 20220705@Tacy: Initalize SP [RedmineID: #194332]
-		
+		- 20240624@Tacy: Implement more function [Redmine: #196256]
+
 	Param's Explanation:
 		@pMutilProductID = 0 : All 
 						<> 0 : ProductID
@@ -45,8 +46,8 @@ BEGIN
 		MinBet			MONEY,
 		MaxBet			MONEY,
 		CurrencyGroupID TINYINT,
-		Currency		VARCHAR(50),
-		[Site]			VARCHAR(50) DEFAULT ('All Sites'),	
+		ExchangeID		INT,
+		SiteID			INT DEFAULT (0),
 		Remark			VARCHAR(1000)
 	)
 
@@ -61,9 +62,9 @@ BEGIN
 
 	IF @IsCredit=1
 	BEGIN
-		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, Currency, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
+		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, ExchangeID, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
 		SELECT DISTINCT
-			psl.SportType, s.SportName, ex.CreditGroupID, ex.currency
+			psl.SportType, s.SportName, ex.CreditGroupID, ex.ExchangeId
 			, psl.GameGroupID
 			, CASE WHEN psl.GameGroupID=1 THEN 'Slot Game' 
 				   WHEN psl.GameGroupID=2 THEN 'Others'
@@ -72,22 +73,22 @@ BEGIN
 		FROM ProductStakeLevelGroup psl WITH (NOLOCK)
 			INNER JOIN #ExchangeGroup eg WITH (NOLOCK) ON eg.CreditGroupID=psl.CreditGroupID
 			INNER JOIN Exchange ex WITH (NOLOCK) ON ex.CreditGroupID=eg.CreditGroupID
-			CROSS APPLY (SELECT TOP 1 sm.Sporttype, sm.RealProductId AS ProductID
+			CROSS APPLY (SELECT TOP 1 
+							sm.SportTypeRefBetSetting AS SportType
+							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-						 WHERE psl.SportType=sm.SportType AND isLicensee=0 
-							AND sm.isDeleted=0 AND isActive=1) sp
+						 WHERE psl.SportType=sm.SportTypeRefBetSetting 
+							AND sm.isDeleted=0 AND isLicensee=0 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
 		WHERE psl.IsDeleted=0
 		AND (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
 	END
 	ELSE
 	BEGIN
-		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, Currency, Site, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
+		INSERT INTO #GlobalStakeLevelGroup(Sporttype, Sportname, CurrencyGroupID, ExchangeID, SiteID, GameGroupID, GameGroup, MinBet, MaxBet, Remark)
 		SELECT DISTINCT
-			psl.SportType, s.SportName, ex.LicenseeGroupID, ex.currency
-			,CASE WHEN psl.SiteID=0 THEN 'All Sites' 
-				  WHEN ss.siteid IS NOT NULL THEN ss.site
-			END AS Site 
+			psl.SportType, s.SportName, ex.LicenseeGroupID, ex.ExchangeId
+			, psl.SiteID
 			, psl.GameGroupID
 			, CASE WHEN psl.GameGroupID=1 THEN 'Slot Game' 
 				   WHEN psl.GameGroupID=2 THEN 'Others'
@@ -97,10 +98,12 @@ BEGIN
 			LEFT JOIN Site sS WITH (NOLOCK) ON sS.siteid=psl.SiteID
 			INNER JOIN #ExchangeGroup eg WITH (NOLOCK) ON eg.LicenseeGroupID=psl.LicenseeGroupID
 			INNER JOIN Exchange ex WITH (NOLOCK) ON ex.LicenseeGroupID=eg.LicenseeGroupID
-			CROSS APPLY (SELECT TOP 1 sm.Sporttype, sm.RealProductId AS ProductID
+			CROSS APPLY (SELECT TOP 1 
+							sm.SportTypeRefBetSetting AS SportType
+							,sm.RealProductId AS ProductID
 						 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-						 WHERE psl.SportType=sm.SportType AND isLicensee=1 
-							AND sm.isDeleted=0 AND isActive=1) sp
+						 WHERE psl.SportType=sm.SportTypeRefBetSetting 
+							AND sm.isDeleted=0 AND isLicensee=1 AND isActive=1) sp
 			INNER JOIN #Sports s ON s.SportType=sp.SportType
 		WHERE psl.IsDeleted=0
 		AND (@pMutilProductID = '0' OR sp.ProductID IN (SELECT TRIM(value) val FROM STRING_SPLIT(@pMutilProductID, ',')))
@@ -108,12 +111,13 @@ BEGIN
 	END
 
 	SELECT Sporttype, Sportname
-		, CurrencyGroupID, Currency
-		, Site
+		, CurrencyGroupID, ExchangeID
+		, SiteID
+		, GameGroupID
 		, GameGroup
 		, MinBet, MaxBet, Remark
 	FROM #GlobalStakeLevelGroup
-	ORDER BY Sportname, CurrencyGroupID, Site , GameGroup DESC
+	ORDER BY Sporttype, CurrencyGroupID, SiteID, GameGroup DESC, ExchangeID
 
 	DROP TABLE #GlobalStakeLevelGroup, #Sports, #ExchangeGroup
 END

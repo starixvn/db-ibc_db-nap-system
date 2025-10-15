@@ -1,4 +1,4 @@
-/*<info serverAlias="DBACC-bodb02" executers="bodbAdminNet" viewers="" isFunction="0"></info>*/
+/*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_GlobalStakeLevelGroup_ProductSel] 
 	-- Add the parameters for the stored procedure here
 	  @pMutilProductID	VARCHAR(MAX) = '0'
@@ -11,7 +11,8 @@ AS
 
 	Revisions:
 		- 20230914@Tacy: Create SP [Redmine: #194332]
-		
+		- 20240624@Tacy: Implement more function [Redmine: #196256]
+
 	Param's Explanation:
 		@pMutilProductID  0 : All, <> 0 : ProductID
 */
@@ -39,7 +40,7 @@ BEGIN
 		FROM ProductStakeLevelGroup P WITH (NOLOCK) 
 		CROSS APPLY (SELECT TOP 1 RealProductId AS ProductID
 					 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-					 WHERE p.SportType=sm.SportType AND isLicensee=0 
+					 WHERE p.SportType=sm.SportTypeRefBetSetting AND isLicensee=0 
 						AND sm.isDeleted=0 AND isActive=1) s
 		WHERE p.isDeleted=0
 	END
@@ -50,7 +51,7 @@ BEGIN
 		FROM Dep_ProductStakeLevelGroup P WITH (NOLOCK) 
 		CROSS APPLY (SELECT TOP 1 RealProductId AS ProductID
 					 FROM SportBettypeSettingMatrix sm WITH (NOLOCK)
-					 WHERE p.SportType=sm.SportType AND isLicensee=1 
+					 WHERE p.SportType=sm.SportTypeRefBetSetting AND isLicensee=1 
 						AND sm.isDeleted=0 AND isActive=1) s
 		WHERE p.isDeleted=0
 	END
@@ -58,7 +59,7 @@ BEGIN
 	SELECT p.ProductID, p.ProductName
 	FROM #SportProfile s WITH(NOLOCK)
 	INNER JOIN #Products p WITH(NOLOCK) ON s.ProductID = p.ProductID
-	ORDER BY ProductName 
+	ORDER BY ProductID 
 
 	DROP TABLE #Products, #SportProfile
 END
