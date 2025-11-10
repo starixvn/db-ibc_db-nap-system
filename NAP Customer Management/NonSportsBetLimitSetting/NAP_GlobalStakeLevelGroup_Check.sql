@@ -13,6 +13,7 @@ AS
 
 	Revisions:
 		- 20230918@Tacy: Initalize SP [RedmineID: #192624]
+		- 20251110@Dave: Live Casino - Adjust-pt-comm-for-live-casino [RedmineID: #242260]
 		
 	Param's Explanation:
 		* @InputData='<ROOT>
@@ -80,6 +81,7 @@ BEGIN
 			, CurRemark			VARCHAR(1000)
 			, IsDeposit			BIT DEFAULT(0)
 			, SportTypeRef		SMALLINT
+			, Site				VARCHAR(50)
 	)
 
 	CREATE TABLE #Sports(SportType SMALLINT PRIMARY KEY, SportName NVARCHAR(50))
@@ -177,14 +179,11 @@ BEGIN
 	CREATE TABLE #SportsNonSupported(
 		  SportType		SMALLINT
 		, IsDeposit		BIT
+		, SiteID		INT
 	)
 
 	--Sports have setting by customer
 	INSERT INTO #SportsNonSupported(SportType, IsDeposit)
-	SELECT DISTINCT f.SportType, 0 AS IsDeposit
-	FROM dbo.f_CustSetting_ProductSettingDetailSel(@SettingStatus) f
-	WHERE f.SettingType IN (2, 7, 16, 17, 23, 26) 
-	UNION ALL
 	SELECT DISTINCT f.SportType, 1 AS IsDeposit
 	FROM dbo.f_Dep_CustSetting_SportBetTypeSettingSelect(NULL, NULL, @SettingStatus) f
 	WHERE f.SettingType IN (2, 7, 8, 10, 12)
@@ -209,6 +208,16 @@ BEGIN
 	FROM @NewGlobalTbl nsl
 	WHERE ISNULL(nsl.LicenseeGroupID,'')<>''
 
+	UPDATE TMP
+	SET TMP.Site = si.Site
+	FROM #NewInputDataTbl AS TMP
+		INNER JOIN dbo.Site AS si
+			ON TMP.SiteID =  si.siteid;
+	
+	UPDATE #NewInputDataTbl
+	SET Site = 'All'
+	WHERE SiteID = 0;
+
 	--Update: SporttypeRef
 	UPDATE t
 	SET t.SportTypeRef=sm.SportTypeRefBetSetting
@@ -217,7 +226,20 @@ BEGIN
 				 FROM f_CustSetting_SportBetTypeSettingMatrix (@SettingStatus) sm 
 				 WHERE t.SportType=sm.SportType
 				 AND t.IsDeposit=sm.isLicensee
-				 AND sm.isActive=1 AND sm.isDeleted=0) sm
+				 AND sm.isActive=1 AND sm.isDeleted=0
+				 AND (t.siteid = 0 OR sm.Site IN (t.site,'All'))) sm;
+
+	
+	--Sports have setting by customer
+	WITH Tmp_Si AS(
+		SELECT DISTINCT SiteID FROM #NewInputDataTbl WHERE IsDeposit = 0
+	)
+	INSERT INTO #SportsNonSupported(SportType, IsDeposit, SiteID)
+	SELECT DISTINCT f.SportType, 0 AS IsDeposit, si.SiteID
+	FROM Tmp_Si AS si
+		CROSS APPLY dbo.f_CustSetting_ProductProfileSel(NULL,@SettingStatus,si.SiteID,0) f
+	WHERE f.SettingType IN (2, 7, 16, 17, 23, 26);
+
 	--------------------------------------------------------------------------------------------------------------------------------------
 	SELECT TOP (1)
 			@ErrCode=CASE 
@@ -280,9 +302,9 @@ BEGIN
 	IF EXISTS (SELECT TOP 1 1 FROM #NewInputDataTbl t
 				INNER JOIN #Sports s ON s.SportType=t.SportType
 				LEFT JOIN #SportsNonSupported ref ON ref.SportType=t.SportTypeRef
-												AND ref.IsDeposit=t.IsDeposit
+												AND ref.IsDeposit=t.IsDeposit AND (ref.SiteID = t.siteID OR t.IsDeposit = 1)
 				LEFT JOIN #SportsNonSupported sn ON sn.SportType=t.SportType
-												AND sn.IsDeposit=t.IsDeposit
+												AND sn.IsDeposit=t.IsDeposit AND (sn.SiteID = t.siteID OR t.IsDeposit = 1)
 				WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL)		
 	BEGIN
 		SELECT @ErrCode=119
@@ -291,9 +313,9 @@ BEGIN
 								  FROM #NewInputDataTbl t
 									INNER JOIN #Sports s ON s.SportType=t.SportType
 									LEFT JOIN #SportsNonSupported ref ON ref.SportType=t.SportTypeRef
-																	AND ref.IsDeposit=t.IsDeposit
+																	AND ref.IsDeposit=t.IsDeposit AND (ref.SiteID = t.siteID OR t.IsDeposit = 1)
 									LEFT JOIN #SportsNonSupported sn ON sn.SportType=t.SportType
-																	AND sn.IsDeposit=t.IsDeposit
+																	AND sn.IsDeposit=t.IsDeposit AND (sn.SiteID = t.siteID OR t.IsDeposit = 1)
 								  WHERE ref.SportType IS NOT NULL OR sn.SportType IS NOT NULL
 								  FOR XML PATH('')), 1, 1, '')
 
