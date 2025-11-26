@@ -1,7 +1,7 @@
 /*<info serverAlias="DBCUST-CUSTDB" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_ValidateCustomer] (
 	  @UserName			NVARCHAR(50) = NULL
-	 ,@SportType		TINYINT = 1
+	 ,@SportType		SMALLINT = 1
 	 ,@ErrCode			TINYINT = 0 OUTPUT
 	 ,@CustID			INT = NULL OUTPUT
 )
@@ -15,6 +15,7 @@ AS
 	Revisions:  
 	- 20190815@Eden: Create New SP  [RedmineID: #117727]
 	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
+	- 20251126@Winfred: Risk Control Upgrade SportType DataType [RedmineId: #245209]
 
 	Parameter explanation:
 	@ErrCode = :

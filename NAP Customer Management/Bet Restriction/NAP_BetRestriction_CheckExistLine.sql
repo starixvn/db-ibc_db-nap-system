@@ -1,7 +1,7 @@
 /*<info serverAlias="DBACC-bodb02" executers="wsv_nap" viewers="" isFunction="0"></info>*/
 ALTER PROCEDURE [dbo].[NAP_BetRestriction_CheckExistLine] 
 	  @Username		NVARCHAR(50) 
-	 ,@SportType    TINYINT = 1
+	 ,@SportType    SMALLINT = 1
 AS
 /*
 	Created: 20190815@Eden
@@ -13,6 +13,7 @@ AS
 	- 20190815@Eden: Create New SP [RedmineID: #117727]
 	- 20230313@Helios: Remove Check and Alert SeiBetTicket for Sport Soccer and Basketball. Approve Check and Alert for Soccer and Badminton FROM Basketball Code [RedmineID: #183662]
 	- 20250327@Winfred: [NAP CM] Customer - Bet Restriction - E-Sports [Redmine: #221607]
+	- 20251126@Winfred: Risk Control Upgrade SportType DataType [RedmineId: #245209]
 
 	Example: EXEC NAP_BetRestriction_CheckExistLine @Username = 'master1', @SportType = 1
 		
